@@ -23,7 +23,7 @@ def fold(run_dir: Path) -> dict:
         "repo": meta.get("repo"), "branch": meta.get("branch"), "parent_id": meta.get("parent_id"),
         "auth_mode": meta.get("auth_mode"), "options": meta.get("options", {}),
         "board": [], "files": [], "final": "", "error": None, "pending_approvals": [], "last_seq": 0,
-        "model_calls": 0,
+        "model_calls": 0, "playbook": None,
     }
     agents: dict[str, dict] = {}
     board: dict[str, dict] = {}
@@ -32,7 +32,9 @@ def fold(run_dir: Path) -> dict:
     for e in events:
         t = e["type"]
         d["last_seq"] = e["seq"]
-        if t == "agent_created":
+        if t == "playbook_chosen":
+            d["playbook"] = {"id": e.get("id"), "title": e.get("title")}
+        elif t == "agent_created":
             agents[e["name"]] = {"name": e["name"], "role": e.get("role", ""), "tools": e.get("tools", []),
                                  "model": e.get("model", ""), "color_index": e.get("color_index", len(agents)),
                                  "status": "idle"}

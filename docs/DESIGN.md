@@ -46,7 +46,8 @@ Desktop                                         Phone
 | P4 | Phone history | `P4-History` | Runs list with search and New run. |
 
 Built in the app but not yet drawn on the canvas: the **approval card**, the **interrupted** outcome,
-the **stop confirmation**, and the **connectors & plugins picker** in the Options panel (chips;
+the **stop confirmation**, the **playbook line** and **Playbook select** (Auto or one playbook, with its
+one-line description under it), and the **connectors & plugins picker** in the Options panel (chips;
 greyed out with "Not set up" when credentials are missing; outward ones are labelled "asks first").
 
 ## 3. Components and every state
@@ -92,6 +93,8 @@ Tap or Enter opens the card in place: "Done when: …", then one checker line pe
 - **Orchestrator:** character (32 px) + plain text, no bubble.
 - **Joined line:** small character(s) + "<name> joined", with "· can search files" style hints when
   a notable tool is added.
+- **Playbook line:** small book icon + "Using the **Research report** playbook", 13.5 px, text-2,
+  indented like joined lines. Shown once, right after your message.
 - **Activity line:** three dots + "<agent> is <doing>". Only the newest one per agent shows.
   It disappears when the attempt ends.
 
@@ -279,6 +282,7 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | Event | UI |
 |---|---|
 | run_started | Your message, run bar "Running" |
+| playbook_chosen | Playbook line: book icon + "Using the <title> playbook" |
 | orchestrator_said | Orchestrator message |
 | nudge | Nothing visible (raw log only) |
 | agent_created | Joined line, rail team row, run bar face |

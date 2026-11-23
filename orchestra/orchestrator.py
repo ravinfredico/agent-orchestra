@@ -23,6 +23,7 @@ from . import prompts
 from .approvals import ApprovalBroker
 from .catalog import Catalog, load_catalog
 from .config import Config
+from .playbooks import summary_lines
 from .runner import run_agent as default_runner
 from .state import RunState, make_run_id
 from .tools import MCP_TOOL_NAMES, SERVER_NAME, OrchestraTools
@@ -71,7 +72,9 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
                 "Have an agent explore its structure, conventions and tests before changing anything.")
 
     options = ClaudeAgentOptions(
-        system_prompt=prompts.orchestrator_prompt(catalog.prompt_lines(config), config.budget),
+        system_prompt=prompts.orchestrator_prompt(
+            catalog.prompt_lines(config), config.budget, summary_lines(tools.playbooks),
+            config.playbook if config.playbook in tools.playbooks else ""),
         model=config.orchestrator_model,
         cwd=str(state.workspace),
         mcp_servers={SERVER_NAME: tools.mcp_server()},

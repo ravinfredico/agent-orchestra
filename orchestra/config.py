@@ -28,6 +28,7 @@ class Config:
     budget: Budget = field(default_factory=Budget)
     catalog: list[str] | None = None    # catalog ids allowed for this run; None = every enabled entry
     allowed_domains: list[str] = field(default_factory=list)  # network allowlist for sandboxed shell
+    playbook: str = "auto"            # playbook id, or "auto" to let the orchestrator pick
 
     def checker_tools(self) -> list[str]:
         # With Bash allowed, the checker can run tests to verify for real.
@@ -46,6 +47,7 @@ class Config:
             "max_attempts": b.max_attempts_per_task,
             "catalog": self.catalog,
             "allowed_domains": self.allowed_domains,
+            "playbook": self.playbook,
         }
 
     @classmethod
@@ -58,6 +60,7 @@ class Config:
             allow_bash=bool(o.get("allow_bash", False)),
             catalog=o.get("catalog") or None,
             allowed_domains=list(o.get("allowed_domains") or []),
+            playbook=o.get("playbook") or "auto",
             budget=Budget(
                 max_agents=int(o.get("max_agents", 6)),
                 max_assignments=int(o.get("max_assignments", 15)),

@@ -12,6 +12,7 @@ from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Reques
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 
+from orchestra.playbooks import load_playbooks
 from orchestra.state import TERMINAL_EVENTS, auth_mode, read_events
 
 from . import auth
@@ -67,6 +68,10 @@ def create_app(manager: RunManager | None = None, runs_dir: Path = Path("runs"),
     @app.get("/api/catalog", dependencies=guard)
     async def catalog():
         return [e.public() for e in mgr.catalog.entries]
+
+    @app.get("/api/playbooks", dependencies=guard)
+    async def playbooks():
+        return [{"id": b.id, "title": b.title, "when": b.when} for b in load_playbooks().values()]
 
     # ---- runs ---------------------------------------------------------------------
 

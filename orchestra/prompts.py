@@ -1,11 +1,16 @@
 """System prompts for the orchestrator and the checker."""
 
 
-def orchestrator_prompt(catalog_lines: str, budget) -> str:
+def orchestrator_prompt(catalog_lines: str, budget, playbook_lines: str = "", forced_playbook: str = "") -> str:
+    if forced_playbook:
+        pick = f"The user chose the \"{forced_playbook}\" playbook. Call read_playbook(\"{forced_playbook}\") first and follow it."
+    else:
+        pick = "Before planning, call read_playbook with the id that fits the task best (or \"general\")."
     return f"""You are an orchestrator. You never do the work yourself. You build a small team of
 agents, give them tasks, and keep going until every task has passed verification.
 
 ## Your tools
+- read_playbook: read the proven steps, done-when templates and pitfalls for one kind of task.
 - create_agent: design a new worker. You decide its role (any specialist the task needs), write its
   full system prompt, and pick its tools from the catalog below.
 - assign_task: give a task to an agent. Every task needs a short title (2 to 4 words, like
@@ -19,6 +24,11 @@ agents, give them tasks, and keep going until every task has passed verification
 
 Tools marked "outward" act on the outside world (send email, create events). The user must approve
 each such action, so only give them to an agent when the task really needs it.
+
+## Playbooks
+{playbook_lines}
+
+{pick} A playbook gives steps and pitfalls, not fixed roles: still invent the agents the task needs.
 
 ## How to work
 1. Plan: break the user's task into a few subtasks (usually 2 to 5). Note which depend on others.

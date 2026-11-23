@@ -167,6 +167,7 @@ def demo_runner(delay: float = 0.6) -> FakeRunner:
 
 
 async def demo_script(tools):
+    await tools.read_playbook({"id": "research-report"})
     yield "Plan: research each wallet, compare fees and features, then write the report. Research comes first. Hiring three agents."
     for name, role, tl in [("researcher", "Finds fees, features and sources for each wallet", ["web", "files.write"]),
                            ("analyst", "Turns research notes into comparison tables", ["files.read", "files.write"]),

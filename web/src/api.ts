@@ -28,6 +28,12 @@ export interface CatalogEntry {
   unavailable: string | null
 }
 
+export interface PlaybookInfo {
+  id: string
+  title: string
+  when: string
+}
+
 export interface Health {
   ok: boolean
   auth_mode: 'plan' | 'api_key'
@@ -53,6 +59,7 @@ export interface RunOptions {
   max_cost?: number
   max_agents?: number
   catalog?: string[] | null
+  playbook?: string
 }
 
 export class ApiError extends Error {
@@ -89,6 +96,7 @@ export const api = {
   health: () => request<Health>('/api/health'),
   login: (token: string) => request<{ ok: boolean }>('/api/login', { method: 'POST', body: JSON.stringify({ token }) }),
   catalog: () => request<CatalogEntry[]>('/api/catalog'),
+  playbooks: () => request<PlaybookInfo[]>('/api/playbooks'),
   runs: (params: { q?: string; status?: string; repo?: boolean; limit?: number } = {}) => {
     const qs = new URLSearchParams()
     Object.entries(params).forEach(([k, v]) => v !== undefined && v !== '' && qs.set(k, String(v)))

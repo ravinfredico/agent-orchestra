@@ -119,6 +119,7 @@ All JSON. All routes need auth when a token is configured (section 13).
 | `POST /api/runs/{id}/continue` | `{extra_budget_usd}` | `201 {id}` (a new run) |
 | `DELETE /api/runs/{id}` | | `204`. Refused with `409` while running. |
 | `GET /api/catalog` | | `[CatalogEntry]` without secrets |
+| `GET /api/playbooks` | | `[{id, title, when}]` |
 | `GET /api/status` | | widget shape, below |
 | `GET /api/health` | | `{ok, auth_mode, version, catalog: [ids]}` |
 
@@ -162,6 +163,7 @@ Every line in `log.jsonl` and every SSE message is one event:
 | Type | Fields | Notes |
 |---|---|---|
 | `run_started` | `task, title, options, workspace, repo, branch, parent_id, auth_mode` | first event |
+| `playbook_chosen` | `id, title` | orchestrator read a playbook (section 9b) |
 | `orchestrator_said` | `text` | orchestrator's text blocks |
 | `nudge` | `round, pending` | engine pushed the orchestrator to continue; shown only in the raw log |
 | `agent_created` | `name, role, tools, model, color_index` | `tools` are catalog ids |
@@ -237,6 +239,17 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
 - The orchestrator prompt lists each enabled entry as `id: description (risk)`. The `create_agent`
   tool schema uses the enabled ids as its enum.
 - `options.catalog` on a run can narrow the catalog for that run.
+
+## 9b. Playbooks
+Inspired by Lauren Tan's pstack (`/poteto-mode` routes work to a playbook).
+- One markdown file per playbook in `orchestra/playbooks/`, front matter `id`, `title`, `when`.
+  Body: steps, suggested roles and catalog tools, done-when templates, pitfalls.
+- Shipped: `research-report`, `build-with-tests`, `repo-change`, `writing`, `general`.
+- The orchestrator prompt lists every playbook's summary. Its first tool call is
+  `read_playbook(id)`, which returns the full text and logs `playbook_chosen`.
+- `options.playbook` (`"auto"` by default) lets you force one from the Options panel.
+- Playbooks give hints, not fixed roles: the orchestrator still invents the agents.
+- When a kind of run keeps failing the same way, fix the playbook's pitfalls, not only the prompt.
 
 ## 10. Approvals for outward tools
 - Servers with outward tools are left out of `allowed_tools`, so the CLI asks the SDK's `can_use_tool`

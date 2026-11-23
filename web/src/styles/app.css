@@ -161,6 +161,8 @@ button { cursor: pointer; }
 .indent { padding-left: 44px; }
 .joined { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-2); flex-wrap: wrap; }
 .joined b { color: var(--text); font-weight: 600; }
+.playbook-line { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-2); }
+.playbook-line b { color: var(--text); font-weight: 600; }
 .activity { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-2); }
 .typing { display: inline-flex; gap: 3px; }
 .typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--text-2); animation: typing 1.2s linear infinite; }

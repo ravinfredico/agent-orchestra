@@ -17,7 +17,7 @@ export function emptyRun(id = ''): RunView {
     id, task: '', title: '', status: 'created', options: {}, authMode: '', repo: null, branch: null,
     parentId: null, startedAt: null, endedAt: null, lastEventAt: null, costUsd: 0, modelCalls: 0,
     assignments: 0, agents: {}, agentOrder: [], tasks: {}, approvals: {}, files: {}, thread: [],
-    final: '', giveUp: false, budgetReason: '', error: null, replanning: false, lastSeq: 0, announcements: [],
+    final: '', giveUp: false, budgetReason: '', error: null, replanning: false, playbook: null, lastSeq: 0, announcements: [],
   }
 }
 
@@ -43,6 +43,10 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
         startedAt: e.t,
       })
       r.thread.push({ kind: 'task_message', seq: e.seq, text: e.task ?? '' })
+      break
+    case 'playbook_chosen':
+      r.playbook = { id: e.id, title: e.title }
+      r.thread.push({ kind: 'playbook', seq: e.seq, id: e.id, title: e.title })
       break
     case 'orchestrator_said':
       r.thread.push({ kind: 'say', seq: e.seq, text: e.text })

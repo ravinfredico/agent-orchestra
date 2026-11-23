@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { Character } from '../components/Character'
-import { Team } from '../components/Icons'
+import { Book, Team } from '../components/Icons'
 import { Announcer, ApprovalCard, ConfirmDialog, OutcomeCard, Rail, RunBar } from '../components/RunParts'
 import { MenuButton } from '../components/Shell'
 import { TaskCard } from '../components/TaskCard'
@@ -20,6 +20,13 @@ function Item({ item, run, last }: { item: ThreadItem; run: RunView; last: boole
         <div className="msg-orch enter">
           <Character color={ORCHESTRATOR_COLOR} accessory="bow" mood={last ? orchestratorMood(run) : 'neutral'} size={32} label="orchestrator" />
           <p>{item.text}</p>
+        </div>
+      )
+    case 'playbook':
+      return (
+        <div className="playbook-line indent enter">
+          <Book />
+          <span>Using the <b>{item.title}</b> playbook</span>
         </div>
       )
     case 'joined':

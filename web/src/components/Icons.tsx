@@ -14,4 +14,5 @@ export const Back = ({ s = 18 }) => <svg width={s} height={s} viewBox="0 0 24 24
 export const Search = ({ s = 16 }) => <svg width={s} height={s} viewBox="0 0 24 24" strokeWidth="1.8" {...base}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
 export const More = ({ s = 18 }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
 export const Team = ({ s = 18 }) => <svg width={s} height={s} viewBox="0 0 24 24" strokeWidth="1.8" {...base}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6" /></svg>
+export const Book = ({ s = 15 }) => <svg width={s} height={s} viewBox="0 0 24 24" strokeWidth="1.8" {...base}><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4 21V5M9 7h6" /></svg>
 export const Close = ({ s = 18 }) => <svg width={s} height={s} viewBox="0 0 24 24" strokeWidth="2" {...base}><path d="M6 6l12 12M18 6L6 18" /></svg>

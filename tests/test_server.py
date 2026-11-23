@@ -191,3 +191,13 @@ def test_repo_conflict_and_allowlist(tmp_path, monkeypatch):
         assert c.get(f"/api/runs/{r.json()['id']}").json()["branch"].startswith("orchestra/")
         assert c.post("/api/runs", json={"task": "y", "options": {"repo": str(repo)}}).status_code == 409
         c.post(f"/api/runs/{r.json()['id']}/stop")
+
+
+def test_playbooks_endpoint_and_detail(client):
+    books = client.get("/api/playbooks").json()
+    assert {"id", "title", "when"} <= set(books[0]) and any(b["id"] == "general" for b in books)
+    run_id = client.post("/api/runs", json={"task": "x", "options": {"playbook": "writing"}}).json()["id"]
+    auto_approve(client, run_id)
+    d = wait_done(client, run_id)
+    assert d["playbook"] == {"id": "research-report", "title": "Research report"}   # the demo script's pick
+    assert d["options"]["playbook"] == "writing"

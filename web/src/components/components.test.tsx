@@ -84,6 +84,9 @@ describe('NewRun', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
       calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+      if (url.startsWith('/api/playbooks')) {
+        return new Response(JSON.stringify([{ id: 'writing', title: 'Writing', when: 'Draft text' }]), { headers: { 'content-type': 'application/json' } })
+      }
       if (url.startsWith('/api/catalog')) {
         return new Response(JSON.stringify([
           { id: 'browser', kind: 'mcp', description: 'Browser', risk: 'read', enabled: true, requires: null, unavailable: null },
@@ -100,8 +103,10 @@ describe('NewRun', () => {
     await user.click(screen.getByRole('button', { name: 'Options' }))
     await user.click(screen.getByLabelText(/Allow shell commands/))
     await waitFor(() => expect(screen.getByRole('button', { name: /gmail/ })).toBeDisabled())
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Writing' })).toBeInTheDocument())
+    await user.selectOptions(screen.getByLabelText(/^Playbook/), 'writing')
     await act(async () => { fireEvent.click(start) })
     const post = calls.find((c) => c.url === '/api/runs')
-    expect(post?.body).toMatchObject({ task: 'Write a haiku to haiku.md', options: { allow_bash: true, max_cost: 5 } })
+    expect(post?.body).toMatchObject({ task: 'Write a haiku to haiku.md', options: { allow_bash: true, max_cost: 5, playbook: 'writing' } })
   })
 })

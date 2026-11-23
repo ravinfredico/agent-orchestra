@@ -23,7 +23,7 @@ export function useRunEvents(runId: string | undefined): { run: RunView; connect
       } catch { /* ignore malformed */ }
     }
     // the server sends named events (event: <type>), so listen to each type plus the default
-    const types = ['run_started', 'orchestrator_said', 'nudge', 'agent_created', 'task_assigned', 'attempt_started',
+    const types = ['run_started', 'playbook_chosen', 'orchestrator_said', 'nudge', 'agent_created', 'task_assigned', 'attempt_started',
       'worker_activity', 'file_written', 'checker_started', 'attempt_failed', 'task_passed', 'task_failed',
       'task_replaced', 'approval_requested', 'approval_resolved', 'usage', 'budget_exhausted', 'finished',
       'run_failed', 'run_stopped', 'run_interrupted']

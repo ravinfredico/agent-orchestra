@@ -16,6 +16,7 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | M2 Server | Done (`tests/test_server.py`). |
 | M3 App core | Done. Vitest reducer + component tests, Playwright screenshots reviewed at 1440 and 390 px. |
 | M4 App complete | Done, except 4.6 (axe audit and screen reader pass) and 4.7 (canvas additions). |
+| Playbooks | Done: 5 playbooks, `read_playbook`, `playbook_chosen`, Options select (`tests/test_playbooks.py`). |
 | M5, M6 | Not started. |
 
 ## M1: Engine events and capabilities

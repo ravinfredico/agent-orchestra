@@ -29,6 +29,7 @@ Docs:
 | `orchestra/runner.py` | `run_agent()`: one agent via `claude_agent_sdk.query()`, forwards tool use |
 | `orchestra/tools.py` | `OrchestraTools`: create_agent, assign_task (inner loop), view_board, finish, as in-process MCP server `orchestra` |
 | `orchestra/approvals.py` | `ApprovalBroker` + `can_use_tool` callback for outward tools |
+| `orchestra/playbooks/` | one markdown playbook per task type; `playbooks.py` loads them, `read_playbook` serves them |
 | `orchestra/orchestrator.py` | `create_run()` / `execute_run()` outer loop, continue and follow-up prompts |
 | `orchestra/state.py` | `RunState`: agents, board, usage, `log()` event envelope to `runs/<id>/log.jsonl` |
 | `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default) |
@@ -101,6 +102,7 @@ These files are meant to get better over time.
 
 ## Status
 - Branch `feat/chacha-pa`. M1 (engine), M2 (server), M3 and M4 (web app) done and tested offline.
+- Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
 - Not yet run against a real model. Next: the first live run (IMPLEMENTATION.md, end of M1), then the
   claude.ai connectors check (task 1.13), then M5 (ntfy, widgets, PWA) and M6 (replay page).
 
@@ -112,4 +114,5 @@ These files are meant to get better over time.
 - Check with the user before touching Figma: the connected Figma account is not theirs.
 - Check UI work in a real browser (Playwright screenshots at 1440 and 390 px) before calling it done.
 - Gate commits on the test exit code (`python -m pytest tests -q && git commit ...`). Piping pytest into `tail` hides failures.
+- Fix recurring run failures in the matching playbook (`orchestra/playbooks/`), not only in prompts.
 - Random ids need enough bits for bursts: run-id suffixes are 6 hex, and `create_run` never reuses a folder.

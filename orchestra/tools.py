@@ -12,11 +12,12 @@ from claude_agent_sdk import create_sdk_mcp_server, tool
 from . import prompts
 from .approvals import make_can_use_tool
 from .catalog import Catalog, load_catalog
+from .playbooks import Playbook, load_playbooks
 from .runner import run_agent as default_runner
 from .state import AgentSpec, RunState, Task
 
 SERVER_NAME = "orchestra"
-TOOL_NAMES = ["create_agent", "assign_task", "view_board", "finish"]
+TOOL_NAMES = ["read_playbook", "create_agent", "assign_task", "view_board", "finish"]
 MCP_TOOL_NAMES = [f"mcp__{SERVER_NAME}__{n}" for n in TOOL_NAMES]
 
 MAX_OUTPUT_BACK = 3000  # chars of worker output returned to the orchestrator
@@ -83,10 +84,22 @@ def snapshot(root: Path) -> dict[str, float]:
 
 
 class OrchestraTools:
-    def __init__(self, state: RunState, runner=default_runner, catalog: Catalog | None = None):
+    def __init__(self, state: RunState, runner=default_runner, catalog: Catalog | None = None,
+                 playbooks: dict[str, Playbook] | None = None):
         self.s = state
         self.runner = runner
         self.catalog = catalog or load_catalog()
+        self.playbooks = playbooks if playbooks is not None else load_playbooks()
+
+    # ---- read_playbook ------------------------------------------------------
+
+    async def read_playbook(self, args: dict) -> dict:
+        pid = str(args.get("id", "")).strip()
+        book = self.playbooks.get(pid)
+        if not book:
+            return _err(f"No playbook '{pid}'. Choose one of: {list(self.playbooks)}")
+        self.s.log("playbook_chosen", id=book.id, title=book.title)
+        return _ok(f"# Playbook: {book.title}\n{book.when}\n\n{book.body}")
 
     # ---- create_agent -------------------------------------------------------
 
@@ -300,6 +313,16 @@ class OrchestraTools:
     def mcp_server(self):
         available = self.catalog.available_ids(self.s.config)
 
+        read = tool(
+            "read_playbook",
+            "Read the playbook for one kind of task: steps, done-when templates, pitfalls.",
+            {
+                "type": "object",
+                "properties": {"id": {"type": "string", "enum": list(self.playbooks)}},
+                "required": ["id"],
+            },
+        )(self.read_playbook)
+
         create = tool(
             "create_agent",
             "Create a new worker agent: any specialist the task needs, with its own role, system prompt, and catalog tools.",
@@ -350,7 +373,7 @@ class OrchestraTools:
             },
         )(self.finish)
 
-        return create_sdk_mcp_server(name=SERVER_NAME, tools=[create, assign, board, fin])
+        return create_sdk_mcp_server(name=SERVER_NAME, tools=[read, create, assign, board, fin])
 
 
 def _parse_verdict(text: str) -> dict:

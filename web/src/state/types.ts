@@ -64,6 +64,7 @@ export interface FileEntry {
 export type ThreadItem =
   | { kind: 'task_message'; seq: number; text: string }
   | { kind: 'say'; seq: number; text: string }
+  | { kind: 'playbook'; seq: number; id: string; title: string }
   | { kind: 'joined'; seq: number; names: string[] }
   | { kind: 'task'; seq: number; taskId: string }
   | { kind: 'approval'; seq: number; approvalId: string }
@@ -95,6 +96,7 @@ export interface RunView {
   budgetReason: string
   error: { error: string; kind: string; hint: string } | null
   replanning: boolean
+  playbook: { id: string; title: string } | null
   lastSeq: number
   announcements: { seq: number; text: string; assertive?: boolean }[]
 }

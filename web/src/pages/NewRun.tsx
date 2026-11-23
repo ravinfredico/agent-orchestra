@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { api, type CatalogEntry, type RunOptions } from '../api'
+import { api, type CatalogEntry, type PlaybookInfo, type RunOptions } from '../api'
 import { Character } from '../components/Character'
 import { ArrowUp, Folder, Sliders } from '../components/Icons'
 import { MenuButton } from '../components/Shell'
@@ -8,7 +8,7 @@ import { CHECKER_COLOR, ORCHESTRATOR_COLOR } from '../state/reducer'
 
 const DEFAULTS: Required<Omit<RunOptions, 'catalog'>> & { catalog: string[] | null } = {
   allow_bash: false, repo: '', orchestrator_model: 'sonnet', worker_model: 'sonnet', checker_model: 'haiku',
-  max_cost: 5, max_agents: 6, catalog: null,
+  max_cost: 5, max_agents: 6, catalog: null, playbook: 'auto',
 }
 
 const SUGGESTIONS = [
@@ -25,11 +25,13 @@ export function NewRun() {
   const [opts, setOpts] = useState({ ...DEFAULTS, ...(prefill.options || {}), repo: prefill.options?.repo || '' })
   const [showOpts, setShowOpts] = useState(false)
   const [catalog, setCatalog] = useState<CatalogEntry[]>([])
+  const [playbooks, setPlaybooks] = useState<PlaybookInfo[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => { api.catalog().then(setCatalog).catch(() => {}) }, [])
+  useEffect(() => { api.playbooks().then(setPlaybooks).catch(() => {}) }, [])
   useEffect(() => { ta.current?.focus() }, [])
   useEffect(() => {
     const el = ta.current
@@ -98,6 +100,14 @@ export function NewRun() {
             <input type="checkbox" checked={opts.allow_bash} onChange={(e) => set('allow_bash', e.target.checked)} />
             <span className="switch" aria-hidden />
             <span><b>Allow shell commands</b><small>Needed for code and tests. Commands run in a sandbox on this machine.</small></span>
+          </label>
+          <label className="field wide">
+            <span>Playbook</span>
+            <select value={opts.playbook} onChange={(e) => set('playbook', e.target.value)}>
+              <option value="auto">Auto: the orchestrator picks</option>
+              {playbooks.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
+            <small>{playbooks.find((p) => p.id === opts.playbook)?.when || 'Proven steps and pitfalls for the kind of task. Agents are still invented for each run.'}</small>
           </label>
           <label className="field wide">
             <span>Work in a repository (optional)</span>
