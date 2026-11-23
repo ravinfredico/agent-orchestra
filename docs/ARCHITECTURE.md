@@ -27,8 +27,8 @@ Principles:
 | Layer | Choice |
 |---|---|
 | Engine | Python 3.10+, Claude Agent SDK (`claude-agent-sdk`) |
-| Server | FastAPI + uvicorn, `sse-starlette` for SSE, `aiosqlite` for the index |
-| Frontend | React 18 + Vite + TypeScript, React Router, no CSS framework (CSS variables from DESIGN.md tokens) |
+| Server | FastAPI + uvicorn, `sse-starlette` for SSE, stdlib `sqlite3` (with a lock) for the index |
+| Frontend | React 19 + Vite + TypeScript, React Router 7, no CSS framework (CSS variables from DESIGN.md tokens), Geist via `@fontsource-variable` |
 | Live updates | Server-Sent Events with `Last-Event-ID` replay |
 | Storage | Files under `runs/`, plus `runs/index.db` (SQLite with FTS5) |
 | Tests | pytest (engine and server, offline with a fake runner), FastAPI TestClient, Vitest + Testing Library |
@@ -48,12 +48,14 @@ orchestra/                  engine
   state.py                  RunState, events, listeners
   approvals.py              NEW: pending approvals, can_use_tool callback
   gitsafe.py                --repo safety
-server/                     NEW
-  app.py                    FastAPI app, routes, static files
-  runs.py                   RunManager: start, stop, continue, recover
+server/
+  app.py                    FastAPI app, routes, SSE, static files
+  runs.py                   RunManager: start, stop, continue, follow-up, recover
+  summary.py                folds a run's log.jsonl into RunSummary / RunDetail
   index.py                  SQLite index: upsert, search, rebuild
-  notify.py                 ntfy
-  auth.py                   token check, auth mode detection
+  auth.py                   APP_TOKEN cookie/bearer check, host guard
+  notify.py                 ntfy (M5)
+orchestra/fake.py           scripted runner + client: offline tests and `python -m server --fake`
 web/                        NEW: React app (Vite). Builds to web/dist
 replay/                     NEW: static replay page for the portfolio
 widgets/                    NEW: scriptable.js (iPhone), android-kwgt.md
@@ -225,16 +227,20 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
   - mcp ids add `mcp_servers[id] = server`, and the server's tools go in `allowed_tools`, except
     outward ones
   - plugin ids add to `plugins`
-- **claude.ai connectors:** M1 checks whether an SDK session started with your Claude login can use
-  your claude.ai connectors. If yes, `kind: "connector"` entries refer to them by name. If not, the
-  same services are added as `kind: "mcp"` entries with their own credentials.
+- **claude.ai connectors (status):** not verified yet; it needs your real Claude login (task 1.13).
+  Until then Gmail and Google Calendar ship as `kind: "mcp"` entries that read their URL and token from
+  `.env` (`GMAIL_MCP_URL`, `GMAIL_MCP_TOKEN`, `GCAL_MCP_URL`, `GCAL_MCP_TOKEN`). Without those they show
+  as "not set up" and the orchestrator is not offered them.
+- **Plugins:** every folder in `plugins/` with `.claude-plugin/plugin.json` becomes `plugin.<name>`.
+- **Picking per run:** the new-run Options panel lists non-builtin entries as chips (from
+  `GET /api/catalog`). The chosen ids go in `options.catalog`. Builtins are always available.
 - The orchestrator prompt lists each enabled entry as `id: description (risk)`. The `create_agent`
   tool schema uses the enabled ids as its enum.
 - `options.catalog` on a run can narrow the catalog for that run.
 
 ## 10. Approvals for outward tools
-- Outward tool names are left out of `allowed_tools`, so the CLI asks the SDK's `can_use_tool`
-  callback before each call.
+- Servers with outward tools are left out of `allowed_tools`, so the CLI asks the SDK's `can_use_tool`
+  callback before each of their calls. The callback lets non-outward tools straight through.
 - The callback (`approvals.py`):
   1. creates `approval_id` and an `asyncio.Future`
   2. logs `approval_requested` with a redacted preview of the input
@@ -245,8 +251,8 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
   - Deny returns deny with the message "Denied by the user. Continue without this action."
 - Stopping a run resolves every pending approval as `expired`.
 - In CLI mode with no server, outward tools are denied with a clear message.
-- To verify in M1: the SDK needs streaming input mode for `can_use_tool`. `run_agent` switches to
-  an async-iterable prompt for agents that have outward tools.
+- Checked in the SDK source: `can_use_tool` works with plain string prompts (stdin stays open while
+  callbacks are pending). Agents with a callback use `permission_mode="default"`, others `"dontAsk"`.
 
 ## 11. Continue and follow-up
 - **Continue** (from `gave_up`, `stopped`, `failed` or `interrupted`):

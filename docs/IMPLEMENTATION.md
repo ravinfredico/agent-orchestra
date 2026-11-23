@@ -9,6 +9,15 @@ prove it.
 
 Rule for every task: `python -m pytest tests -q` passes before the commit, and the CLI still works.
 
+## Progress
+| Milestone | State |
+|---|---|
+| M1 Engine | Done offline (54 pytest tests). Open: 1.13 connectors check and 1.14 first live run, both need your Claude login. |
+| M2 Server | Done (`tests/test_server.py`). |
+| M3 App core | Done. Vitest reducer + component tests, Playwright screenshots reviewed at 1440 and 390 px. |
+| M4 App complete | Done, except 4.6 (axe audit and screen reader pass) and 4.7 (canvas additions). |
+| M5, M6 | Not started. |
+
 ## M1: Engine events and capabilities
 Goal: the engine emits the full event stream, can be cancelled, uses the tool catalog, asks for
 approvals, and has run once for real.

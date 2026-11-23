@@ -45,8 +45,9 @@ Desktop                                         Phone
 | P3 | Phone files | `P3-Files` | Bottom sheet with file chips and the rendered file. |
 | P4 | Phone history | `P4-History` | Runs list with search and New run. |
 
-Not yet drawn on the canvas (to add before M3): the **approval card**, the **interrupted** outcome,
-and the **stop confirmation**. Their specs are below.
+Built in the app but not yet drawn on the canvas: the **approval card**, the **interrupted** outcome,
+the **stop confirmation**, and the **connectors & plugins picker** in the Options panel (chips;
+greyed out with "Not set up" when credentials are missing; outward ones are labelled "asks first").
 
 ## 3. Components and every state
 

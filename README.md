@@ -98,6 +98,30 @@ board.json    final task board + agent definitions + usage
 final.md      the orchestrator's final answer
 ```
 
+## Web app: ChaCha PA
+
+Type a task in the browser and watch the team work live: agents appear as characters, tasks update
+in place, the checker sends work back, and you get a clear ending. Works on a phone too.
+
+```bash
+pip install -r requirements.txt
+cd web && npm install && npm run build && cd ..
+python -m server              # open http://127.0.0.1:8000
+python -m server --fake       # demo mode: a scripted run, no model calls, nothing billed
+```
+
+- Runs use your Claude plan login, same as the CLI. The sidebar shows "Claude plan" or "API key".
+- Several runs can go at once. Closing the browser doesn't stop them.
+- Tools come from `tools.catalog.json`: files, web, a real browser (Playwright MCP), shell (opt-in,
+  sandboxed), Gmail and Google Calendar (set their URLs and tokens in `.env`, see `.env.example`),
+  and any Claude Code plugin you put in `plugins/`. Pick which ones a run may use under Options.
+- Anything that sends or changes something outside (email, calendar) pauses for your Approve / Deny.
+- The server only listens on 127.0.0.1. To reach it from elsewhere, set `APP_TOKEN` and put it behind
+  Cloudflare Tunnel + Access (see `docs/ARCHITECTURE.md`).
+
+Docs: `docs/PLAN.md` (decisions), `docs/PRD.md`, `docs/DESIGN.md`, `docs/ARCHITECTURE.md`,
+`docs/IMPLEMENTATION.md`. Instructions for AI coding agents: `AGENTS.md`.
+
 ## Guardrails
 
 | Flag | Default | Why |
@@ -109,7 +133,8 @@ final.md      the orchestrator's final answer
 | `--allow-bash` | off | shell access is opt-in |
 
 Also built in:
-- Workers can only get tools from a fixed registry (`orchestra/config.py`). The orchestrator cannot invent tools.
+- Workers can only get tools from the catalog (`tools.catalog.json`). The orchestrator cannot invent tools.
+- Outward tools (send email, create events) need your approval in the web app, and are denied in the CLI.
 - Workers cannot create agents. Only the orchestrator can (no recursion).
 - The checker is a separate agent with read-only tools (plus Bash if allowed, to run tests). It inspects files, not the worker's claims.
 - Your personal Claude Code settings and CLAUDE.md files are ignored (`setting_sources=[]`).
@@ -141,7 +166,6 @@ python -m pytest tests -q
 
 ## Ideas to extend
 
-- Live web dashboard that streams `log.jsonl` (agents appearing, board updating)
 - Parallel `assign_task` with per-agent subfolders
 - Persist good agent definitions and reuse them across runs
 - Human approval step before `finish`

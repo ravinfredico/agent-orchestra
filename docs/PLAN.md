@@ -3,8 +3,8 @@
 ChaCha PA is the web app for Agent Orchestra. You type a task, press start, and watch the
 orchestrator hire agents, assign tasks, retry and finish, live.
 
-Status: questions answered and design chosen. Docs written. Next step is milestone M1 in
-[IMPLEMENTATION.md](IMPLEMENTATION.md).
+Status: M1 to M4 built on branch `feat/chacha-pa` and tested offline. Next: the first live run, then
+M5 and M6 in [IMPLEMENTATION.md](IMPLEMENTATION.md).
 
 ## Documents
 | Doc | What it holds |
@@ -21,7 +21,7 @@ Design canvas (private to you): https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNU
 |---|---|
 | Name | ChaCha PA. Repo and Python package keep their names (`agent-orchestra`, `orchestra`). |
 | Design | "Thread" direction: a monochrome chat where agents are colored characters whose faces show their status. |
-| Frontend | React + Vite + TypeScript, built to static files that FastAPI serves. |
+| Frontend | React 19 + Vite + TypeScript, built to static files that FastAPI serves. |
 | Backend | FastAPI + uvicorn. |
 | Live updates | Server-Sent Events, with replay from `Last-Event-ID`. |
 | Storage | `runs/<id>/` files are the source of truth. A SQLite index (`runs/index.db`) speeds up history and can be rebuilt from the files. |
@@ -38,6 +38,7 @@ Design canvas (private to you): https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNU
 | History actions | Delete, download as zip, rerun with edits. Repo diff comes later. |
 | Extras from the designs | Short task `title` on `assign_task`. "Continue with more budget". Follow-up run box. Plan-mode indicator. |
 | Agents | Any role the task needs. No role templates: the orchestrator invents each specialist, writes its prompt, and picks its tools from the catalog. |
+| First connectors | Gmail and Google Calendar. Claude Code plugins can be picked per run. |
 | Tool catalog | The orchestrator can only give agents tools from a catalog: built-in tools, MCP servers listed in a project catalog file (local or remote, each with a description and a risk level), local Claude Code plugins, and claude.ai connectors if the SDK can reach them (to verify in M1; otherwise the same services go in as MCP servers). |
 | Browser | A browser (Playwright MCP) is in the catalog by default, so agents can open and use real web pages. |
 | Isolation | v1: the SDK's built-in shell sandbox with a network allowlist, plus one folder per agent. Later: a Docker container per agent, sharing a `/workspace` volume for handoffs. |

@@ -23,16 +23,20 @@ Docs:
 | Path | What |
 |---|---|
 | `main.py` | CLI entry |
-| `orchestra/config.py` | models, `Budget` limits, tool registry (moving to `catalog.py`) |
+| `orchestra/config.py` | models, `Budget` limits, `Config.to_options()/from_options()` |
+| `orchestra/catalog.py` | tool catalog: loads `tools.catalog.json` + `plugins/`, maps ids to SDK options |
 | `orchestra/prompts.py` | orchestrator and checker prompts, checker JSON schema |
-| `orchestra/runner.py` | `run_agent()`: one agent via `claude_agent_sdk.query()` |
+| `orchestra/runner.py` | `run_agent()`: one agent via `claude_agent_sdk.query()`, forwards tool use |
 | `orchestra/tools.py` | `OrchestraTools`: create_agent, assign_task (inner loop), view_board, finish, as in-process MCP server `orchestra` |
-| `orchestra/orchestrator.py` | outer loop with `ClaudeSDKClient` |
-| `orchestra/state.py` | `RunState`: agents, board, usage, `log()` to `runs/<id>/log.jsonl` |
-| `orchestra/gitsafe.py` | `--repo` safety: clean tree, branch `orchestra/<ts>` |
-| `server/` (planned) | FastAPI app, RunManager, SQLite index, ntfy |
-| `web/` (planned) | React + Vite + TypeScript app |
-| `tools.catalog.json` (planned) | tools the orchestrator may give agents |
+| `orchestra/approvals.py` | `ApprovalBroker` + `can_use_tool` callback for outward tools |
+| `orchestra/orchestrator.py` | `create_run()` / `execute_run()` outer loop, continue and follow-up prompts |
+| `orchestra/state.py` | `RunState`: agents, board, usage, `log()` event envelope to `runs/<id>/log.jsonl` |
+| `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default) |
+| `orchestra/gitsafe.py` | `--repo` safety: clean tree, branch `orchestra/<ts>`, `REPOS_ROOT` allowlist |
+| `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth |
+| `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py` |
+| `tools.catalog.json` | tools the orchestrator may give agents |
+| `scripts/make_fixtures.py` | regenerates the web test fixtures from the Python demo scenario |
 
 ## The three loops
 1. **Agent loop:** the SDK runs each agent until it stops.
@@ -45,11 +49,16 @@ Docs:
 ## Commands
 ```bash
 pip install -r requirements.txt
-python -m pytest tests -q                      # offline, no model calls
+python -m pytest tests -q                      # engine + server, offline, no model calls
 python main.py "task"                          # CLI run
 python main.py --allow-bash --repo PATH "task" # coding task on an existing repo
+cd web && npm install && npm run build         # build the app into web/dist
+python -m server                               # app + API on http://127.0.0.1:8000
+python -m server --fake                        # demo mode: scripted runs, no model calls
+cd web && npm test && npx tsc -b               # web tests + typecheck
+cd web && npm run dev                          # dev server on :5173, proxies /api to :8000
+python scripts/make_fixtures.py                # after changing events: refresh web fixtures
 ```
-Planned: `python -m server` (API on 127.0.0.1:8000), `cd web && npm run dev` / `npm test` / `npm run build`.
 
 ## Conventions
 - Handlers in `OrchestraTools` are plain async functions, so tests can use a fake runner.
@@ -59,7 +68,12 @@ Planned: `python -m server` (API on 127.0.0.1:8000), `cd web && npm run dev` / `
   tools, which use the approval callback.
 - Use model aliases (`sonnet`, `haiku`, `opus`), not dated model IDs.
 - Events: one envelope `{seq, run_id, t, type, ...}`, defined in `docs/ARCHITECTURE.md` section 7.
-  A new event type needs an entry there and a row in the event-to-UI map in `docs/DESIGN.md`.
+  A new event type needs an entry there, a row in the event-to-UI map in `docs/DESIGN.md`, handling in
+  `server/summary.py` and `web/src/state/reducer.ts`, and fresh fixtures (`scripts/make_fixtures.py`).
+- A terminal event (`finished`, `run_failed`, `run_stopped`, `run_interrupted`) is always the last line
+  of a log. `finish` only sets `pending_finish`; the outer loop logs `finished` after the last usage.
+- Web CSS: prefix state classes with their component (`pip-done`, `dot-pass`). Never reuse generic
+  names like `.empty` for states.
 - `runs/<id>/log.jsonl` is the source of truth. Everything else can be rebuilt from it.
 - Docs are plain English: short sentences, no jargon or filler, lists and tables where they help.
 
@@ -86,11 +100,9 @@ These files are meant to get better over time.
   summary, so the user can see what was learned.
 
 ## Status
-- Engine: offline tests pass. Not yet run end to end against a real model. The first live run is
-  part of M1.
-- Design: done. Thread direction with agents as characters. Canvas linked in `docs/DESIGN.md`.
-- Docs: PRD, DESIGN, ARCHITECTURE, IMPLEMENTATION written.
-- Next: M1 (engine refactors and events) in `docs/IMPLEMENTATION.md`.
+- Branch `feat/chacha-pa`. M1 (engine), M2 (server), M3 and M4 (web app) done and tested offline.
+- Not yet run against a real model. Next: the first live run (IMPLEMENTATION.md, end of M1), then the
+  claude.ai connectors check (task 1.13), then M5 (ntfy, widgets, PWA) and M6 (replay page).
 
 ## Learnings
 - Design work goes into a design tool (Claude Design canvas, then Figma) before any HTML. No
@@ -98,5 +110,6 @@ These files are meant to get better over time.
 - Ask the user open questions directly, with concrete options for each, rather than listing them
   in a doc.
 - Check with the user before touching Figma: the connected Figma account is not theirs.
+- Check UI work in a real browser (Playwright screenshots at 1440 and 390 px) before calling it done.
 - Gate commits on the test exit code (`python -m pytest tests -q && git commit ...`). Piping pytest into `tail` hides failures.
 - Random ids need enough bits for bursts: run-id suffixes are 6 hex, and `create_run` never reuses a folder.
