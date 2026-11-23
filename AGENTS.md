@@ -98,3 +98,5 @@ These files are meant to get better over time.
 - Ask the user open questions directly, with concrete options for each, rather than listing them
   in a doc.
 - Check with the user before touching Figma: the connected Figma account is not theirs.
+- Gate commits on the test exit code (`python -m pytest tests -q && git commit ...`). Piping pytest into `tail` hides failures.
+- Random ids need enough bits for bursts: run-id suffixes are 6 hex, and `create_run` never reuses a folder.

@@ -19,8 +19,8 @@ TERMINAL_EVENTS = {"finished", "run_failed", "run_stopped", "run_interrupted"}
 
 
 def make_run_id() -> str:
-    """`YYYYmmdd-HHMMSS-xxxx`. The random suffix keeps runs started in the same second apart."""
-    return time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(2)
+    """`YYYYmmdd-HHMMSS-xxxxxx`. The random suffix keeps runs started in the same second apart."""
+    return time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
 
 
 def auth_mode() -> str:

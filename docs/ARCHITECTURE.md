@@ -83,7 +83,7 @@ These are the changes to today's code, in the order M1 does them.
 |---|---|---|
 | R1 | `state.py` | `RunState.log()` writes the envelope `{seq, run_id, t, type, ...}` to `log.jsonl`, then calls listeners (`add_listener(fn)`). Pretty ANSI printing moves into a CLI listener added by `main.py` only. Event names follow section 7 (`start` becomes `run_started`, `orchestrator` becomes `orchestrator_said`, `budget` becomes `budget_exhausted`). |
 | R2 | `state.py` | `record_usage()` logs a `usage` event with totals and the delta. |
-| R3 | `state.py` | Run id `%Y%m%d-%H%M%S-xxxx` (4 random hex). `RunState` stores `repo`, `branch`, `parent_id`, `auth_mode`, and writes `meta.json`. |
+| R3 | `state.py` | Run id `%Y%m%d-%H%M%S-xxxxxx` (6 random hex). `RunState` stores `repo`, `branch`, `parent_id`, `auth_mode`, and writes `meta.json`. |
 | R4 | `tools.py` | `assign_task` logs `attempt_started` before the worker and `checker_started` before the checker. |
 | R5 | `tools.py`, `prompts.py` | `assign_task` takes a required `title` (2 to 4 words). The orchestrator prompt asks for it. |
 | R6 | `prompts.py`, `tools.py` | The checker schema gets `short` (max 6 words, for the card). `attempt_failed` carries `reason` and `short`. |
@@ -128,7 +128,7 @@ Shapes:
  "max_attempts": 3, "catalog": ["*"], "allowed_domains": []}
 
 // RunSummary
-{"id": "20261123-091402-a3f1", "title": "Indonesian e-wallets report", "task": "...",
+{"id": "20261123-091402-a3f1c2", "title": "Indonesian e-wallets report", "task": "...",
  "status": "running|finished|gave_up|failed|stopped|interrupted", "needs_approval": false,
  "created_at": 1795425000.1, "ended_at": null, "duration_s": 24, "cost_usd": 0.74,
  "agents": [{"name": "researcher", "color_index": 0}], "tasks_total": 2, "tasks_passed": 1,
@@ -150,7 +150,7 @@ first 6 words of the task.
 ## 7. Live event schema
 Every line in `log.jsonl` and every SSE message is one event:
 ```json
-{"seq": 12, "run_id": "20261123-091402-a3f1", "t": 1795425012.4, "type": "task_assigned", "...": "fields"}
+{"seq": 12, "run_id": "20261123-091402-a3f1c2", "t": 1795425012.4, "type": "task_assigned", "...": "fields"}
 ```
 - `seq` starts at 1 per run and never skips. It is the SSE `id`.
 - SSE frame: `id: <seq>`, `event: <type>`, `data: <json>`. Comment keepalive every 15 s.

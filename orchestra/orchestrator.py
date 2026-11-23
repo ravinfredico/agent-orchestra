@@ -35,6 +35,8 @@ def create_run(task: str, config: Config, runs_dir: Path = Path("runs"), workspa
                seed_from: Path | None = None, listeners=None, run_id: str | None = None) -> RunState:
     """Make the run folder and state, copy a seed workspace if given, and log run_started."""
     run_dir = Path(runs_dir) / (run_id or make_run_id())
+    while not run_id and run_dir.exists():          # never reuse a folder
+        run_dir = Path(runs_dir) / make_run_id()
     state = RunState(task, config, run_dir, workspace, repo=repo, branch=branch,
                      parent_id=parent_id, listeners=listeners)
     if seed_from and Path(seed_from).is_dir() and not workspace:
