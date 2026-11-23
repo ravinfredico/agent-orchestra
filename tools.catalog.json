@@ -1,0 +1,21 @@
+[
+  {"id": "files.read", "kind": "builtin", "tools": ["Read", "Glob", "Grep"], "risk": "read",
+   "description": "Read and search files in the workspace"},
+  {"id": "files.write", "kind": "builtin", "tools": ["Write", "Edit"], "risk": "write",
+   "description": "Create and edit files in the workspace"},
+  {"id": "web", "kind": "builtin", "tools": ["WebSearch", "WebFetch"], "risk": "read",
+   "description": "Search the web and read pages"},
+  {"id": "shell", "kind": "builtin", "tools": ["Bash"], "risk": "shell", "requires": "allow_bash",
+   "description": "Run commands in the sandbox (code, tests, installs)"},
+  {"id": "browser", "kind": "mcp", "risk": "read",
+   "server": {"type": "stdio", "command": "npx", "args": ["-y", "@playwright/mcp@latest", "--headless", "--isolated"]},
+   "description": "Open and use real web pages: navigate, click, type, read, screenshot"},
+  {"id": "gmail", "kind": "mcp", "risk": "outward",
+   "server": {"type": "http", "url": "${GMAIL_MCP_URL}", "headers": {"Authorization": "Bearer ${GMAIL_MCP_TOKEN}"}},
+   "outward_tools": ["send*", "reply*", "forward*", "create_draft", "update_draft", "delete*", "trash*", "mark_*spam*"],
+   "description": "Search and read your Gmail. Sending, replying and deleting need your approval"},
+  {"id": "calendar", "kind": "mcp", "risk": "outward",
+   "server": {"type": "http", "url": "${GCAL_MCP_URL}", "headers": {"Authorization": "Bearer ${GCAL_MCP_TOKEN}"}},
+   "outward_tools": ["create*", "update*", "delete*", "respond*"],
+   "description": "Read your Google Calendar. Creating, changing or answering events needs your approval"}
+]

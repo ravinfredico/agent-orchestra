@@ -10,6 +10,7 @@ from pathlib import Path
 from orchestra.config import Budget, Config
 from orchestra.gitsafe import RepoError, prepare_repo
 from orchestra.orchestrator import run
+from orchestra.state import cli_printer
 
 
 def parse_args() -> argparse.Namespace:
@@ -48,15 +49,18 @@ def main() -> None:
             max_cost_usd=a.max_cost,
         ),
     )
-    workspace = None
+    workspace, branch = None, None
     if a.repo:
         try:
-            prepare_repo(a.repo, a.allow_dirty)
+            branch = prepare_repo(a.repo, a.allow_dirty)
         except RepoError as e:
             raise SystemExit(f"Error: {e}")
         workspace = a.repo.resolve()
 
-    state = asyncio.run(run(task, config, a.runs_dir, workspace))
+    try:
+        state = asyncio.run(run(task, config, a.runs_dir, workspace, branch=branch, listeners=[cli_printer]))
+    except KeyboardInterrupt:
+        raise SystemExit("Stopped. See runs/ for what was saved.")
 
     u = state.usage
     print("\n" + "=" * 60)
@@ -64,6 +68,7 @@ def main() -> None:
     print("=" * 60)
     print(f"Agents: {len(state.agents)}  Tasks: {len(state.board)}  "
           f"Model calls: {u.model_calls}  Turns: {u.turns}  Est. cost: ${u.cost_usd:.2f}")
+    print(f"Status: {state.status}  Auth: {state.auth_mode}")
     print(f"Output files: {state.workspace}")
     print(f"Logs: {state.run_dir / 'log.jsonl'}")
 
