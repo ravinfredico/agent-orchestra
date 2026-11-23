@@ -13,6 +13,7 @@ or phone. Runs on the user's Claude Pro plan through the Claude Code login (`ANT
 unset). API-key mode is also supported.
 
 Docs:
+- `docs/HANDOVER.md` start here in a new session: state, next steps, gotchas
 - `docs/PLAN.md` decisions
 - `docs/PRD.md` requirements
 - `docs/DESIGN.md` screens, states, tokens
