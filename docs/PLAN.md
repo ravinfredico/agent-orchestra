@@ -37,7 +37,13 @@ Design canvas (private to you): https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNU
 | Repo and shell when hosted | Repos only from one allowlisted folder. Docker sandbox per run comes later. |
 | History actions | Delete, download as zip, rerun with edits. Repo diff comes later. |
 | Extras from the designs | Short task `title` on `assign_task`. "Continue with more budget". Follow-up run box. Plan-mode indicator. |
-| After v1 | Message the orchestrator mid-run, then Docker sandbox, repo diff, hosting setup. |
+| Agents | Any role the task needs. No role templates: the orchestrator invents each specialist, writes its prompt, and picks its tools from the catalog. |
+| Tool catalog | The orchestrator can only give agents tools from a catalog: built-in tools, MCP servers listed in a project catalog file (local or remote, each with a description and a risk level), local Claude Code plugins, and claude.ai connectors if the SDK can reach them (to verify in M1; otherwise the same services go in as MCP servers). |
+| Browser | A browser (Playwright MCP) is in the catalog by default, so agents can open and use real web pages. |
+| Isolation | v1: the SDK's built-in shell sandbox with a network allowlist, plus one folder per agent. Later: a Docker container per agent, sharing a `/workspace` volume for handoffs. |
+| Outward actions | Tools that act on the outside world (send email, post, book) pause the run and show an Approve / Deny card, plus a push notification. Read-only tools run freely. |
+| Model providers | Claude only in v1, on your Pro plan. OpenRouter later, through a gateway. It needs its own API key and is billed by OpenRouter. |
+| After v1 | Message the orchestrator mid-run, then Docker sandbox per agent, OpenRouter models, repo diff, hosting setup. |
 | Portfolio | Static replay page (GitHub Pages) that plays back a recorded run. |
 | Writing | Plain English, short sentences, no jargon or filler, lists and tables where they help. |
 
