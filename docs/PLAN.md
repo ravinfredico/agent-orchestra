@@ -8,6 +8,11 @@ Claude Design artifact; the chosen one will then be built in Figma. Docs wait fo
   the chosen one. No hand-written HTML prototypes.
 - Design skills `ui-ux-pro-max` and `emil-design-eng` are installed in `.claude/skills/` and committed.
 - Questions live in this file.
+- Direction: Thread, with agents as characters (canvas: https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNUS).
+  Task cards stay minimal, which needs a short `title` field on `assign_task`.
+- Billing: runs use your Claude Pro plan login, not API billing. `ANTHROPIC_API_KEY` stays unset and
+  the UI shows that plan mode is active. For hosting, the preferred path is an always-on machine of
+  your own, reached over Tailscale, so the plan login stays on your own device (see 2d).
 
 ## Open questions
 
