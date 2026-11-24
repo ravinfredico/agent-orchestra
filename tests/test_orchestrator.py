@@ -118,3 +118,30 @@ def test_continue_and_follow_up_prompts(tmp_path):
     assert (child.workspace / "draft.md").exists() and not (child.workspace / ".agents").exists()
     assert child.parent_id == parent.run_id
     assert "translate it" in follow_up_task(parent.run_dir, "translate it")
+
+
+def test_build_demo_produces_a_working_app(tmp_path):
+    import subprocess
+    import sys
+
+    from orchestra.fake import DEMO_BUILD_TASK, demo_build_runner, demo_build_script
+
+    s = create_run(DEMO_BUILD_TASK, Config(allow_bash=True), tmp_path)
+    go(s, demo_build_script, demo_build_runner(delay=0), catalog=demo_catalog(), interactive=True)
+    t = types(s)
+    assert s.status == "finished" and t[-1] == "finished"
+    board = json.loads((s.run_dir / "board.json").read_text())["board"]
+    assert board["app-1"]["attempts"] == 2 and board["app-1"]["status"] == "done"
+    assert board["tests-1"]["status"] == "replaced" and board["app-fix"]["status"] == "done"
+    assert {"todo.py", "test_todo.py", "README.md"} <= {p.name for p in s.workspace.iterdir()}
+    # the demo app is real: its own test suite passes
+    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"], cwd=s.workspace,
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "11 passed" in r.stdout
+
+
+def test_pick_demo_matches_the_task():
+    from orchestra.fake import demo_build_script, pick_demo
+    assert pick_demo("Build a Python CLI todo app with pytest tests")[1] is demo_build_script
+    assert pick_demo("Research the top 5 Indonesian e-wallets")[1] is demo_script

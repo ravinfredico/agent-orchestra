@@ -8,6 +8,7 @@ with ORCHESTRA_FAKE_RUNNER=1. No model is called and nothing is billed.
 """
 
 import asyncio
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -70,7 +71,8 @@ class FakeRunner:
             await asyncio.sleep(self.delay)
             p = root / path
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(content + ("" if t.attempts == 1 else f"\n\n<!-- revision {t.attempts} -->"))
+            revised = t.attempts > 1 and path.endswith(".md")   # a comment would break code files
+            p.write_text(content + (f"\n\n<!-- revision {t.attempts} -->" if revised else ""))
             if on_tool_use:
                 on_tool_use("Write", {"file_path": str(p), "content": content})
         await asyncio.sleep(self.delay)
@@ -192,3 +194,104 @@ async def demo_script(tools):
     yield "Every task passed verification. Finishing."
     await tools.finish({"result": "Wrote report.md comparing GoPay, OVO, DANA, ShopeePay and LinkAja on fees and features, "
                                   "with a recommendation and 17 sources.\n\nFiles: report.md, analysis/comparison.md, research/ (5 files)."})
+
+
+# ---- build scenario: a small app with tests (picked for build-style tasks) -----------
+# The code is real: the finished workspace passes its own pytest suite. The first version has a
+# genuine bug (`done 0` ticks the last todo, `done 3` crashes) that the tester's suite catches.
+
+DEMO_BUILD_TASK = "Build a Python CLI todo app with pytest tests that all pass"
+
+_FILES = Path(__file__).parent / "demo_files"
+_BUILD_KEYWORDS = re.compile(r"\b(build|app|cli|code|script|program|tests?|pytest|api|function|game)\b", re.I)
+
+
+def _todo_sources() -> tuple[str, str, str]:
+    fixed = (_FILES / "todo.py.txt").read_text()
+    tests = (_FILES / "test_todo.py.txt").read_text()
+    check = """    if not 1 <= n <= len(items):
+        raise ValueError(f"there is no todo number {n}")
+"""
+    assert check in fixed
+    return fixed.replace(check, ""), fixed, tests
+
+
+_README = """# todo
+
+A tiny todo list for the terminal. Todos are saved in `todos.json`.
+
+```
+python todo.py add "buy milk"
+python todo.py list
+python todo.py done 1
+python todo.py remove 1
+```
+
+Run the tests with `pytest -q`.
+"""
+
+
+def demo_build_runner(delay: float = 0.6) -> FakeRunner:
+    buggy, fixed, tests = _todo_sources()
+    return FakeRunner({
+        "[dev-core]": FakeTask(
+            verdicts=[False, True], shorts=["list is empty after add", "add and list work"],
+            reasons=["Ran `python todo.py add \"buy milk\"` then `python todo.py list`: it printed \"Nothing to do.\" "
+                     "Todos are not saved to todos.json.",
+                     "`add` then `list` prints \"1. [ ] buy milk\". `done 1` ticks it. Todos persist in todos.json."],
+            tools=[("Bash", {"command": 'python todo.py add "buy milk" && python todo.py list'})],
+            files=[("todo.py", buggy)], cost=0.31),
+        "[tests]": FakeTask(
+            verdicts=[False, False, False],
+            shorts=["4 tests fail: bug in todo.py", "same 4 failures", "tests are right; todo.py is wrong"],
+            reasons=["Ran `pytest -q`: 4 failed, 7 passed. `done 0` ticks the last todo instead of failing, and "
+                     "`done 3` on a 2-item list raises IndexError. The bug is in todo.py, not the tests.",
+                     "Same 4 failures. The tester can't fix todo.py, and changing the tests to match the bug is not allowed.",
+                     "Still 4 failures. The tests are correct: todo.py must reject numbers that are not on the list."],
+            tools=[("Read", {"file_path": "todo.py"}), ("Bash", {"command": "pytest -q"})],
+            files=[("test_todo.py", tests)], cost=0.27),
+        "[dev-fix]": FakeTask(
+            verdicts=[True], shorts=["11 tests pass"],
+            reasons=["Ran `pytest -q`: 11 passed. `python todo.py done 9` prints \"error: there is no todo number 9\" and exits 1. "
+                     "README.md explains every command."],
+            tools=[("Read", {"file_path": "test_todo.py"}), ("Bash", {"command": "pytest -q"})],
+            files=[("todo.py", fixed), ("README.md", _README)], cost=0.24),
+    }, delay=delay)
+
+
+async def demo_build_script(tools):
+    await tools.read_playbook({"id": "build-with-tests"})
+    shell = tools.s.config.allow_bash
+    yield ("Plan: a developer writes todo.py, then a tester writes pytest tests for every command, including bad input. "
+           "The checker runs the code and the tests itself. Hiring two agents.")
+    if not shell:
+        yield "Shell is off, so nobody can run the code or the tests. Turn on shell commands for a checked build."
+    extra = ["shell"] if shell else []
+    await tools.create_agent({"name": "developer", "role": "Writes and fixes the app code", "system_prompt": "You are the developer.",
+                              "tools": ["files.read", "files.write", *extra]})
+    await tools.create_agent({"name": "tester", "role": "Writes pytest tests and runs them", "system_prompt": "You are the tester.",
+                              "tools": ["files.read", "files.write", *extra]})
+    await tools.assign_task({"agent": "developer", "task_id": "app-1", "title": "Write the todo app",
+                             "task": "[dev-core] Write todo.py: add, list, done N, remove N. Save todos in todos.json.",
+                             "done_when": '`python todo.py add "buy milk"` then `python todo.py list` prints "1. [ ] buy milk"'})
+    res = await tools.assign_task({"agent": "tester", "task_id": "tests-1", "title": "Write the tests",
+                                   "task": "[tests] Write test_todo.py covering every command and bad input. Run pytest -q.",
+                                   "done_when": "`pytest -q` exits 0 with at least 8 tests, including bad numbers and empty text"})
+    if res.get("is_error"):
+        yield ("The tests found a real bug: done and remove accept numbers that aren't on the list. That's in todo.py, "
+               "so the fix goes to the developer, not the tester.")
+        await tools.assign_task({"agent": "developer", "task_id": "app-fix", "title": "Fix bad numbers", "replaces": "tests-1",
+                                 "task": "[dev-fix] Make done and remove reject numbers not on the list, with an error and exit 1. "
+                                         "Don't change test_todo.py. Add a README.md.",
+                                 "done_when": "`pytest -q` exits 0 with at least 8 tests; README.md lists every command"})
+    yield "Every task passed verification. Finishing."
+    await tools.finish({"result": "Built a todo CLI in todo.py (add, list, done, remove, saved in todos.json) with 11 passing "
+                                  "pytest tests. The tests caught a bug with bad todo numbers, which the developer fixed.\n\n"
+                                  "Files: todo.py, test_todo.py, README.md. Try it: python todo.py add \"buy milk\""})
+
+
+def pick_demo(task: str):
+    """Demo mode: the build scenario for build-style tasks, otherwise the research one."""
+    if _BUILD_KEYWORDS.search(task or ""):
+        return demo_build_runner, demo_build_script
+    return demo_runner, demo_script
