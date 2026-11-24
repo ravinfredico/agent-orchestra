@@ -70,6 +70,20 @@ python main.py --worker-model haiku --max-agents 3 --max-cost 1 "..."
 python main.py -f task.txt
 ```
 
+### Web UI
+
+```bash
+python server.py               # then open http://127.0.0.1:8000
+```
+
+Type a task, press **Start run**, and watch it live: usage meters, agents appearing with their tools
+and system prompts, the task board with attempts and checker feedback, the event log, the final
+result, and a viewer for the files in the workspace. Past runs are listed in the sidebar and replay
+from `runs/`. **Stop** cancels a running run.
+
+The server binds to `127.0.0.1` only and refuses requests from other hosts or other websites'
+pages, because a Bash-enabled run executes real commands on this machine.
+
 ### Software engineering on an existing project
 
 ```bash
@@ -94,7 +108,7 @@ Each run creates `runs/<timestamp>/`:
 ```
 workspace/    files the agents produced (your deliverables)
 log.jsonl     every event: agents created, tasks, attempts, verdicts
-board.json    final task board + agent definitions + usage
+board.json    task board + agent definitions + usage + status
 final.md      the orchestrator's final answer
 ```
 
@@ -123,6 +137,8 @@ A typical run with 3 to 4 agents is roughly 20 to 40 model calls.
 
 ```
 main.py                    CLI
+server.py                  local web UI backend (FastAPI, SSE event stream)
+web/index.html             web UI (vanilla JS, no build step)
 orchestra/
   config.py                models, budget, tool registry
   prompts.py               orchestrator + checker prompts
@@ -130,7 +146,7 @@ orchestra/
   tools.py                 create_agent / assign_task / view_board / finish
   orchestrator.py          outer loop with ClaudeSDKClient
   state.py                 board, usage counters, logging
-tests/test_tools.py        offline tests (fake runner, no model calls)
+tests/                     offline tests (fake runner / fake orchestrator, no model calls)
 ```
 
 ## Tests
@@ -141,7 +157,6 @@ python -m pytest tests -q
 
 ## Ideas to extend
 
-- Live web dashboard that streams `log.jsonl` (agents appearing, board updating)
 - Parallel `assign_task` with per-agent subfolders
 - Persist good agent definitions and reuse them across runs
 - Human approval step before `finish`

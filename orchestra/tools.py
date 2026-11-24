@@ -94,6 +94,8 @@ class OrchestraTools:
         feedback: list[str] = []
         for attempt in range(1, b.max_attempts_per_task + 1):
             t.attempts = attempt
+            s.log("attempt_started", task_id=task_id, agent=agent_name, attempt=attempt,
+                  max_attempts=b.max_attempts_per_task)
 
             # 1. worker does the task
             work = await self.runner(
@@ -174,6 +176,7 @@ class OrchestraTools:
         if give_up and not s.budget_problem() and pending:
             return _err("give_up is only allowed once the budget is exhausted. Keep working.")
         s.final_result = result
+        s.status = "gave_up" if give_up else "finished"
         s.log("finished", give_up=give_up, tasks=len(s.board))
         s.save_board()
         return _ok("Accepted. The run is complete, stop now.")

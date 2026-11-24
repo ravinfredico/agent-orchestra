@@ -2,8 +2,9 @@
 
 import json
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from pathlib import Path
+from typing import Callable
 
 from .config import Config
 
@@ -45,12 +46,17 @@ class RunState:
         run_dir.mkdir(parents=True, exist_ok=True)
         # workspace = your existing repo (--repo), or a fresh folder inside the run
         self.workspace = workspace or (run_dir / "workspace")
+        self.repo_mode = workspace is not None
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.agents: dict[str, AgentSpec] = {}
         self.board: dict[str, Task] = {}
         self.usage = Usage()
         self.final_result: str | None = None
+        self.status = "running"          # running | finished | gave_up | incomplete | error | stopped
+        self.listeners: list[Callable[[dict], None]] = []   # e.g. the web UI's live event stream
+        self.quiet = False               # True: don't print events to the console
         self._log_path = run_dir / "log.jsonl"
+        self._seq = 0
 
     # ---- budget -------------------------------------------------------------
 
@@ -67,6 +73,7 @@ class RunState:
         self.usage.model_calls += 1
         self.usage.turns += turns or 0
         self.usage.cost_usd += cost or 0.0
+        self.log("usage", **asdict(self.usage))
 
     # ---- board ---------------------------------------------------------------
 
@@ -95,22 +102,37 @@ class RunState:
     def unfinished(self) -> list[Task]:
         return [t for t in self.board.values() if t.status not in ("done", "replaced")]
 
-    def save_board(self) -> None:
-        data = {
+    def snapshot(self) -> dict:
+        """Everything about the run right now. Written to board.json and served to the web UI."""
+        return {
             "task": self.task,
+            "status": self.status,
+            "workspace": str(self.workspace),
             "agents": {k: asdict(v) for k, v in self.agents.items()},
             "board": {k: asdict(v) for k, v in self.board.items()},
             "usage": asdict(self.usage),
+            "budget": asdict(self.config.budget),
+            "final_result": self.final_result,
         }
-        (self.run_dir / "board.json").write_text(json.dumps(data, indent=2))
+
+    def save_board(self) -> None:
+        (self.run_dir / "board.json").write_text(json.dumps(self.snapshot(), indent=2))
 
     # ---- logging -------------------------------------------------------------
 
     def log(self, event: str, **data) -> None:
-        entry = {"t": round(time.time(), 2), "event": event, **data}
+        self._seq += 1
+        entry = json.loads(json.dumps(
+            {"seq": self._seq, "t": round(time.time(), 2), "event": event, **data}, default=str))
         with self._log_path.open("a") as f:
-            f.write(json.dumps(entry, default=str) + "\n")
-        print(_pretty(event, data), flush=True)
+            f.write(json.dumps(entry) + "\n")
+        for listener in list(self.listeners):
+            try:
+                listener(entry)
+            except Exception:  # a broken listener must never break the run
+                pass
+        if not self.quiet and event != "usage":
+            print(_pretty(event, data), flush=True)
 
 
 _COLORS = {
@@ -123,6 +145,7 @@ _COLORS = {
     "nudge": "\033[93m",
     "finished": "\033[92m",
     "budget": "\033[91m",
+    "error": "\033[91m",
 }
 
 
