@@ -156,6 +156,15 @@ class RunManager:
             except Exception:
                 pass
 
+    def title_of(self, run_id: str) -> str:
+        h = self.active.get(run_id)
+        if h:
+            return h.state.title
+        try:
+            return fold(self.runs_dir / run_id)["title"]
+        except Exception:
+            return ""
+
     async def stop(self, run_id: str) -> None:
         h = self.active.get(run_id)
         if not h or not h.task:

@@ -315,8 +315,12 @@ runs/index.db    SQLite: runs table + FTS5 over task and title
   indicator changes to "API key · billed" and `run_started` records it.
 
 ## 14. Notifications and widgets
-- `notify.py` posts to `${NTFY_URL}/${NTFY_TOPIC}` with a title, a short message, a click URL
-  (`${PUBLIC_URL}/runs/<id>`) and a priority.
+- `server/notify.py` publishes JSON to `${NTFY_URL}` (topic in the body, so non-English titles
+  survive) with a title, a short message, a click URL (`${PUBLIC_URL}/runs/<id>`), tags and a
+  priority. `NTFY_TOKEN` is sent as a bearer token when set. Pushes go out on a background thread;
+  a failed push is printed and never affects the run.
+- `.env` is loaded at startup by `orchestra/envfile.py` (server and CLI). Shell variables win, and
+  `ANTHROPIC_API_KEY` is never loaded from the file.
 - It sends on these events, and is off when `NTFY_URL` is unset:
   - `finished`
   - `budget_exhausted` followed by `finished` with `give_up`

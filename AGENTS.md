@@ -35,7 +35,8 @@ Docs:
 | `orchestra/state.py` | `RunState`: agents, board, usage, `log()` event envelope to `runs/<id>/log.jsonl` |
 | `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default); `pick_demo()` chooses the research or build scenario |
 | `orchestra/gitsafe.py` | `--repo` safety: clean tree, branch `orchestra/<ts>`, `REPOS_ROOT` allowlist |
-| `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth |
+| `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth, ntfy pushes (`notify.py`) |
+| `orchestra/envfile.py` | loads `.env` at startup (shell wins, never `ANTHROPIC_API_KEY`) |
 | `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py` |
 | `tools.catalog.json` | tools the orchestrator may give agents |
 | `scripts/make_fixtures.py` | regenerates the web test fixtures from the Python demo scenario |

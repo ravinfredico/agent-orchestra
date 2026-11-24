@@ -8,6 +8,7 @@ import asyncio
 from pathlib import Path
 
 from orchestra.config import Budget, Config
+from orchestra.envfile import load_env
 from orchestra.gitsafe import RepoError, prepare_repo
 from orchestra.orchestrator import run
 from orchestra.state import cli_printer
@@ -35,6 +36,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    load_env()
     a = parse_args()
     task = a.task_file.read_text() if a.task_file else a.task
     config = Config(

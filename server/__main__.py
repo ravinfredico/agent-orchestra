@@ -6,6 +6,8 @@ from pathlib import Path
 
 import uvicorn
 
+from orchestra.envfile import load_env
+
 from .auth import check_host
 
 
@@ -16,13 +18,19 @@ def main() -> None:
     p.add_argument("--runs-dir", type=Path, default=Path("runs"))
     p.add_argument("--fake", action="store_true", help="Demo mode: scripted runs, no model calls")
     a = p.parse_args()
+    load_env()
     check_host(a.host)
     if a.fake:
         os.environ["ORCHESTRA_FAKE_RUNNER"] = "1"
+    from . import notify
     from .app import create_app
     from .runs import RunManager
-    app = create_app(RunManager(a.runs_dir))
+    mgr = RunManager(a.runs_dir)
+    mgr.notify = notify.from_env(mgr.title_of)
+    app = create_app(mgr)
     print(f"ChaCha PA on http://{a.host}:{a.port}" + ("  (demo mode, no model calls)" if a.fake else ""))
+    if mgr.notify:
+        print(f"Push notifications on: ntfy topic '{mgr.notify.topic}' at {mgr.notify.url}")
     uvicorn.run(app, host=a.host, port=a.port, log_level="warning")
 
 

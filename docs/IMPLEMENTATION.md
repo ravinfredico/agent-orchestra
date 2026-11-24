@@ -17,7 +17,8 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | M3 App core | Done. Vitest reducer + component tests, Playwright screenshots reviewed at 1440 and 390 px. |
 | M4 App complete | Done, except the manual screen reader pass in 4.6 and 4.7 (canvas additions). 4.6 automated part done: `npm run a11y` is clean. |
 | Playbooks | Done: 5 playbooks, `read_playbook`, `playbook_chosen`, Options select (`tests/test_playbooks.py`). |
-| M5, M6 | Not started. |
+| M5 Phone extras | 5.1 ntfy done (`tests/test_notify.py`). |
+| M6 | Not started. |
 
 ## M1: Engine events and capabilities
 Goal: the engine emits the full event stream, can be cancelled, uses the tool catalog, asks for
