@@ -1,6 +1,8 @@
 """The outer loop: run the orchestrator until it calls finish or the budget runs out."""
 
+import asyncio
 import time
+import traceback
 from pathlib import Path
 
 from claude_agent_sdk import (
@@ -17,16 +19,60 @@ from .state import RunState
 from .tools import MCP_TOOL_NAMES, SERVER_NAME, OrchestraTools
 
 
+def create_state(task: str, config: Config, runs_dir: Path = Path("runs"),
+                 workspace: Path | None = None) -> RunState:
+    """Make the run folder and state, without starting anything. Gives callers the run id at once."""
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    run_dir, n = runs_dir / stamp, 1
+    while run_dir.exists():  # two runs started in the same second
+        n += 1
+        run_dir = runs_dir / f"{stamp}-{n}"
+    state = RunState(task, config, run_dir, workspace)
+    state.save_board()
+    return state
+
+
+async def execute(state: RunState) -> RunState:
+    """Run the orchestrator until finish is accepted, the budget runs out, it crashes, or it is stopped."""
+    try:
+        await _orchestrate(state)
+    except asyncio.CancelledError:
+        state.status = "stopped"
+        state.log("stopped")
+        _wrap_up(state, "Run was stopped by the user before it finished.")
+        raise
+    except Exception as e:
+        state.status = "error"
+        state.log("error", error=f"{type(e).__name__}: {e}", traceback=traceback.format_exc()[-4000:])
+        _wrap_up(state, f"Run crashed: {type(e).__name__}: {e}")
+    else:
+        _wrap_up(state, "Run ended without an accepted finish. See board.json and log.jsonl.")
+    return state
+
+
 async def run(task: str, config: Config, runs_dir: Path = Path("runs"),
               workspace: Path | None = None) -> RunState:
-    run_dir = runs_dir / time.strftime("%Y%m%d-%H%M%S")
-    state = RunState(task, config, run_dir, workspace)
+    return await execute(create_state(task, config, runs_dir, workspace))
+
+
+def _wrap_up(state: RunState, fallback: str) -> None:
+    if state.final_result is None:
+        state.final_result = fallback
+        if state.status == "running":
+            state.status = "incomplete"
+    (state.run_dir / "final.md").write_text(state.final_result)
+    state.save_board()
+    u = state.usage
+    state.log("run_end", status=state.status, cost_usd=round(u.cost_usd, 4), model_calls=u.model_calls)
+
+
+async def _orchestrate(state: RunState) -> None:
+    config, task = state.config, state.task
     tools = OrchestraTools(state)
-    state.log("start", task=task, run_dir=str(run_dir), workspace=str(state.workspace))
-    if workspace:
+    state.log("start", task=task, run_dir=str(state.run_dir), workspace=str(state.workspace))
+    if state.repo_mode:
         task = (f"{task}\n\nYou are working in an EXISTING codebase at the workspace root. "
                 "Have an agent explore its structure, conventions and tests before changing anything.")
-
     options = ClaudeAgentOptions(
         system_prompt=prompts.orchestrator_prompt(config.tool_registry(), config.budget),
         model=config.orchestrator_model,
@@ -74,9 +120,3 @@ async def run(task: str, config: Config, runs_dir: Path = Path("runs"),
                 + (f"Unfinished tasks: {pending}. " if pending else "")
                 + "Check view_board, fix what failed, and continue until finish is accepted."
             )
-
-    if state.final_result is None:
-        state.final_result = "Run ended without an accepted finish. See board.json and log.jsonl."
-    (run_dir / "final.md").write_text(state.final_result)
-    state.save_board()
-    return state

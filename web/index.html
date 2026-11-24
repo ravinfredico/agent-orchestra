@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Orchestra</title>
+<style>
+:root {
+  --bg: #f6f5f2; --panel: #ffffff; --sunk: #efede8; --line: #dedbd3;
+  --text: #1d1c1a; --muted: #6b6860; --accent: #3b5bdb;
+  --ok: #2b8a3e; --bad: #c92a2a; --warn: #b7791f; --run: #1971c2; --idle: #868e96;
+  --ok-bg: #e6f4ea; --bad-bg: #fdecec; --warn-bg: #fdf3e1; --run-bg: #e7f0fb;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141413; --panel: #1d1d1b; --sunk: #252522; --line: #34332f;
+    --text: #ecebe7; --muted: #9a978f; --accent: #7c95f5;
+    --ok: #69db7c; --bad: #ff8787; --warn: #ffc94d; --run: #74c0fc; --idle: #868e96;
+    --ok-bg: #1b2e20; --bad-bg: #351c1c; --warn-bg: #352b16; --run-bg: #172839;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--sans); }
+button, input, select, textarea { font: inherit; color: inherit; }
+.app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+aside { border-right: 1px solid var(--line); background: var(--panel); padding: 16px; display: flex;
+  flex-direction: column; gap: 16px; height: 100vh; position: sticky; top: 0; overflow: auto; }
+main { padding: 20px 24px 48px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 16px; margin: 0; letter-spacing: .01em; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+textarea, input[type=text], input[type=number], select {
+  width: 100%; background: var(--sunk); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; }
+textarea { min-height: 110px; resize: vertical; }
+textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); margin: 0; }
+.field { margin-bottom: 10px; }
+.btn { border: 1px solid var(--line); background: var(--sunk); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: #fff; border-color: transparent; width: 100%; font-weight: 600; }
+.btn.danger { color: var(--bad); }
+.btn:disabled { opacity: .5; cursor: default; }
+.warnbox { background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 6px 9px; font-size: 12px; margin-bottom: 10px; }
+.err { color: var(--bad); font-size: 12px; margin-top: 6px; white-space: pre-wrap; }
+details.adv summary { cursor: pointer; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.history { display: flex; flex-direction: column; gap: 4px; }
+.hist { text-align: left; border: 1px solid transparent; background: none; border-radius: 6px; padding: 7px 8px; cursor: pointer; width: 100%; }
+.hist:hover { background: var(--sunk); }
+.hist.sel { background: var(--sunk); border-color: var(--line); }
+.hist .t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; }
+.hist .m { font-size: 11px; color: var(--muted); display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.head { display: flex; align-items: flex-start; gap: 12px; }
+.head .task { flex: 1; white-space: pre-wrap; font-size: 15px; }
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.s-running { color: var(--run); background: var(--run-bg); }
+.s-running::before { animation: pulse 1.2s infinite; }
+.s-done, .s-finished { color: var(--ok); background: var(--ok-bg); }
+.s-failed, .s-error { color: var(--bad); background: var(--bad-bg); }
+.s-gave_up, .s-incomplete, .s-stopped, .s-interrupted { color: var(--warn); background: var(--warn-bg); }
+.s-pending, .s-replaced { color: var(--idle); background: var(--sunk); }
+@keyframes pulse { 50% { opacity: .25; } }
+.meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.meter .k { font-size: 12px; color: var(--muted); }
+.meter .v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.meter .v small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.bar { height: 4px; background: var(--sunk); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.bar i.hot { background: var(--bad); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 16px; }
+.agents, .tasks { display: flex; flex-direction: column; gap: 8px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--bg); }
+.card .top { display: flex; align-items: center; gap: 8px; }
+.card .name { font-weight: 600; font-family: var(--mono); font-size: 13px; }
+.card .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.chip { font-family: var(--mono); font-size: 11px; background: var(--sunk); border: 1px solid var(--line); padding: 1px 6px; border-radius: 4px; }
+.chip.bash { color: var(--warn); border-color: var(--warn); }
+.card details { margin-top: 6px; }
+.card summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.5 var(--mono); margin: 6px 0 0; }
+.card pre { background: var(--sunk); padding: 8px; border-radius: 6px; max-height: 260px; overflow: auto; }
+.fb { font-size: 12px; margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: var(--sunk); white-space: pre-wrap; }
+.fb.bad { background: var(--bad-bg); }
+.fb.ok { background: var(--ok-bg); }
+.attempts { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); font-size: 13px; }
+.log { max-height: 460px; overflow: auto; font-size: 12.5px; border-top: 1px solid var(--line); }
+.ev { display: grid; grid-template-columns: 64px 128px 1fr; gap: 10px; padding: 5px 2px; border-bottom: 1px solid var(--line); }
+.ev .time { color: var(--muted); font-family: var(--mono); font-size: 11px; padding-top: 1px; }
+.ev .type { font-family: var(--mono); font-size: 11px; font-weight: 600; padding-top: 1px; }
+.ev .body { white-space: pre-wrap; word-break: break-word; min-width: 0; }
+.ev.c-ok .type { color: var(--ok); } .ev.c-bad .type { color: var(--bad); }
+.ev.c-warn .type { color: var(--warn); } .ev.c-run .type { color: var(--run); }
+.ev.c-accent .type { color: var(--accent); } .ev .type { color: var(--muted); }
+.ev.orch .body { color: var(--text); }
+.log .ev.usage { display: none; } .log.withusage .ev.usage { display: grid; }
+.logbar { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.logbar h2 { margin: 0; flex: 1; }
+.final pre { font: 14px/1.55 var(--sans); white-space: pre-wrap; margin: 0; }
+.files { display: grid; grid-template-columns: minmax(180px, 1fr) 3fr; gap: 12px; min-height: 120px; }
+.flist { max-height: 420px; overflow: auto; border-right: 1px solid var(--line); padding-right: 8px; }
+.fitem { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; background: none; border: 0;
+  padding: 4px 6px; border-radius: 4px; cursor: pointer; font: 12px var(--mono); }
+.fitem:hover, .fitem.sel { background: var(--sunk); }
+.fitem span:last-child { color: var(--muted); }
+.fview { min-width: 0; }
+.fview pre { background: var(--sunk); padding: 10px; border-radius: 6px; max-height: 420px; overflow: auto; margin: 0; }
+.muted { color: var(--muted); font-size: 12px; }
+.welcome { max-width: 560px; margin: 12vh auto 0; text-align: center; color: var(--muted); }
+.welcome h1 { font-size: 22px; color: var(--text); margin-bottom: 8px; }
+@media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; }
+  aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 16px; }
+  .meters { grid-template-columns: 1fr 1fr; }
+  .files { grid-template-columns: 1fr; }
+  .flist { border-right: 0; max-height: 200px; }
+  .ev { grid-template-columns: 56px 1fr; } .ev .body { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Agent Orchestra</h1>
+    <form id="form" class="panel" style="padding:12px">
+      <h2>New run</h2>
+      <div class="field">
+        <label for="task">Task</label>
+        <textarea id="task" required placeholder="e.g. Research the top 5 Indonesian e-wallets and write a comparison report"></textarea>
+      </div>
+      <div class="field"><label class="check"><input type="checkbox" id="allow_bash"> Allow Bash (agents run shell commands)</label></div>
+      <div id="bashwarn" class="warnbox" hidden>Bash runs real commands on this machine.</div>
+      <div class="field">
+        <label for="repo">Existing git repo (optional)</label>
+        <input type="text" id="repo" placeholder="/path/to/repo — works on a new branch">
+      </div>
+      <details class="adv">
+        <summary>Models and limits</summary>
+        <div class="row3 field">
+          <div><label for="orchestrator_model">Orchestrator</label><select id="orchestrator_model"></select></div>
+          <div><label for="worker_model">Workers</label><select id="worker_model"></select></div>
+          <div><label for="checker_model">Checker</label><select id="checker_model"></select></div>
+        </div>
+        <div class="row field">
+          <div><label for="max_cost">Max cost (USD)</label><input type="number" id="max_cost" value="5" min="0.01" step="any"></div>
+          <div><label for="max_agents">Max agents</label><input type="number" id="max_agents" value="6" min="1" max="50"></div>
+        </div>
+        <div class="row field">
+          <div><label for="max_assignments">Max assignments</label><input type="number" id="max_assignments" value="15" min="1" max="200"></div>
+          <div><label for="max_attempts">Attempts per task</label><input type="number" id="max_attempts" value="3" min="1" max="10"></div>
+        </div>
+        <div class="field"><label class="check"><input type="checkbox" id="allow_dirty"> Allow repo with uncommitted changes</label></div>
+      </details>
+      <button class="btn primary" id="startbtn" type="submit">Start run</button>
+      <div class="err" id="formerr"></div>
+    </form>
+    <div>
+      <h2>History</h2>
+      <div class="history" id="history"><div class="empty">No runs yet.</div></div>
+    </div>
+  </aside>
+  <main id="main">
+    <div class="welcome"><h1>Start a run</h1><p>Describe a task on the left. The orchestrator plans it, creates its own agents, and keeps going until an independent checker passes every task.</p></div>
+  </main>
+</div>
+
+<template id="runview">
+  <section class="panel head">
+    <div class="task" id="v-task"></div>
+    <span class="badge" id="v-status"></span>
+    <button class="btn danger" id="v-stop" hidden>Stop</button>
+  </section>
+  <section class="panel meters" id="v-meters"></section>
+  <section class="panel final" id="v-finalwrap" hidden><h2>Final result</h2><pre id="v-final"></pre></section>
+  <div class="grid2">
+    <section class="panel"><h2>Agents</h2><div class="agents" id="v-agents"></div></section>
+    <section class="panel"><h2>Task board</h2><div class="tasks" id="v-tasks"></div></section>
+  </div>
+  <section class="panel">
+    <div class="logbar"><h2>Event log</h2>
+      <label class="check"><input type="checkbox" id="v-follow" checked> Follow</label>
+      <label class="check"><input type="checkbox" id="v-showusage"> Usage events</label>
+    </div>
+    <div class="log" id="v-log"></div>
+  </section>
+  <section class="panel">
+    <div class="logbar"><h2>Workspace files</h2><span class="muted" id="v-root"></span><button class="btn" id="v-refresh" type="button">Refresh</button></div>
+    <div class="files"><div class="flist" id="v-files"></div><div class="fview" id="v-fview"><div class="empty">Select a file.</div></div></div>
+  </section>
+</template>
+
+<script>
+const MODELS = ["sonnet", "haiku", "opus"];
+const DEFAULTS = { orchestrator_model: "sonnet", worker_model: "sonnet", checker_model: "haiku" };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (n) => "$" + (Number(n) || 0).toFixed(2);
+const badge = (s) => `<span class="badge s-${esc(s)}">${esc(String(s).replace("_", " "))}</span>`;
+
+let current = null;   // { id, es, snapTimer, filesTimer, selectedFile }
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { "Content-Type": "application/json", ...(opts.headers || {}) } });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || data));
+  return data;
+}
+
+// ---- form ------------------------------------------------------------------
+for (const k of Object.keys(DEFAULTS)) {
+  $(k).innerHTML = MODELS.map((m) => `<option ${m === DEFAULTS[k] ? "selected" : ""}>${m}</option>`).join("");
+}
+// an invalid field inside the collapsed section would otherwise block submit silently
+$("form").addEventListener("invalid", (e) => { e.target.closest("details")?.setAttribute("open", ""); }, true);
+$("allow_bash").addEventListener("change",(e) => { $("bashwarn").hidden = !e.target.checked; });
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("formerr").textContent = "";
+  const body = {
+    task: $("task").value.trim(), allow_bash: $("allow_bash").checked, repo: $("repo").value.trim(),
+    allow_dirty: $("allow_dirty").checked,
+    orchestrator_model: $("orchestrator_model").value, worker_model: $("worker_model").value, checker_model: $("checker_model").value,
+    max_cost: +$("max_cost").value, max_agents: +$("max_agents").value,
+    max_assignments: +$("max_assignments").value, max_attempts: +$("max_attempts").value,
+  };
+  if (!body.task) return;
+  if (body.allow_bash && !confirm("Bash is enabled: agents will run real shell commands on this machine. Start?")) return;
+  $("startbtn").disabled = true;
+  try {
+    const { id } = await api("/api/runs", { method: "POST", body: JSON.stringify(body) });
+    location.hash = "run=" + id;
+    loadHistory();
+  } catch (err) {
+    $("formerr").textContent = err.message;
+  } finally {
+    $("startbtn").disabled = false;
+  }
+});
+
+// ---- history ---------------------------------------------------------------
+async function loadHistory() {
+  let runs = [];
+  try { runs = await api("/api/runs"); } catch { return; }
+  $("history").innerHTML = runs.length ? runs.map((r) => `
+    <button class="hist ${current && current.id === r.id ? "sel" : ""}" data-id="${esc(r.id)}">
+      <div class="t">${esc(r.task) || "<i>untitled</i>"}</div>
+      <div class="m">${badge(r.status || "pending")}<span>${esc(r.id)}</span><span>${money(r.cost_usd)}</span></div>
+    </button>`).join("") : `<div class="empty">No runs yet.</div>`;
+  for (const b of $("history").querySelectorAll(".hist")) b.onclick = () => { location.hash = "run=" + b.dataset.id; };
+}
+
+// ---- run view --------------------------------------------------------------
+function closeRun() {
+  if (!current) return;
+  current.es?.close();
+  clearTimeout(current.snapTimer);
+  clearTimeout(current.filesTimer);
+  current = null;
+}
+
+function openRun(id) {
+  closeRun();
+  current = { id, selectedFile: null };
+  const main = $("main");
+  main.innerHTML = "";
+  main.appendChild($("runview").content.cloneNode(true));
+  $("v-stop").onclick = async () => {
+    if (!confirm("Stop this run?")) return;
+    try { await api(`/api/runs/${id}/stop`, { method: "POST", body: "{}" }); } catch (e) { alert(e.message); }
+  };
+  $("v-refresh").onclick = () => loadFiles();
+  $("v-showusage").onchange = (e) => $("v-log").classList.toggle("withusage", e.target.checked);
+  loadSnapshot();
+  loadFiles();
+  loadHistory();
+
+  const es = new EventSource(`/api/runs/${id}/events`);
+  current.es = es;
+  es.onmessage = (m) => {
+    if (!current || current.id !== id) return;
+    const ev = JSON.parse(m.data);
+    appendEvent(ev);
+    scheduleSnapshot();
+    if (["task_passed", "attempt_failed", "task_failed", "finished", "run_end"].includes(ev.event)) scheduleFiles();
+    if (ev.event === "run_end") loadHistory();
+  };
+  es.addEventListener("end", () => { es.close(); loadSnapshot(); loadHistory(); });
+}
+
+function scheduleSnapshot() {
+  clearTimeout(current.snapTimer);
+  current.snapTimer = setTimeout(loadSnapshot, 250);
+}
+function scheduleFiles() {
+  clearTimeout(current.filesTimer);
+  current.filesTimer = setTimeout(loadFiles, 600);
+}
+
+async function loadSnapshot() {
+  if (!current) return;
+  const id = current.id;
+  let s;
+  try { s = await api(`/api/runs/${id}`); } catch (e) { $("main").innerHTML = `<div class="welcome">${esc(e.message)}</div>`; return; }
+  if (!current || current.id !== id) return;
+  renderSnapshot(s);
+}
+
+function meter(label, value, max, fmt = (x) => x) {
+  const pct = max ? Math.min(100, (value / max) * 100) : 0;
+  return `<div class="meter"><div class="k">${label}</div>
+    <div class="v">${fmt(value)}${max != null ? ` <small>/ ${fmt(max)}</small>` : ""}</div>
+    ${max != null ? `<div class="bar"><i class="${pct >= 90 ? "hot" : ""}" style="width:${pct}%"></i></div>` : ""}</div>`;
+}
+
+function renderSnapshot(s) {
+  const u = s.usage || {}, b = s.budget || {};
+  $("v-task").textContent = s.task || "";
+  const st = $("v-status");
+  st.className = "badge s-" + (s.status || "pending");
+  st.textContent = String(s.status || "pending").replace("_", " ");
+  $("v-stop").hidden = !s.active;
+
+  const agents = Object.values(s.agents || {});
+  $("v-meters").innerHTML =
+    meter("Est. cost", u.cost_usd || 0, b.max_cost_usd, money) +
+    meter("Assignments", u.assignments || 0, b.max_assignments) +
+    meter("Agents", agents.length, b.max_agents) +
+    meter("Model calls · turns", `${u.model_calls || 0} · ${u.turns || 0}`, null);
+
+  $("v-agents").innerHTML = agents.length ? agents.map((a) => `
+    <div class="card">
+      <div class="top"><span class="name">${esc(a.name)}</span></div>
+      <div class="sub">${esc(a.role)}</div>
+      <div class="chips">${(a.tools || []).map((t) => `<span class="chip ${t === "Bash" ? "bash" : ""}">${esc(t)}</span>`).join("") || `<span class="muted">no tools</span>`}</div>
+      <details><summary>System prompt</summary><pre>${esc(a.system_prompt)}</pre></details>
+    </div>`).join("") : `<div class="empty">${s.active ? "Waiting for the orchestrator to create agents…" : "No agents."}</div>`;
+
+  const tasks = Object.values(s.board || {});
+  const maxA = b.max_attempts_per_task;
+  $("v-tasks").innerHTML = tasks.length ? tasks.map((t) => `
+    <div class="card">
+      <div class="top">${badge(t.status)}<span class="name">${esc(t.task_id)}</span>
+        <span class="muted">→ ${esc(t.agent)}</span>
+        <span class="attempts">attempt ${t.attempts}${maxA ? "/" + maxA : ""}</span></div>
+      ${t.replaces ? `<div class="sub">replaces ${esc(t.replaces)}</div>` : ""}
+      <div class="sub"><b>Done when:</b> ${esc(t.done_when)}</div>
+      ${t.feedback ? `<div class="fb ${t.status === "done" ? "ok" : t.status === "failed" || t.status === "running" ? "bad" : ""}"><b>Checker:</b> ${esc(t.feedback)}</div>` : ""}
+      <details><summary>Task</summary><pre>${esc(t.task)}</pre></details>
+      ${t.output ? `<details><summary>Worker report</summary><pre>${esc(t.output)}</pre></details>` : ""}
+    </div>`).join("") : `<div class="empty">No tasks yet.</div>`;
+
+  const showFinal = !s.active && s.final_result;
+  $("v-finalwrap").hidden = !showFinal;
+  if (showFinal) $("v-final").textContent = s.final_result;
+}
+
+// ---- event log -------------------------------------------------------------
+const EV = {
+  start: ["c-accent", () => "Run started"],
+  config: ["", (e) => {
+    const o = e.options || {};
+    return `models ${o.orchestrator_model}/${o.worker_model}/${o.checker_model} · max ${money(o.max_cost)} · bash ${o.allow_bash ? "ON" : "off"}`
+      + (o.repo ? ` · repo ${o.repo}` : "") + (e.branch ? ` · branch ${e.branch}` : "");
+  }],
+  orchestrator: ["c-accent", (e) => e.say],
+  agent_created: ["c-accent", (e) => `${e.name} — ${e.role}\ntools: ${(e.tools || []).join(", ") || "none"}`],
+  task_assigned: ["c-run", (e) => `${e.task_id} → ${e.agent}\ndone when: ${e.done_when}`],
+  attempt_started: ["c-run", (e) => `${e.task_id}: attempt ${e.attempt}/${e.max_attempts} (${e.agent})`],
+  attempt_failed: ["c-warn", (e) => `${e.task_id} attempt ${e.attempt}: ${e.reason}`],
+  task_passed: ["c-ok", (e) => `${e.task_id} passed on attempt ${e.attempt}: ${e.reason}`],
+  task_failed: ["c-bad", (e) => `${e.task_id} failed after ${e.attempts} attempts`],
+  task_replaced: ["c-ok", (e) => `${e.task_id} replaced by ${e.by}`],
+  nudge: ["c-warn", (e) => `Orchestrator stopped early, nudge #${e.round}` + (e.pending?.length ? `. Pending: ${e.pending.join(", ")}` : "")],
+  budget: ["c-bad", (e) => e.reason],
+  finished: ["c-ok", (e) => `finish accepted${e.give_up ? " (gave up)" : ""} · ${e.tasks} tasks`],
+  usage: ["", (e) => `${money(e.cost_usd)} · ${e.model_calls} calls · ${e.turns} turns · ${e.assignments} assignments`],
+  error: ["c-bad", (e) => e.error + (e.traceback ? "\n\n" + e.traceback : "")],
+  stopped: ["c-warn", () => "Stopped by user"],
+  run_end: ["c-accent", (e) => `Run ended: ${e.status} · ${money(e.cost_usd)} · ${e.model_calls} model calls`],
+};
+
+function appendEvent(e) {
+  const log = $("v-log");
+  if (!log) return;
+  const [cls, fmt] = EV[e.event] || ["", (x) => { const { seq, t, event, ...rest } = x; return JSON.stringify(rest); }];
+  const div = document.createElement("div");
+  div.className = `ev ${cls} ${e.event === "orchestrator" ? "orch" : ""} ${e.event === "usage" ? "usage" : ""}`;
+  const time = e.t ? new Date(e.t * 1000).toLocaleTimeString([], { hour12: false }) : "";
+  div.innerHTML = `<span class="time">${time}</span><span class="type">${esc(e.event)}</span><span class="body"></span>`;
+  div.querySelector(".body").textContent = fmt(e) ?? "";
+  log.appendChild(div);
+  if ($("v-follow").checked) log.scrollTop = log.scrollHeight;
+}
+
+// ---- files -----------------------------------------------------------------
+async function loadFiles() {
+  if (!current) return;
+  const id = current.id;
+  let d;
+  try { d = await api(`/api/runs/${id}/files`); } catch { return; }
+  if (!current || current.id !== id) return;
+  $("v-root").textContent = d.root;
+  const kb = (n) => n < 1024 ? n + " B" : (n / 1024).toFixed(1) + " KB";
+  $("v-files").innerHTML = d.files.length
+    ? d.files.map((f) => `<button class="fitem ${f.path === current.selectedFile ? "sel" : ""}" data-p="${esc(f.path)}"><span>${esc(f.path)}</span><span>${kb(f.size)}</span></button>`).join("")
+      + (d.truncated ? `<div class="muted">List truncated.</div>` : "")
+    : `<div class="empty">No files yet.</div>`;
+  for (const b of $("v-files").querySelectorAll(".fitem")) b.onclick = () => showFile(b.dataset.p);
+  if (current.selectedFile && d.files.some((f) => f.path === current.selectedFile)) showFile(current.selectedFile, true);
+}
+
+async function showFile(path, quiet) {
+  const id = current.id;
+  current.selectedFile = path;
+  for (const b of $("v-files").querySelectorAll(".fitem")) b.classList.toggle("sel", b.dataset.p === path);
+  let f;
+  try { f = await api(`/api/runs/${id}/file?path=${encodeURIComponent(path)}`); }
+  catch (e) { if (!quiet) $("v-fview").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  if (!current || current.id !== id) return;
+  $("v-fview").innerHTML = `<div class="muted" style="margin-bottom:6px">${esc(path)}${f.truncated ? " (first 512 KB)" : ""}</div>`
+    + (f.binary ? `<div class="empty">Binary file.</div>` : `<pre></pre>`);
+  if (!f.binary) $("v-fview").querySelector("pre").textContent = f.content;
+}
+
+// ---- routing ---------------------------------------------------------------
+function route() {
+  const m = location.hash.match(/run=([\w-]+)/);
+  if (m) { if (!current || current.id !== m[1]) openRun(m[1]); }
+  else { closeRun(); loadHistory(); }
+}
+window.addEventListener("hashchange", route);
+route();
+loadHistory();
+setInterval(loadHistory, 10000);
+</script>
+</body>
+</html>
