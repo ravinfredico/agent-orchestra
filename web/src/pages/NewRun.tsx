@@ -78,7 +78,7 @@ export function NewRun() {
         <label className="visually-hidden" htmlFor="task">Task</label>
         <textarea id="task" ref={ta} rows={2} value={task} onChange={(e) => setTask(e.target.value)}
           placeholder="Give the team a task, and say how to tell it's done"
-          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }} />
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !e.nativeEvent.isComposing) { e.preventDefault(); submit() } }} />
         <div className="composer-row">
           <button type="button" className="icon-btn bordered" aria-label="Work in a repository"
             onClick={() => { setShowOpts(true); setTimeout(() => document.getElementById('opt-repo')?.focus(), 50) }}>

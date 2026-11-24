@@ -56,10 +56,12 @@ function Item({ item, run, last }: { item: ThreadItem; run: RunView; last: boole
 
 export function RunPage() {
   const { runId } = useParams()
-  const { run, error } = useRunEvents(runId)
+  const { run, error, historySeq } = useRunEvents(runId)
   const [confirmStop, setConfirmStop] = useState(false)
   const [railOpen, setRailOpen] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
+  const railBtn = useRef<HTMLButtonElement>(null)
+  const railWasOpen = useRef(false)
   const stick = useRef(true)
   const live = isLive(run)
 
@@ -72,6 +74,18 @@ export function RunPage() {
     if (stick.current) bottom.current?.scrollIntoView({ block: 'end' })
   }, [run.lastSeq])
   useEffect(() => { document.title = run.title ? `${run.title} · ChaCha PA` : 'ChaCha PA' }, [run.title])
+  // rail drawer (below 1280px): focus moves in on open, Escape closes, focus returns to the toggle
+  useEffect(() => {
+    if (!railOpen) {
+      if (railWasOpen.current) { railWasOpen.current = false; railBtn.current?.focus() }
+      return
+    }
+    railWasOpen.current = true
+    document.querySelector<HTMLElement>('.rail .rail-toggle')?.focus()
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setRailOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [railOpen])
 
   if (error) {
     return (
@@ -84,7 +98,7 @@ export function RunPage() {
   const items = run.thread
   return (
     <div className="run-page" style={{ display: 'flex', flexDirection: 'row', flex: 1, minWidth: 0 }}>
-      <Announcer run={run} />
+      <Announcer run={run} quietThrough={historySeq} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <header className="run-header">
           <MenuButton />
@@ -92,9 +106,9 @@ export function RunPage() {
           <span className="state"><span className={`dot dot-${stateDot}${live ? ' live' : ''}`} aria-hidden />
             {needsApproval(run) ? 'Needs approval' : STATUS_LABEL[run.status]}</span>
           {run.branch && <span className="mono muted" title="Git branch">{run.branch}</span>}
-          <button className="icon-btn rail-toggle" aria-label="Team and usage" aria-expanded={railOpen} onClick={() => setRailOpen(true)}><Team /></button>
+          <button ref={railBtn} className="icon-btn rail-toggle" aria-label="Team and usage" aria-expanded={railOpen} onClick={() => setRailOpen(true)}><Team /></button>
         </header>
-        <div className="team-strip" aria-label="Team">
+        <div className="team-strip" role="group" aria-label="Team" tabIndex={0}>
           <div><Character color={ORCHESTRATOR_COLOR} accessory="bow" mood={orchestratorMood(run)} size={40} label="orchestrator" /><span>orchestrator</span></div>
           {run.agentOrder.map((n) => {
             const a = run.agents[n]

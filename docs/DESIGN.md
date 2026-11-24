@@ -252,14 +252,24 @@ Voice: plain, short, says what happened and what to do next. Never blame the use
 ## 8. Accessibility
 - **Keyboard:**
   - Everything is reachable with Tab in visual order.
+  - A "Skip to content" link is the first Tab stop. It jumps past the sidebar.
+  - Closed drawers (sidebar, rail) are hidden from Tab and screen readers. Opening one moves focus
+    into it. Escape closes it and focus returns to the button that opened it.
+  - Dialogs keep Tab inside until closed. Row menus focus their first item and Escape returns to the
+    menu button.
+  - Focus never ends up under the sticky header or run bar (scroll padding).
   - Cards are buttons. Enter or Space opens them, Escape closes.
   - Cmd/Ctrl+Enter starts a run.
   - Focus moves to the dialog on Stop confirm and returns to Stop after.
 - **Focus:** a 2 px focus-color ring with a 3 px offset on every interactive element. Never removed.
+  Text fields that sit inside a styled box (composer, follow-up, search) show the ring on the box.
+- **Faded states:** never fade text below 4.5:1. A replaced card fades only its face and dots; its
+  title is struck through in text-2.
 - **Contrast:** all text pairs pass 4.5:1 in both themes. Faces use dark features on light bodies,
   so they read on black and white.
 - **Screen readers:**
-  - Each character has a label: "analyst, waiting on checker".
+  - Each character has a label: "analyst, waiting on checker". Inside a task card the face is hidden
+    and the card's name is "analyst: Compare fees, Passed on try 2", so the status is read once.
   - Decorative faces in stacks are `aria-hidden`.
   - Meters use `role="meter"` with values.
 - **Live announcements:** one `role="status"` region with `aria-atomic="true"`, polite. It announces
@@ -272,7 +282,9 @@ Voice: plain, short, says what happened and what to do next. Never blame the use
   - approval needed (assertive)
   - run finished, out of budget, crashed or stopped
 
-  Activity lines and usage changes are never announced.
+  Activity lines and usage changes are never announced. Events that were already in the log when the
+  page opened are never announced (the page reads `last_seq` first). Several events at once are read
+  together in one sentence each.
 - **Color is never the only signal:** every status has a word and a face.
 - **Motion:** honors `prefers-reduced-motion` (section 4).
 

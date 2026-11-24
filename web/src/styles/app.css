@@ -3,6 +3,8 @@
 *::before,
 *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+/* keep keyboard focus clear of the sticky header and run bar (WCAG 2.4.11) */
+html { scroll-padding: 72px 0 112px; }
 body {
   margin: 0;
   background: var(--bg);
@@ -18,6 +20,10 @@ button { cursor: pointer; }
 .mono { font-family: var(--mono); font-size: 13px; }
 .muted { color: var(--text-2); }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; padding: 10px 16px; border-radius: 999px; background: var(--primary); color: var(--on-primary); font-weight: 500; text-decoration: none; transform: translateY(-200%); }
+.skip-link:focus-visible { transform: none; }
+/* text fields hide their own outline, so the field's wrapper shows the ring instead */
+.composer:has(textarea:focus-visible), .follow:has(input:focus-visible), .search:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 3px; }
 .caps { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
 
 /* ---------- buttons, chips, dots ---------- */
@@ -181,8 +187,9 @@ button { cursor: pointer; }
 .card-head .ttl { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-head .line { font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 6px; min-width: 0; }
 .card-head .line span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 180ms ease, filter 180ms ease; }
-.card.replaced { opacity: 0.55; }
-.card.replaced .ttl { text-decoration: line-through; }
+/* fade only the face and dots: faded text would fail 4.5:1 contrast */
+.card.replaced .char, .card.replaced .pips { opacity: 0.55; }
+.card.replaced .ttl { text-decoration: line-through; color: var(--text-2); }
 .pips { display: flex; gap: 4px; flex: none; }
 .pip { display: block; width: 7px; height: 7px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--border); }
 .pip-current { box-shadow: inset 0 0 0 1.5px var(--text); }
@@ -301,6 +308,7 @@ button { cursor: pointer; }
 .doc th, .doc td { white-space: nowrap; }
 pre.code { margin: 0; padding: 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); font: 13px/1.6 var(--mono); overflow-x: auto; white-space: pre; max-width: 100%; }
 .file-tabs { display: none; }
+.file-tabs .chip[aria-current='page'] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 
 /* ---------- dialog + login ---------- */
 .dialog-backdrop { position: fixed; inset: 0; z-index: 50; background: var(--scrim); display: grid; place-items: center; padding: 16px; animation: fade 160ms ease; }
@@ -330,13 +338,13 @@ pre.code { margin: 0; padding: 16px; border-radius: 12px; background: var(--surf
 /* ---------- responsive ---------- */
 .menu-btn { display: none !important; }
 @media (max-width: 1279px) {
-  .rail { position: fixed; right: 0; top: 0; z-index: 45; transform: translateX(100%); transition: transform 320ms var(--ease-drawer); box-shadow: -12px 0 32px rgba(0, 0, 0, 0.3); }
-  .rail.open { transform: none; }
+  .rail { position: fixed; right: 0; top: 0; z-index: 45; transform: translateX(100%); visibility: hidden; transition: transform 320ms var(--ease-drawer), visibility 0s linear 320ms; box-shadow: -12px 0 32px rgba(0, 0, 0, 0.3); }
+  .rail.open { transform: none; visibility: visible; transition: transform 320ms var(--ease-drawer); }
   .rail-toggle { display: inline-flex; }
 }
 @media (max-width: 1099px) {
-  .sidebar { position: fixed; left: 0; top: 0; z-index: 45; transform: translateX(-100%); transition: transform 320ms var(--ease-drawer); box-shadow: 12px 0 32px rgba(0, 0, 0, 0.3); }
-  .sidebar.open { transform: none; }
+  .sidebar { position: fixed; left: 0; top: 0; z-index: 45; transform: translateX(-100%); visibility: hidden; transition: transform 320ms var(--ease-drawer), visibility 0s linear 320ms; box-shadow: 12px 0 32px rgba(0, 0, 0, 0.3); }
+  .sidebar.open { transform: none; visibility: visible; transition: transform 320ms var(--ease-drawer); }
   .menu-btn { display: inline-grid !important; }
 }
 @media (max-width: 759px) {
@@ -375,4 +383,8 @@ pre.code { margin: 0; padding: 16px; border-radius: 12px; background: var(--surf
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 120ms !important; }
   .char svg, .char .eyes { animation: none !important; }
   .enter, .card-body, .options, .dialog, .menu { animation: fade 120ms ease !important; }
+  .rail, .sidebar, .rail.open, .sidebar.open, .skip-link { transition: none !important; }
+  .btn:active:not(:disabled), .chip:active:not(:disabled), .icon-btn:active, .send-btn:active:not(:disabled) { transform: none; }
 }
+/* the skip link focuses <main>; it is a landing spot, not a control, so no ring */
+.main:focus { outline: none; }

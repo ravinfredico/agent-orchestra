@@ -1,6 +1,6 @@
 # Handover: ChaCha PA
 
-Last updated: 2026-11-23. Read this first in a new session, then `AGENTS.md`.
+Last updated: 2026-11-24. Read this first in a new session, then `AGENTS.md`.
 
 ## Where things are
 | What | Where |
@@ -33,8 +33,8 @@ Last updated: 2026-11-23. Read this first in a new session, then `AGENTS.md`.
   - live thread with characters, task cards, approvals and outcomes
   - history, file viewer
   - dark and light themes, phone layout
-- **Tests:** 60 pytest (`python -m pytest tests -q`), 13 Vitest (`cd web && npm test`), and type-checked
-  (`npx tsc -b`).
+- **Tests:** 60 pytest (`python -m pytest tests -q`), 16 Vitest (`cd web && npm test`), type-checked
+  (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
 ```bash
@@ -57,7 +57,8 @@ Open http://127.0.0.1:8000.
    their claude.ai Gmail and Calendar connectors? Until then, both are MCP entries that need
    `GMAIL_MCP_URL/TOKEN` and `GCAL_MCP_URL/TOKEN` in `.env` (see `.env.example`).
 3. **M4 leftovers:**
-   - an accessibility pass (axe + screen reader)
+   - a manual screen reader pass (VoiceOver or NVDA) on a live run. The automated part is done:
+     `cd web && npm run a11y` is clean in both themes at 1440 and 390 px
    - add the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
      connector picker to the canvas (ask before editing it)
 4. **M5:** ntfy push, widgets (`widgets/scriptable.js` for iPhone, `widgets/android-kwgt.md`), PWA install.

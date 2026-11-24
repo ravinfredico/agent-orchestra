@@ -4,15 +4,20 @@ import { emptyRun, reduce, TERMINAL } from './reducer'
 import type { RunEvent, RunView } from './types'
 
 /** Live run state from the SSE stream. EventSource resumes from the last seq on its own after a drop. */
-export function useRunEvents(runId: string | undefined): { run: RunView; connected: boolean; error: string } {
+export function useRunEvents(runId: string | undefined): { run: RunView; connected: boolean; error: string; historySeq: number | null } {
   const [run, setRun] = useState<RunView>(() => emptyRun(runId))
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState('')
+  const [historySeq, setHistorySeq] = useState<number | null>(null)
 
   useEffect(() => {
     if (!runId) return
     setRun(emptyRun(runId))
     setError('')
+    // where the log stood when the page opened: the Announcer stays quiet up to here
+    setHistorySeq(null)
+    fetch(`/api/runs/${runId}`).then((r) => (r.ok ? r.json() : null))
+      .then((d) => setHistorySeq(Number(d?.last_seq) || 0)).catch(() => setHistorySeq(0))
     const es = new EventSource(api.eventsUrl(runId))
     let ended = false
     const onEvent = (msg: MessageEvent) => {
@@ -39,7 +44,7 @@ export function useRunEvents(runId: string | undefined): { run: RunView; connect
     return () => es.close()
   }, [runId])
 
-  return { run, connected, error }
+  return { run, connected, error, historySeq }
 }
 
 /** Run list for the sidebar and history. Refreshes on RUNS_CHANGED and every few seconds while any run is live. */

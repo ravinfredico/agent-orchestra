@@ -230,7 +230,8 @@ export function Rail({ run, open, onClose }: { run: RunView; open: boolean; onCl
           <span className="muted" style={{ fontSize: 13 }}>{hot && live ? 'almost out · ' : ''}est. of {money(cap)}</span>
         </div>
         <div className={`meter${hot ? ' hot' : ''}`} role="meter" aria-label="Estimated plan usage"
-          aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+          aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}
+          aria-valuetext={`${money(run.costUsd)} of ${money(cap)} estimated`}>
           <i style={{ transform: `scaleX(${pct / 100})` }} />
         </div>
         <div className="stats">
@@ -271,20 +272,23 @@ export function Rail({ run, open, onClose }: { run: RunView; open: boolean; onCl
 
 // ---- announcer: one polite status region (DESIGN.md section 8) ---------------------------
 
-export function Announcer({ run }: { run: RunView }) {
+/** quietThrough: the run's last seq when the page opened (null until known). Events up to it are
+ *  history, so they are never read out, however many batches the replay arrives in. */
+export function Announcer({ run, quietThrough }: { run: RunView; quietThrough: number | null }) {
   const [polite, setPolite] = useState('')
   const [assertive, setAssertive] = useState('')
   const seen = useRef(0)
-  const first = useRef(true)
   useEffect(() => {
-    const items = run.announcements.filter((a) => a.seq > seen.current)
+    if (quietThrough === null) return
+    const from = Math.max(seen.current, quietThrough)
+    const items = run.announcements.filter((a) => a.seq > from)
+    seen.current = Math.max(from, run.announcements.at(-1)?.seq ?? 0)
     if (!items.length) return
-    seen.current = items[items.length - 1].seq
-    if (first.current) { first.current = false; return }   // don't read out a whole replayed history
-    const last = items[items.length - 1]
-    if (items.some((a) => a.assertive)) setAssertive(items.filter((a) => a.assertive).map((a) => a.text).join('. '))
-    else setPolite(last.text)
-  }, [run.announcements])
+    const urgent = items.filter((a) => a.assertive)
+    const calm = items.filter((a) => !a.assertive).slice(-3)
+    if (urgent.length) setAssertive(urgent.map((a) => a.text).join('. '))
+    if (calm.length) setPolite(calm.map((a) => a.text).join('. '))
+  }, [run.announcements, quietThrough])
   return (
     <>
       <div role="status" aria-live="polite" aria-atomic="true" className="visually-hidden">{polite}</div>
@@ -299,16 +303,26 @@ export function ConfirmDialog({ title, body, confirm, cancel = 'Cancel', danger,
   title: string; body: string; confirm: string; cancel?: string; danger?: boolean; onConfirm: () => void; onClose: () => void
 }) {
   const ref = useRef<HTMLButtonElement>(null)
+  const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null
     ref.current?.focus()
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Tab' || !box.current) return
+      const items = [...box.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input, select, textarea')]
+      if (!items.length) return
+      const first = items[0], last = items[items.length - 1]
+      const inside = box.current.contains(document.activeElement)
+      if (e.shiftKey && (document.activeElement === first || !inside)) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && (document.activeElement === last || !inside)) { e.preventDefault(); first.focus() }
+    }
     window.addEventListener('keydown', onKey)
     return () => { window.removeEventListener('keydown', onKey); prev?.focus() }
   }, [onClose])
   return (
     <div className="dialog-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title" aria-describedby="dlg-body">
+      <div className="dialog" ref={box} role="dialog" aria-modal="true" aria-labelledby="dlg-title" aria-describedby="dlg-body">
         <h2 id="dlg-title">{title}</h2>
         <p id="dlg-body">{body}</p>
         <div className="acts">

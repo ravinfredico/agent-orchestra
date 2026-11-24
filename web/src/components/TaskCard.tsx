@@ -20,11 +20,10 @@ export function TaskCard({ task, run }: { task: TaskCardState; run: RunView }) {
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}
       >
-        <Character color={agentColor(idx)} accessory={agentAccessory(idx)} mood={look.mood} size={36}
-          label={`${task.agent}, ${look.line}`} />
+        <Character color={agentColor(idx)} accessory={agentAccessory(idx)} mood={look.mood} size={36} />
         <span className="txt">
-          <span className="ttl">{task.title}</span>
-          <span className="line"><span className={`dot dot-${look.dot}`} /><span key={look.line}>{look.line}</span></span>
+          <span className="ttl"><span className="visually-hidden">{task.agent}: </span>{task.title}</span>
+          <span className="line"><span className={`dot dot-${look.dot}`} aria-hidden /><span key={look.line}><span className="visually-hidden">, </span>{look.line}</span></span>
         </span>
         {look.pips.length > 0 && (
           <span className="pips" aria-hidden>

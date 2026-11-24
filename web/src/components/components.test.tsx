@@ -7,7 +7,7 @@ import { NewRun } from '../pages/NewRun'
 import { reduce, reduceAll, emptyRun } from '../state/reducer'
 import type { RunEvent } from '../state/types'
 import { Character } from './Character'
-import { Announcer, OutcomeCard } from './RunParts'
+import { Announcer, ConfirmDialog, OutcomeCard } from './RunParts'
 import { TaskCard } from './TaskCard'
 
 const events = demo as RunEvent[]
@@ -49,6 +49,13 @@ describe('TaskCard', () => {
     await user.keyboard('{Escape}')
     expect(btn).toHaveAttribute('aria-expanded', 'false')
   })
+
+  it('names the card once: agent, title, status', () => {
+    render(<TaskCard task={finished.tasks['analysis-1']} run={finished} />)
+    const name = screen.getByRole('button').textContent?.replace(/\s+/g, ' ').trim()
+    expect(name).toBe(`${finished.tasks['analysis-1'].agent}: ${finished.tasks['analysis-1'].title}, Passed on try 2`)
+    expect(screen.queryByRole('img')).toBeNull()
+  })
 })
 
 describe('OutcomeCard', () => {
@@ -68,13 +75,43 @@ describe('OutcomeCard', () => {
 })
 
 describe('Announcer', () => {
-  it('stays quiet on replay, then announces new events', () => {
-    const half = events.slice(0, 30).reduce(reduce, emptyRun())
-    const { rerender } = render(<Announcer run={half} />)
+  it('stays quiet for history, however many batches it arrives in, then announces new events', () => {
+    const historyEnd = events[29].seq
+    const a = events.slice(0, 10).reduce(reduce, emptyRun())
+    const { rerender } = render(<Announcer run={a} quietThrough={null} />)    // last_seq not known yet
+    const b = events.slice(10, 20).reduce(reduce, a)
+    rerender(<Announcer run={b} quietThrough={historyEnd} />)
+    const c = events.slice(20, 30).reduce(reduce, b)
+    rerender(<Announcer run={c} quietThrough={historyEnd} />)
     expect(screen.getByRole('status')).toHaveTextContent('')
-    const more = events.slice(30).reduce(reduce, half)
-    rerender(<Announcer run={more} />)
-    expect(screen.getByRole('status').textContent || screen.getByRole('alert').textContent).not.toBe('')
+    expect(screen.getByRole('alert')).toHaveTextContent('')
+    const more = events.slice(30).reduce(reduce, c)
+    rerender(<Announcer run={more} quietThrough={historyEnd} />)
+    expect((screen.getByRole('status').textContent || '') + (screen.getByRole('alert').textContent || '')).not.toBe('')
+  })
+
+  it('reads every item of a batch, not only the last one', () => {
+    const base = emptyRun()
+    const { rerender } = render(<Announcer run={base} quietThrough={0} />)
+    rerender(<Announcer run={{ ...base, announcements: [{ seq: 5, text: 'Rewrite the report passed' }, { seq: 6, text: 'Run finished' }] }} quietThrough={0} />)
+    expect(screen.getByRole('status')).toHaveTextContent('Rewrite the report passed. Run finished')
+  })
+})
+
+describe('ConfirmDialog', () => {
+  it('moves focus in, keeps Tab inside, and closes on Escape', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<><button>outside</button><ConfirmDialog title="Stop this run?" body="b" confirm="Stop run" cancel="Keep running" danger onConfirm={() => {}} onClose={onClose} /></>)
+    expect(screen.getByRole('button', { name: 'Keep running' })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Stop run' })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Keep running' })).toHaveFocus()
+    await user.tab({ shift: true })
+    expect(screen.getByRole('button', { name: 'Stop run' })).toHaveFocus()
+    await user.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalled()
   })
 })
 

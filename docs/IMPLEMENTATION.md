@@ -15,7 +15,7 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | M1 Engine | Done offline (54 pytest tests). Open: 1.13 connectors check and 1.14 first live run, both need your Claude login. |
 | M2 Server | Done (`tests/test_server.py`). |
 | M3 App core | Done. Vitest reducer + component tests, Playwright screenshots reviewed at 1440 and 390 px. |
-| M4 App complete | Done, except 4.6 (axe audit and screen reader pass) and 4.7 (canvas additions). |
+| M4 App complete | Done, except the manual screen reader pass in 4.6 and 4.7 (canvas additions). 4.6 automated part done: `npm run a11y` is clean. |
 | Playbooks | Done: 5 playbooks, `read_playbook`, `playbook_chosen`, Options select (`tests/test_playbooks.py`). |
 | M5, M6 | Not started. |
 
@@ -84,7 +84,7 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 | 4.3 | File viewer | List with author characters, markdown rendering, code view, Copy, Raw. | markdown table renders, code untouched |
 | 4.4 | Follow-up and continue | Follow-up box on finished runs, Continue on out-of-budget, interrupted and stopped runs. Parent link shown. | API calls and the resulting navigation |
 | 4.5 | Responsive and phone | The layouts in DESIGN.md section 6: rail panel, sidebar drawer, phone header, team strip, run bar, bottom sheets. | Playwright screenshots at 390, 900 and 1440 px (manual review) |
-| 4.6 | Accessibility pass | Keyboard order, focus ring, contrast and reduced motion are checked against DESIGN.md section 8. | axe check in Playwright, manual screen reader pass on the live run |
+| 4.6 | Accessibility pass | Keyboard order, focus ring, contrast and reduced motion are checked against DESIGN.md section 8. | `cd web && npm run a11y` (axe + Tab walk, both themes, 1440 and 390 px, with `python -m server --fake` running). Still open: a manual pass with VoiceOver or NVDA on a live run. |
 | 4.7 | Canvas additions | Approval card, interrupted outcome and stop confirm are added to the design canvas. | visual review |
 
 ## M5: Phone extras

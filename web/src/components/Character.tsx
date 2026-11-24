@@ -44,7 +44,7 @@ export function Character({ color, mood = 'neutral', accessory = 'none', size = 
 
   return (
     <span className={cls} style={{ width: size, height: size, ...(animate ? blink : {}) }} {...a11y}>
-      <svg width={size} height={size} viewBox="0 0 40 40" focusable="false">
+      <svg width={size} height={size} viewBox="0 0 40 40" focusable="false" aria-hidden="true">
         <rect x="2" y="4" width="36" height="34" rx="14" fill={color} />
         {accessory === 'bow' && <path d="M14 33 L20 35.5 L14 38 Z M26 33 L20 35.5 L26 38 Z" fill={INK} />}
         {accessory === 'antenna' && (

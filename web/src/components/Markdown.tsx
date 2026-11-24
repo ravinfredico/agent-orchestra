@@ -51,7 +51,7 @@ export function Markdown({ source }: { source: string }) {
       const head = cells(rows[0])
       const body = rows.slice(rows[1] && /^\|?\s*:?-/.test(rows[1]) ? 2 : 1).map(cells)
       blocks.push(
-        <div className="table-wrap" key={k++}>
+        <div className="table-wrap" key={k++} tabIndex={0} role="region" aria-label="Table">
           <table>
             <thead><tr>{head.map((c, j) => <th key={j}>{inline(c)}</th>)}</tr></thead>
             <tbody>{body.map((r, j) => <tr key={j}>{r.map((c, n) => <td key={n}>{inline(c)}</td>)}</tr>)}</tbody>

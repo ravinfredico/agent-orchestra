@@ -59,6 +59,7 @@ python -m server                               # app + API on http://127.0.0.1:8
 python -m server --fake                        # demo mode: scripted runs, no model calls
 cd web && npm test && npx tsc -b               # web tests + typecheck
 cd web && npm run dev                          # dev server on :5173, proxies /api to :8000
+cd web && npm run a11y                         # axe + keyboard audit; needs python -m server --fake running
 python scripts/make_fixtures.py                # after changing events: refresh web fixtures
 ```
 
@@ -117,3 +118,7 @@ These files are meant to get better over time.
 - Gate commits on the test exit code (`python -m pytest tests -q && git commit ...`). Piping pytest into `tail` hides failures.
 - Fix recurring run failures in the matching playbook (`orchestra/playbooks/`), not only in prompts.
 - Random ids need enough bits for bursts: run-id suffixes are 6 hex, and `create_run` never reuses a folder.
+- A new session may start from `main`, which has none of this work. Fetch all branches and read
+  `docs/HANDOVER.md` on the working branch before doing anything.
+- Off-canvas drawers need `visibility: hidden` when closed, or Tab walks through invisible links.
+- Run `npm run a11y` after UI changes. Wait for enter animations before axe, or it measures half-faded colors.

@@ -45,7 +45,7 @@ export function Files() {
   }
 
   return (
-    <div className="files-page">
+    <main className="files-page">
       <header className="run-header">
         <Link className="icon-btn" to={`/runs/${runId}`} aria-label="Back to the run"><Back /></Link>
         <h1>Files · {title}</h1>
@@ -53,7 +53,7 @@ export function Files() {
       </header>
       <nav className="file-tabs" aria-label="Workspace files">
         {files.map((f) => (
-          <Link key={f.path} to={`/runs/${runId}/files/${f.path}`} className="chip" aria-pressed={f.path === current} aria-current={f.path === current ? 'page' : undefined}>
+          <Link key={f.path} to={`/runs/${runId}/files/${f.path}`} className="chip" aria-current={f.path === current ? 'page' : undefined}>
             {f.path}
           </Link>
         ))}
@@ -87,6 +87,6 @@ export function Files() {
           {!current && files.length === 0 && <div className="empty"><span>Files appear here as agents write them.</span></div>}
         </article>
       </div>
-    </div>
+    </main>
   )
 }

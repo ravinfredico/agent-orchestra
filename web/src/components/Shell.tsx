@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom'
 import { dayGroup, STATUS_DOT } from '../format'
 import { useHealth, useRuns, useTheme } from '../state/hooks'
@@ -68,20 +68,29 @@ function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }
 
 export function Shell() {
   const [open, setOpen] = useState(false)
+  const opener = useRef<HTMLElement | null>(null)
   const loc = useLocation()
   useEffect(() => setOpen(false), [loc.pathname])
+  // sidebar drawer (below 1100px): focus moves in on open and back to the menu button on close
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      if (opener.current?.isConnected) opener.current.focus()
+      opener.current = null
+      return
+    }
+    document.querySelector<HTMLElement>('.sidebar a')?.focus()
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
   return (
-    <DrawerCtx.Provider value={{ open: () => setOpen(true) }}>
+    <DrawerCtx.Provider value={{ open: () => { opener.current = document.activeElement as HTMLElement; setOpen(true) } }}>
       <div className="app">
+        <a className="skip-link" href="#content"
+          onClick={(e) => { e.preventDefault(); document.getElementById('content')?.focus() }}>Skip to content</a>
         <Sidebar open={open} onNavigate={() => setOpen(false)} />
         {open && <div className="scrim" onClick={() => setOpen(false)} />}
-        <main className="main"><Outlet /></main>
+        <main className="main" id="content" tabIndex={-1}><Outlet /></main>
       </div>
     </DrawerCtx.Provider>
   )

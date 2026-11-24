@@ -25,10 +25,12 @@ function RowMenu({ run, onDelete }: { run: RunSummary; onDelete: () => void }) {
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const btn = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     if (!open) return
+    ref.current?.querySelector<HTMLElement>('.menu button:not(:disabled), .menu a')?.focus()
     const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); btn.current?.focus() } }
     document.addEventListener('mousedown', close)
     document.addEventListener('keydown', key)
     return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', key) }
@@ -39,12 +41,12 @@ function RowMenu({ run, onDelete }: { run: RunSummary; onDelete: () => void }) {
   }
   return (
     <div className="menu-wrap" ref={ref}>
-      <button className="icon-btn" aria-label={`Actions for ${run.title}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}><More /></button>
+      <button ref={btn} className="icon-btn" aria-label={`Actions for ${run.title}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}><More /></button>
       {open && (
-        <div className="menu" role="menu">
-          <button role="menuitem" onClick={rerun}>Rerun with edits</button>
-          <a role="menuitem" href={api.zipUrl(run.id)} download>Download files (.zip)</a>
-          <button role="menuitem" className="danger" disabled={run.status === 'running'} onClick={() => { setOpen(false); onDelete() }}>
+        <div className="menu">
+          <button onClick={rerun}>Rerun with edits</button>
+          <a href={api.zipUrl(run.id)} download>Download files (.zip)</a>
+          <button className="danger" disabled={run.status === 'running'} onClick={() => { setOpen(false); onDelete() }}>
             {run.status === 'running' ? 'Delete (stop it first)' : 'Delete run'}
           </button>
         </div>
