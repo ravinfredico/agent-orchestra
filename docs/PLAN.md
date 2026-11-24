@@ -44,6 +44,7 @@ Design canvas (private to you): https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNU
 | Isolation | v1: the SDK's built-in shell sandbox with a network allowlist, plus one folder per agent. Later: a Docker container per agent, sharing a `/workspace` volume for handoffs. |
 | Outward actions | Tools that act on the outside world (send email, post, book) pause the run and show an Approve / Deny card, plus a push notification. Read-only tools run freely. |
 | Model providers | Claude only in v1, on your Pro plan. OpenRouter later, through a gateway. It needs its own API key and is billed by OpenRouter. |
+| Open source (later) | Repo stays private for now. If opened, each user connects their own Claude: their own plan login (for their personal use) or their own API key. Public docs lead with the API key, per the Agent SDK terms below. |
 | After v1 | Message the orchestrator mid-run, then Docker sandbox per agent, OpenRouter models, repo diff, hosting setup. |
 | Portfolio | Static replay page (GitHub Pages) that plays back a recorded run. |
 | Writing | Plain English, short sentences, no jargon or filler, lists and tables where they help. |
