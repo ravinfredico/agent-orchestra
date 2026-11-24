@@ -39,6 +39,7 @@ Docs:
 | `orchestra/envfile.py` | loads `.env` at startup (shell wins, never `ANTHROPIC_API_KEY`) |
 | `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py` |
 | `tools.catalog.json` | tools the orchestrator may give agents |
+| `widgets/` | phone home-screen widgets: `scriptable.js` (iPhone), `android-kwgt.md` (Android guide) |
 | `scripts/make_fixtures.py` | regenerates the web test fixtures from the Python demo scenario |
 
 ## The three loops
@@ -104,10 +105,10 @@ These files are meant to get better over time.
   summary, so the user can see what was learned.
 
 ## Status
-- Branch `feat/chacha-pa`. M1 (engine), M2 (server), M3 and M4 (web app) done and tested offline.
+- Branch `feat/chacha-pa`. M1 (engine), M2 (server), M3 and M4 (web app), M5 (ntfy, PWA, widgets) done and tested offline.
 - Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
 - Not yet run against a real model. Next: the first live run (IMPLEMENTATION.md, end of M1), then the
-  claude.ai connectors check (task 1.13), then M5 (ntfy, widgets, PWA) and M6 (replay page).
+  claude.ai connectors check (task 1.13), then M6 (replay page).
 
 ## Learnings
 - Design work goes into a design tool (Claude Design canvas, then Figma) before any HTML. No

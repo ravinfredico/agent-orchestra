@@ -329,7 +329,8 @@ runs/index.db    SQLite: runs table + FTS5 over task and title
 - `widgets/scriptable.js`: an iPhone home-screen widget. It fetches `/api/status` and shows the
   running task, team count, usage and last result. iOS decides the refresh rate, usually every few
   minutes.
-- `widgets/android-kwgt.md`: the same with KWGT or an HTTP widget app.
+- `widgets/android-kwgt.md`: the same with KWGT. KWGT's web fetch can't send headers, so Tasker
+  makes the authenticated request and passes the values to KWGT. Tokens never go in a URL.
 
 ## 15. Frontend
 - Routes:
