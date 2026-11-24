@@ -33,7 +33,7 @@ Last updated: 2026-11-24. Read this first in a new session, then `AGENTS.md`.
   - live thread with characters, task cards, approvals and outcomes
   - history, file viewer
   - dark and light themes, phone layout
-- **Tests:** 69 pytest (`python -m pytest tests -q`), 16 Vitest (`cd web && npm test`), type-checked
+- **Tests:** 71 pytest (`python -m pytest tests -q`), 16 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -64,8 +64,9 @@ Open http://127.0.0.1:8000.
      `cd web && npm run a11y` is clean in both themes at 1440 and 390 px
    - add the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
      connector picker to the canvas (ask before editing it)
-4. **M5:** ntfy push is done (set `NTFY_URL` and `NTFY_TOPIC` in `.env`). Left: widgets
-   (`widgets/scriptable.js` for iPhone, `widgets/android-kwgt.md`), PWA install.
+4. **M5:** ntfy push is done (set `NTFY_URL` and `NTFY_TOPIC` in `.env`). PWA install is done
+   (manifest + icons in `web/public/`). Left: widgets (`widgets/scriptable.js` for iPhone,
+   `widgets/android-kwgt.md`).
 5. **M6:** static replay page for the portfolio.
 6. **Later:**
    - steering (message the orchestrator mid-run)

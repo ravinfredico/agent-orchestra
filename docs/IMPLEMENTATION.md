@@ -17,7 +17,7 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | M3 App core | Done. Vitest reducer + component tests, Playwright screenshots reviewed at 1440 and 390 px. |
 | M4 App complete | Done, except the manual screen reader pass in 4.6 and 4.7 (canvas additions). 4.6 automated part done: `npm run a11y` is clean. |
 | Playbooks | Done: 5 playbooks, `read_playbook`, `playbook_chosen`, Options select (`tests/test_playbooks.py`). |
-| M5 Phone extras | 5.1 ntfy done (`tests/test_notify.py`). |
+| M5 Phone extras | 5.1 ntfy and 5.4 PWA done (`tests/test_notify.py`, `tests/test_pwa.py`; Chromium reports no installability errors). |
 | M6 | Not started. |
 
 ## M1: Engine events and capabilities
@@ -94,7 +94,7 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 | 5.1 | ntfy | Push on finished, out of budget, crashed and approval needed, with a link to the run. Off when `NTFY_URL` is unset. | fake HTTP: right events send, others don't |
 | 5.2 | iPhone widget | `widgets/scriptable.js` shows the running task, usage and last result from `/api/status`, with Access service-token headers. | manual on a phone |
 | 5.3 | Android widget | `widgets/android-kwgt.md` step-by-step guide. | manual |
-| 5.4 | PWA install | Manifest and icons so "Add to Home Screen" opens full screen. | Lighthouse installable check |
+| 5.4 | PWA install | Manifest and icons so "Add to Home Screen" opens full screen. | Chromium `Page.getInstallabilityErrors` is empty (Lighthouse 12 dropped its PWA audit); `tests/test_pwa.py` |
 
 ## M6: Portfolio replay
 | # | Task | Done when | Tests |
