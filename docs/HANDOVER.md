@@ -33,7 +33,7 @@ Last updated: 2026-11-24. Read this first in a new session, then `AGENTS.md`.
   - live thread with characters, task cards, approvals and outcomes
   - history, file viewer
   - dark and light themes, phone layout
-- **Tests:** 60 pytest (`python -m pytest tests -q`), 16 Vitest (`cd web && npm test`), type-checked
+- **Tests:** 62 pytest (`python -m pytest tests -q`), 16 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -46,7 +46,10 @@ cd web && npm install && npm run build && cd ..
 ```bash
 python -m server --fake
 ```
-`--fake` plays a scripted run with no model calls. Drop it to use the real Claude plan login.
+`--fake` plays a scripted run with no model calls. It picks the scenario from the task text:
+build-style tasks ("build", "app", "tests"…) play a developer + tester building a todo CLI whose
+tests really pass (`orchestra/demo_files/`); anything else plays the e-wallet research report.
+Drop `--fake` to use the real Claude plan login.
 Open http://127.0.0.1:8000.
 
 ## Next steps, in order
