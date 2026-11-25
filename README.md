@@ -4,6 +4,13 @@ Give it any task. An orchestrator agent plans it, **creates its own specialist a
 system prompts and choosing their tools), assigns them work, and **keeps looping until every piece is
 independently verified**. Built on the Claude Agent SDK, so it runs on your Claude plan.
 
+**ChaCha PA** is the web app around it: type a task, watch the team work live, on laptop or phone.
+
+[![Watch the demo video](docs/media/chacha-pa-demo-poster.jpg)](docs/media/chacha-pa-demo.mp4)
+
+*[Watch the demo (97 s, with voiceover)](docs/media/chacha-pa-demo.mp4). Footage is from demo mode (`python -m server --fake`):
+scripted agents, no model calls. Made with Remotion, source in [`demo-video/`](demo-video/).*
+
 ```
 You: "Research the top 5 Indonesian e-wallets and write a comparison report"
         │
@@ -70,20 +77,6 @@ python main.py --worker-model haiku --max-agents 3 --max-cost 1 "..."
 python main.py -f task.txt
 ```
 
-### Web UI
-
-```bash
-python server.py               # then open http://127.0.0.1:8000
-```
-
-Type a task, press **Start run**, and watch it live: usage meters, agents appearing with their tools
-and system prompts, the task board with attempts and checker feedback, the event log, the final
-result, and a viewer for the files in the workspace. Past runs are listed in the sidebar and replay
-from `runs/`. **Stop** cancels a running run.
-
-The server binds to `127.0.0.1` only and refuses requests from other hosts or other websites'
-pages, because a Bash-enabled run executes real commands on this machine.
-
 ### Software engineering on an existing project
 
 ```bash
@@ -108,9 +101,33 @@ Each run creates `runs/<timestamp>/`:
 ```
 workspace/    files the agents produced (your deliverables)
 log.jsonl     every event: agents created, tasks, attempts, verdicts
-board.json    task board + agent definitions + usage + status
+board.json    final task board + agent definitions + usage
 final.md      the orchestrator's final answer
 ```
+
+## Web app: ChaCha PA
+
+Type a task in the browser and watch the team work live: agents appear as characters, tasks update
+in place, the checker sends work back, and you get a clear ending. Works on a phone too.
+
+```bash
+pip install -r requirements.txt
+cd web && npm install && npm run build && cd ..
+python -m server              # open http://127.0.0.1:8000
+python -m server --fake       # demo mode: a scripted run, no model calls, nothing billed
+```
+
+- Runs use your Claude plan login, same as the CLI. The sidebar shows "Claude plan" or "API key".
+- Several runs can go at once. Closing the browser doesn't stop them.
+- Tools come from `tools.catalog.json`: files, web, a real browser (Playwright MCP), shell (opt-in,
+  sandboxed), Gmail and Google Calendar (set their URLs and tokens in `.env`, see `.env.example`),
+  and any Claude Code plugin you put in `plugins/`. Pick which ones a run may use under Options.
+- Anything that sends or changes something outside (email, calendar) pauses for your Approve / Deny.
+- The server only listens on 127.0.0.1. To reach it from elsewhere, set `APP_TOKEN` and put it behind
+  Cloudflare Tunnel + Access (see `docs/ARCHITECTURE.md`).
+
+Docs: `docs/PLAN.md` (decisions), `docs/PRD.md`, `docs/DESIGN.md`, `docs/ARCHITECTURE.md`,
+`docs/IMPLEMENTATION.md`. Instructions for AI coding agents: `AGENTS.md`.
 
 ## Guardrails
 
@@ -123,7 +140,8 @@ final.md      the orchestrator's final answer
 | `--allow-bash` | off | shell access is opt-in |
 
 Also built in:
-- Workers can only get tools from a fixed registry (`orchestra/config.py`). The orchestrator cannot invent tools.
+- Workers can only get tools from the catalog (`tools.catalog.json`). The orchestrator cannot invent tools.
+- Outward tools (send email, create events) need your approval in the web app, and are denied in the CLI.
 - Workers cannot create agents. Only the orchestrator can (no recursion).
 - The checker is a separate agent with read-only tools (plus Bash if allowed, to run tests). It inspects files, not the worker's claims.
 - Your personal Claude Code settings and CLAUDE.md files are ignored (`setting_sources=[]`).
@@ -137,8 +155,6 @@ A typical run with 3 to 4 agents is roughly 20 to 40 model calls.
 
 ```
 main.py                    CLI
-server.py                  local web UI backend (FastAPI, SSE event stream)
-web/index.html             web UI (vanilla JS, no build step)
 orchestra/
   config.py                models, budget, tool registry
   prompts.py               orchestrator + checker prompts
@@ -146,7 +162,7 @@ orchestra/
   tools.py                 create_agent / assign_task / view_board / finish
   orchestrator.py          outer loop with ClaudeSDKClient
   state.py                 board, usage counters, logging
-tests/                     offline tests (fake runner / fake orchestrator, no model calls)
+tests/test_tools.py        offline tests (fake runner, no model calls)
 ```
 
 ## Tests

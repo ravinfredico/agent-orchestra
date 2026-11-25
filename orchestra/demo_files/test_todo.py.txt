@@ -1,0 +1,68 @@
+import pytest
+
+import todo
+
+
+@pytest.fixture
+def db(tmp_path):
+    return tmp_path / "todos.json"
+
+
+def run(db, *args):
+    return todo.main(list(args), db=db)
+
+
+def test_empty_list(db, capsys):
+    assert run(db, "list") == 0
+    assert "Nothing to do." in capsys.readouterr().out
+
+
+def test_add_and_list(db, capsys):
+    run(db, "add", "buy", "milk")
+    run(db, "add", "call mum")
+    capsys.readouterr()
+    run(db, "list")
+    assert capsys.readouterr().out.splitlines() == ["1. [ ] buy milk", "2. [ ] call mum"]
+
+
+def test_todos_are_saved_between_runs(db):
+    run(db, "add", "water plants")
+    assert todo.load(db) == [{"text": "water plants", "done": False}]
+
+
+def test_done_marks_the_right_todo(db):
+    run(db, "add", "a")
+    run(db, "add", "b")
+    assert run(db, "done", "2") == 0
+    assert [t["done"] for t in todo.load(db)] == [False, True]
+
+
+def test_remove(db):
+    run(db, "add", "a")
+    run(db, "add", "b")
+    run(db, "remove", "1")
+    assert [t["text"] for t in todo.load(db)] == ["b"]
+
+
+def test_add_needs_text(db, capsys):
+    assert run(db, "add", "   ") == 1
+    assert "needs some text" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("n", ["0", "3", "-1"])
+def test_done_rejects_numbers_that_are_not_on_the_list(db, capsys, n):
+    run(db, "add", "a")
+    run(db, "add", "b")
+    assert run(db, "done", n) == 1
+    assert "no todo number" in capsys.readouterr().err
+    assert [t["done"] for t in todo.load(db)] == [False, False]   # nothing changed
+
+
+def test_remove_rejects_a_bad_number(db):
+    run(db, "add", "a")
+    assert run(db, "remove", "5") == 1
+    assert len(todo.load(db)) == 1
+
+
+def test_unknown_command(db):
+    assert run(db, "fly") == 2

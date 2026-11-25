@@ -16,9 +16,18 @@ def _git(repo: Path, *args: str) -> str:
     return r.stdout.strip()
 
 
-def prepare_repo(repo: Path, allow_dirty: bool = False) -> str:
+def check_allowed(repo: Path, root: Path | None) -> None:
+    """When REPOS_ROOT is set (required when hosted), only repos inside it may be used."""
+    if root is None:
+        return
+    repo, root = Path(repo).resolve(), Path(root).resolve()
+    if repo != root and root not in repo.parents:
+        raise RepoError(f"{repo} is outside the allowed folder {root}.")
+
+
+def prepare_repo(repo: Path, allow_dirty: bool = False, verbose: bool = True) -> str:
     """Check the repo is clean, then switch to a new branch. Returns the branch name."""
-    repo = repo.resolve()
+    repo = Path(repo).resolve()
     if not repo.is_dir():
         raise RepoError(f"{repo} is not a folder")
     try:
@@ -32,6 +41,7 @@ def prepare_repo(repo: Path, allow_dirty: bool = False) -> str:
     original = _git(repo, "rev-parse", "--abbrev-ref", "HEAD")
     branch = f"orchestra/{time.strftime('%Y%m%d-%H%M%S')}"
     _git(repo, "checkout", "-b", branch)
-    print(f"Working on new branch '{branch}' (from '{original}').")
-    print(f"Review afterwards with:  git -C {repo} diff {original}...{branch}")
+    if verbose:
+        print(f"Working on new branch '{branch}' (from '{original}').")
+        print(f"Review afterwards with:  git -C {repo} diff {original}...{branch}")
     return branch

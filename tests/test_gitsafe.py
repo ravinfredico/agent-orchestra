@@ -37,3 +37,12 @@ def test_clean_repo_gets_branch(tmp_path):
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "--abbrev-ref", "HEAD"],
                           capture_output=True, text=True).stdout.strip()
     assert head == branch and branch.startswith("orchestra/")
+
+
+def test_allowlist(tmp_path):
+    from orchestra.gitsafe import check_allowed
+    (tmp_path / "ok").mkdir()
+    check_allowed(tmp_path / "ok", tmp_path)
+    check_allowed(tmp_path / "ok", None)
+    with pytest.raises(RepoError, match="outside"):
+        check_allowed(tmp_path.parent, tmp_path)

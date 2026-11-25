@@ -39,19 +39,19 @@ def text(res):
     return res["content"][0]["text"]
 
 
-AGENT = {"name": "writer", "role": "writes", "system_prompt": "You write.", "tools": ["Read", "Write"]}
-TASK = {"agent": "writer", "task_id": "t1", "task": "write report.md", "done_when": "report.md exists"}
+AGENT = {"name": "writer", "role": "writes", "system_prompt": "You write.", "tools": ["files.read", "files.write"]}
+TASK = {"agent": "writer", "task_id": "t1", "title": "Write report", "task": "write report.md", "done_when": "report.md exists"}
 
 
 def test_create_agent_rejects_unknown_tool(tmp_path):
     _, t, _ = make(tmp_path, [])
-    res = run(t.create_agent({**AGENT, "tools": ["Read", "LaunchMissiles"]}))
+    res = run(t.create_agent({**AGENT, "tools": ["files.read", "LaunchMissiles"]}))
     assert res.get("is_error") and "Unknown tools" in text(res)
 
 
 def test_bash_only_when_allowed(tmp_path):
     _, t, _ = make(tmp_path, [])
-    assert run(t.create_agent({**AGENT, "tools": ["Bash"]})).get("is_error")
+    assert run(t.create_agent({**AGENT, "tools": ["shell"]})).get("is_error")
 
 
 def test_agent_limit(tmp_path):
@@ -121,3 +121,77 @@ def test_board_and_files(tmp_path):
 def test_mcp_server_builds(tmp_path):
     _, t, _ = make(tmp_path, [])
     assert t.mcp_server()
+
+
+def events(state):
+    return [json.loads(line) for line in (state.run_dir / "log.jsonl").read_text().splitlines()]
+
+
+def test_title_required(tmp_path):
+    _, t, _ = make(tmp_path, [True])
+    run(t.create_agent(AGENT))
+    res = run(t.assign_task({**TASK, "title": ""}))
+    assert res.get("is_error") and "title" in text(res)
+
+
+def test_event_order_with_retry(tmp_path):
+    s, t, _ = make(tmp_path, [False, True])
+    run(t.create_agent(AGENT))
+    run(t.assign_task(TASK))
+    types = [e["type"] for e in events(s) if e["type"] != "usage"]
+    assert types == ["agent_created", "task_assigned",
+                     "attempt_started", "checker_started", "attempt_failed",
+                     "attempt_started", "checker_started", "task_passed"]
+    ev = events(s)
+    assert [e["seq"] for e in ev] == list(range(1, len(ev) + 1))
+    failed = next(e for e in ev if e["type"] == "attempt_failed")
+    assert failed["reason"] == "missing file" and failed["short"]
+    assert next(e for e in ev if e["type"] == "agent_created")["color_index"] == 0
+    assert next(e for e in ev if e["type"] == "task_assigned")["title"] == "Write report"
+
+
+def test_usage_events_track_totals(tmp_path):
+    s, t, _ = make(tmp_path, [True])
+    run(t.create_agent(AGENT))
+    run(t.assign_task(TASK))
+    usage = [e for e in events(s) if e["type"] == "usage"]
+    assert len(usage) == 2 and abs(usage[-1]["cost_usd"] - 0.3) < 1e-9 and usage[-1]["model_calls"] == 2
+
+
+def test_activity_and_files(tmp_path):
+    from orchestra.fake import FakeRunner, FakeTask
+    state = RunState("demo", Config(), tmp_path)
+    runner = FakeRunner({"[x]": FakeTask(tools=[("Read", {"file_path": str(state.workspace / "notes.md")})],
+                                         files=[("out/report.md", "# hi")])})
+    t = OrchestraTools(state, runner=runner)
+    run(t.create_agent(AGENT))
+    run(t.assign_task({**TASK, "task": "[x] write it"}))
+    ev = events(state)
+    acts = [e for e in ev if e["type"] == "worker_activity"]
+    assert acts[0]["summary"] == "reading notes.md"
+    files = [e for e in ev if e["type"] == "file_written"]
+    assert [f["path"] for f in files] == ["out/report.md"]    # reported once, not twice by the scan
+    assert (state.workspace / ".agents" / "writer").is_dir()
+
+
+def test_bash_files_found_by_scan(tmp_path):
+    state = RunState("demo", Config(), tmp_path)
+
+    async def runner(*, prompt, output_schema=None, cwd=None, **kw):
+        if output_schema:
+            return AgentResult(text="", structured={"passed": True, "reason": "ok", "short": "ok"}, turns=1, cost_usd=0)
+        (cwd / "built.txt").write_text("made by a script")
+        return AgentResult(text="ran a script", turns=1, cost_usd=0)
+
+    t = OrchestraTools(state, runner=runner)
+    run(t.create_agent(AGENT))
+    run(t.assign_task(TASK))
+    assert [e["path"] for e in events(state) if e["type"] == "file_written"] == ["built.txt"]
+
+
+def test_activity_summary_truncates():
+    from pathlib import Path
+    from orchestra.tools import activity_summary
+    s = activity_summary("Bash", {"command": "x" * 200}, Path("."))
+    assert len(s) <= 80 and s.startswith("running ")
+    assert activity_summary("mcp__browser__browser_click", {}, Path(".")) == "using browser: browser click"

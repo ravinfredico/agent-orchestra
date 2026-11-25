@@ -1,0 +1,84 @@
+"""A tiny todo list for the terminal. Todos are saved in todos.json.
+
+    python todo.py add "buy milk"
+    python todo.py list
+    python todo.py done 1
+    python todo.py remove 1
+"""
+
+import json
+import sys
+from pathlib import Path
+
+DB = Path("todos.json")
+USAGE = 'usage: todo.py add "text" | list | done N | remove N'
+
+
+def load(db: Path = DB) -> list[dict]:
+    return json.loads(db.read_text()) if db.exists() else []
+
+
+def save(items: list[dict], db: Path = DB) -> None:
+    db.write_text(json.dumps(items, indent=2))
+
+
+def add(items: list[dict], text: str) -> list[dict]:
+    text = text.strip()
+    if not text:
+        raise ValueError("a todo needs some text")
+    items.append({"text": text, "done": False})
+    return items
+
+
+def _index(items: list[dict], n: int) -> int:
+    if not 1 <= n <= len(items):
+        raise ValueError(f"there is no todo number {n}")
+    return n - 1
+
+
+def done(items: list[dict], n: int) -> list[dict]:
+    items[_index(items, n)]["done"] = True
+    return items
+
+
+def remove(items: list[dict], n: int) -> list[dict]:
+    items.pop(_index(items, n))
+    return items
+
+
+def render(items: list[dict]) -> str:
+    if not items:
+        return "Nothing to do."
+    return "\n".join(f"{i}. [{'x' if t['done'] else ' '}] {t['text']}" for i, t in enumerate(items, 1))
+
+
+def main(argv: list[str] | None = None, db: Path = DB) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    if not args:
+        print(USAGE, file=sys.stderr)
+        return 2
+    cmd, rest = args[0], args[1:]
+    items = load(db)
+    try:
+        if cmd == "add":
+            add(items, " ".join(rest))
+        elif cmd == "list":
+            print(render(items))
+            return 0
+        elif cmd in ("done", "remove"):
+            if len(rest) != 1 or not rest[0].lstrip("-").isdigit():
+                raise ValueError(f"{cmd} needs a todo number")
+            (done if cmd == "done" else remove)(items, int(rest[0]))
+        else:
+            print(USAGE, file=sys.stderr)
+            return 2
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    save(items, db)
+    print(render(items))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
