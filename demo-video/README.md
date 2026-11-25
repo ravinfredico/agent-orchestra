@@ -27,6 +27,13 @@ npm run dev                 # Remotion Studio: preview and edit
 npm run render              # writes out/chacha-pa-demo.mp4
 cp out/chacha-pa-demo.mp4 ../docs/media/
 ```
+The README shows `docs/media/chacha-pa-demo-preview.gif`, a 23-second highlights cut (GitHub
+won't play an mp4 stored in the repo). Rebuild it after re-rendering:
+```bash
+cd ../docs/media
+ffmpeg -y -i chacha-pa-demo.mp4 -filter_complex "[0:v]trim=1.5:5,setpts=PTS-STARTPTS[a];[0:v]trim=10:14.5,setpts=PTS-STARTPTS[b];[0:v]trim=26:32,setpts=PTS-STARTPTS[c];[0:v]trim=37.5:42,setpts=PTS-STARTPTS[d];[0:v]trim=52:60,setpts=PTS-STARTPTS[e];[0:v]trim=64.5:69,setpts=PTS-STARTPTS[f];[0:v]trim=83:87,setpts=PTS-STARTPTS[g];[a][b][c][d][e][f][g]concat=n=7:v=1:a=0,setpts=PTS/1.5,fps=12,scale=960:-1:flags=lanczos,split[x][y];[x]palettegen=max_colors=128:stats_mode=diff[p];[y][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle" chacha-pa-demo-preview.gif
+```
+The trim times match the current scene lengths; check them if the timeline changes.
 
 ## Re-record the footage (after UI changes)
 ```bash
