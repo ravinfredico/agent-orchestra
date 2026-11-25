@@ -6,9 +6,9 @@ independently verified**. Built on the Claude Agent SDK, so it runs on your Clau
 
 **ChaCha PA** is the web app around it: type a task, watch the team work live, on laptop or phone.
 
-[![Watch the demo video](docs/media/chacha-pa-demo-poster.jpg)](docs/media/chacha-pa-demo.mp4)
+[![ChaCha PA demo: agents planning, retrying, asking for approval and passing tests](docs/media/chacha-pa-demo-preview.gif)](docs/media/chacha-pa-demo.mp4)
 
-*[Watch the demo (97 s, with voiceover)](docs/media/chacha-pa-demo.mp4). Footage is from demo mode (`python -m server --fake`):
+*A 23-second preview. [Download the full demo (97 s, with voiceover)](docs/media/chacha-pa-demo.mp4). Footage is from demo mode (`python -m server --fake`):
 scripted agents, no model calls. Made with Remotion, source in [`demo-video/`](demo-video/).*
 
 ```
