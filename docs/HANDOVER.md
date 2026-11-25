@@ -68,7 +68,8 @@ Open http://127.0.0.1:8000.
    (manifest + icons in `web/public/`), iPhone widget (`widgets/scriptable.js`) and Android guide
    (`widgets/android-kwgt.md`). Left: try the widgets on real phones. They need a URL the phone can
    reach, so in practice this waits for hosting.
-5. **M6:** static replay page for the portfolio.
+5. **M6:** static replay page for the portfolio. (A Remotion demo video already exists:
+   `docs/media/chacha-pa-demo.mp4`, source in `demo-video/`. Re-render it after big UI changes.)
 6. **Later:**
    - steering (message the orchestrator mid-run)
    - Docker sandbox per agent

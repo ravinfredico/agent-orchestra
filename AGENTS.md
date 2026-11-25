@@ -39,6 +39,7 @@ Docs:
 | `orchestra/envfile.py` | loads `.env` at startup (shell wins, never `ANTHROPIC_API_KEY`) |
 | `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py` |
 | `tools.catalog.json` | tools the orchestrator may give agents |
+| `demo-video/` | Remotion project for the demo video (`docs/media/chacha-pa-demo.mp4`); footage is demo-mode recordings |
 | `widgets/` | phone home-screen widgets: `scriptable.js` (iPhone), `android-kwgt.md` (Android guide) |
 | `scripts/make_fixtures.py` | regenerates the web test fixtures from the Python demo scenario |
 

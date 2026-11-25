@@ -4,6 +4,13 @@ Give it any task. An orchestrator agent plans it, **creates its own specialist a
 system prompts and choosing their tools), assigns them work, and **keeps looping until every piece is
 independently verified**. Built on the Claude Agent SDK, so it runs on your Claude plan.
 
+**ChaCha PA** is the web app around it: type a task, watch the team work live, on laptop or phone.
+
+[![Watch the 85-second demo](docs/media/chacha-pa-demo-poster.jpg)](docs/media/chacha-pa-demo.mp4)
+
+*[Watch the demo (85 s)](docs/media/chacha-pa-demo.mp4). Footage is from demo mode (`python -m server --fake`):
+scripted agents, no model calls. Made with Remotion, source in [`demo-video/`](demo-video/).*
+
 ```
 You: "Research the top 5 Indonesian e-wallets and write a comparison report"
         │
