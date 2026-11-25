@@ -11,7 +11,7 @@ const POINTS = [
   ["Glance at a widget", "iPhone and Android: the running task, team and usage"],
 ];
 
-export const Phone: React.FC = () => {
+export const Phone: React.FC<{ rate?: number }> = ({ rate = 2.2 }) => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: C.bg, fontFamily: font }}>
@@ -19,7 +19,7 @@ export const Phone: React.FC = () => {
         boxShadow: "0 40px 120px rgba(0,0,0,0.7)", border: `2px solid ${C.border}`,
         translate: `0px ${interpolate(f, [0, 22], [40, 0], { ...clamp, easing: ease })}px`, opacity: interpolate(f, [0, 12], [0, 1], clamp) }}>
         <div style={{ width: 402, height: 870, borderRadius: 52, overflow: "hidden", position: "relative" }}>
-          <Video src={staticFile("footage/phone.mp4")} playbackRate={2.2} muted style={{ width: 402, height: 870, objectFit: "cover" }} />
+          <Video src={staticFile("footage/phone.mp4")} playbackRate={rate} muted style={{ width: 402, height: 870, objectFit: "cover" }} />
           <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, textAlign: "center" }}>
             <span style={{ padding: "6px 12px", borderRadius: 999, background: "rgba(10,10,10,0.8)", color: C.text2, fontFamily: mono, fontSize: 16 }}>Demo mode · scripted run</span>
           </div>

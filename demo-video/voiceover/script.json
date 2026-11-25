@@ -1,0 +1,14 @@
+{
+  "voice": "en_US-lessac-high",
+  "lines": {
+    "Intro": "Meet ChaCha PA. Give it a task, and a team of AI agents plans it, does it, and checks every part.",
+    "Loop": "An orchestrator splits the work and hires the agents it needs. Every task gets a clear finish line, and an independent checker verifies it. If something fails, it gets sent back, retried, or replanned.",
+    "Start a run": "Here's a run in demo mode. You type a task and press start. The orchestrator makes a plan, then hires a researcher, an analyst and a writer, and writes each of their instructions. When the writer misses the mark three times, it doesn't give up. It hires an editor instead.",
+    "Approval": "Anything that reaches the outside world, like sending an email, waits for your approval. And the run only finishes when every task has passed.",
+    "Build an app": "It builds small apps too. A developer writes the code, a tester writes the tests, and the checker runs them itself. Here, the tests caught a real bug, so the fix went back to the developer, not the tester. Every failure is explained, try by try.",
+    "Phone": "You can follow along on your phone. Install it to your home screen, get a push when a run finishes or needs you, or glance at a home screen widget.",
+    "History and files": "Every run is saved, with its history and every file it made.",
+    "Capabilities": "Live progress, verified results, budget limits, and approvals before anything leaves your machine. All private, on your own Claude access.",
+    "Outro": "ChaCha PA. Built on the Claude Agent SDK."
+  }
+}
