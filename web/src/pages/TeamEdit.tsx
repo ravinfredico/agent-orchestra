@@ -33,7 +33,8 @@ export function TeamEdit() {
   }, [teamId])
   useEffect(() => { document.title = `${teamId ? 'Edit team' : 'New team'} · ChaCha PA` }, [teamId])
 
-  const tools = catalog.filter((e) => e.enabled).map((e) => e.id)
+  const tools = catalog.filter((e) => e.enabled && !e.unavailable).map((e) => e.id)
+  const label = (id: string) => catalog.find((e) => e.id === id)?.label ?? id
   const setMember = (i: number, m: Partial<TeamMember>) => setT({ ...t, members: t.members.map((x, j) => (j === i ? { ...x, ...m } : x)) })
   const setSlot = (i: number, k: 'cron' | 'task', v: string) => setT({ ...t, schedule: t.schedule.map((x, j) => (j === i ? { ...x, [k]: v } : x)) })
 
@@ -90,7 +91,7 @@ export function TeamEdit() {
               <div className="connectors member-tools" role="group" aria-label={`Tools for ${m.name || 'member'}`}>
                 {tools.map((id) => (
                   <button key={id} type="button" className="chip" aria-pressed={m.tools.includes(id)}
-                    onClick={() => setMember(i, { tools: m.tools.includes(id) ? m.tools.filter((x) => x !== id) : [...m.tools, id] })}>{id}</button>
+                    onClick={() => setMember(i, { tools: m.tools.includes(id) ? m.tools.filter((x) => x !== id) : [...m.tools, id] })}>{label(id)}</button>
                 ))}
               </div>
             </div>

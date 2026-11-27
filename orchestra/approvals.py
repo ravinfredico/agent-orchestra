@@ -14,6 +14,7 @@ from claude_agent_sdk import PermissionResultAllow, PermissionResultDeny
 
 SECRET_KEYS = ("token", "password", "secret", "authorization", "api_key", "apikey")
 DENIED = "Denied by the user. Continue without this action."
+NOT_GIVEN = "This tool was not given to you. Use only your own tools."
 NO_UI = "This action needs the user's approval, which is only available in the web app. Continue without it."
 
 
@@ -72,6 +73,8 @@ def make_can_use_tool(broker: ApprovalBroker | None, toolset, agent: str, task_i
     """Build the SDK `can_use_tool` callback for one agent attempt."""
 
     async def can_use_tool(tool_name: str, tool_input: dict, context) -> PermissionResultAllow | PermissionResultDeny:
+        if hasattr(toolset, "owns") and not toolset.owns(tool_name):
+            return PermissionResultDeny(message=NOT_GIVEN)
         if not toolset.is_outward(tool_name):
             return PermissionResultAllow(updated_input=tool_input)
         if broker is None or not broker.interactive:

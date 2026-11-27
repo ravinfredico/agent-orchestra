@@ -20,12 +20,13 @@ export interface RunSummary {
 
 export interface CatalogEntry {
   id: string
-  kind: 'builtin' | 'mcp' | 'plugin'
+  kind: 'builtin' | 'mcp' | 'plugin' | 'connector'
   description: string
   risk: 'read' | 'write' | 'shell' | 'outward'
   enabled: boolean
   requires: string | null
   unavailable: string | null
+  label?: string | null      // claude.ai connector name, e.g. Figma
 }
 
 export interface PlaybookInfo {

@@ -124,12 +124,18 @@ DEMO_TASK = "Research the top 5 Indonesian e-wallets and write a comparison repo
 _WALLETS = ["gopay", "ovo", "dana", "shopeepay", "linkaja"]
 
 
-def demo_catalog() -> Catalog:
+def demo_catalog(connectors: bool = False) -> Catalog:
     entries = [_entry_from_dict(d) for d in BUILTIN_ENTRIES]
     entries.append(Entry(id="gmail", kind="mcp", risk="outward", server={"type": "http", "url": "http://demo"},
                          outward_tools=["send*"], description="Search, read and send email (demo)"))
     entries.append(Entry(id="tiktok", kind="mcp", risk="outward", server={"type": "http", "url": "http://demo"},
                          outward_tools=["post*", "schedule*"], description="Read post stats, schedule posts (demo)"))
+    if connectors:  # what your claude.ai connectors look like in the app (demo: nothing is called)
+        from .catalog import connector_entries
+        from .connectors import Connector
+        entries += connector_entries([Connector("claude.ai Figma", "https://mcp.figma.com/mcp", "connected"),
+                                      Connector("claude.ai Notion", "https://mcp.notion.com/mcp", "connected"),
+                                      Connector("claude.ai Slack", "https://mcp.slack.com/mcp", "needs_auth")])
     return Catalog(entries)
 
 

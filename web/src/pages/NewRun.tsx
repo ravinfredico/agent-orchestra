@@ -128,7 +128,7 @@ export function NewRun() {
                   return (
                     <button key={e.id} type="button" className="chip" disabled={off} aria-pressed={!off && selected.includes(e.id)}
                       title={e.unavailable ? `Not set up: ${e.unavailable}` : e.description} onClick={() => toggleTool(e.id)}>
-                      {e.id}{e.risk === 'outward' ? ' · asks first' : ''}
+                      {e.label ?? e.id}{e.risk === 'outward' ? ' · asks first' : ''}
                     </button>
                   )
                 })}

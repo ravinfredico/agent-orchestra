@@ -14,6 +14,7 @@ from . import checks, prompts
 from .approvals import make_can_use_tool
 from .catalog import Catalog, load_catalog
 from .config import TIERS, clamp_tier, step_up
+from .connectors import DISABLE_ENV
 from .playbooks import Playbook, load_playbooks
 from .runner import run_agent as default_runner
 from .state import AgentSpec, RunState, Task
@@ -389,6 +390,8 @@ class OrchestraTools:
                 plugins=toolset.plugins or None,
                 can_use_tool=can_use,
                 sandbox=sandbox,
+                env=toolset.env or None,
+                disallowed_tools=toolset.disallowed_tools or None,
                 model=(model := t.tier),
                 cwd=s.workspace,
                 max_turns=b.max_worker_turns,
@@ -424,6 +427,7 @@ class OrchestraTools:
                         max_turns=15,
                         output_schema=prompts.CHECKER_SCHEMA,
                         sandbox=sandbox,
+                        env=dict(DISABLE_ENV),
                     )
                     s.record_usage(check.turns, check.cost_usd, role="checker", model=cfg.checker_model,
                                    task_id=task_id)

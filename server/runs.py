@@ -10,7 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from orchestra import fake
-from orchestra.catalog import Catalog, load_catalog
+from orchestra.catalog import Catalog, load_catalog, with_connectors
+from orchestra.connectors import discover as discover_connectors
 from orchestra.config import Config
 from orchestra.gitsafe import RepoError, check_allowed, prepare_repo
 from orchestra.orchestrator import continue_task, create_run, execute_run, follow_up_task
@@ -46,11 +47,21 @@ class RunManager:
         self.fake_delay = fake_delay
         self.runner = runner
         self.client_factory = client_factory
-        self.catalog = catalog or (fake.demo_catalog() if self.fake_mode else load_catalog())
+        self._catalog = catalog
+        self.discover = discover_connectors   # your claude.ai connectors; swapped out in tests
         self.notify = notify
         self.repos_root = repos_root if repos_root is not None else os.environ.get("REPOS_ROOT")
         self.active: dict[str, RunHandle] = {}
         self.on_end = None   # async callback(state) after a run ends; set by the team runner
+
+    @property
+    def catalog(self) -> Catalog:
+        """The tool catalog plus your claude.ai connectors (cached 5 min; demo ones in demo mode)."""
+        if self._catalog is not None:
+            return self._catalog
+        if self.fake_mode:
+            return fake.demo_catalog(connectors=True)
+        return with_connectors(load_catalog(), self.discover())
 
     # ---- lifecycle ------------------------------------------------------------
 

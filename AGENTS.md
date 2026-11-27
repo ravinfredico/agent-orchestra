@@ -29,6 +29,7 @@ Docs:
 | `orchestra/prompts.py` | orchestrator and checker prompts, checker JSON schema |
 | `orchestra/runner.py` | `run_agent()`: one agent via `claude_agent_sdk.query()`, forwards tool use |
 | `orchestra/tools.py` | `OrchestraTools`: create_agent, assign_task (inner loop), assign_tasks (parallel batch), view_board, finish, as in-process MCP server `orchestra` |
+| `orchestra/connectors.py` | your claude.ai connectors: discovery (`claude mcp list`), catalog entries, read patterns |
 | `orchestra/checks.py` | cheap checks run before the model checker (files, words, commands when shell is on) |
 | `mcp_servers/` | MCP servers that ship with the app: `tiktok.py` (stats, drafts, posts). Catalog entries start them with `${PYTHON}` and `${ORCHESTRA_ROOT}` |
 | `orchestra/approvals.py` | `ApprovalBroker` + `can_use_tool` callback for outward tools |
@@ -116,7 +117,8 @@ These files are meant to get better over time.
   Cheap preset, `assign_tasks` with dependencies, usage by agent and model.
 - M8 (teams, triggers, steering, room) done offline. No daily cap (user's decision).
 - M6 replay page built; publishing waits for you to turn on GitHub Pages (Actions source).
-- First live run worked (2026-11-27). Next: the connectors check (task 1.13), then M9 (team builder).
+- claude.ai connectors in the catalog, scoped per agent (built offline; confirm live, task 1.13).
+- First live run worked (2026-11-27). Next: confirm connectors live, then M9 (team builder; marketing example first).
 - `main` has everything (PRs #2, #3); `feat/chacha-pa` is the working branch.
 
 ## Learnings

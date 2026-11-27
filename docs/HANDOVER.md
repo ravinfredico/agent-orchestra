@@ -44,6 +44,9 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   front, memory in the first prompt plus a line per finished run, triggers (room message, schedule,
   secret webhook), steering (message a running orchestrator, also from the run page), team room,
   team editor, Teams in the sidebar.
+- **Claude connectors (the main direction):** teams use the user's claude.ai connectors (Figma, Gmail,
+  Notion, Slack…). `orchestra/connectors.py` finds them with `claude mcp list`; each agent sees only
+  its own; reads are free, everything else asks. Built on Claude Code's docs, not yet checked live.
 - **Video-team tools (PRD section 13, "Making the TikTok team real"):** `elevenlabs` and `tiktok`
   catalog entries, `mcp_servers/tiktok.py`, `short-video` playbook. Need `ELEVENLABS_API_KEY` (+ uv)
   and `TIKTOK_ACCESS_TOKEN` in `.env`; not tried live yet.
@@ -75,10 +78,10 @@ Open http://127.0.0.1:8000.
    page then deploys on pushes to `main` that touch `web/` (or run "Replay page" in the Actions tab).
 2. **Try M7 and M8 live:** a Cheap run (does the orchestrator use tiers, checks, `assign_tasks`?),
    then a small team with one schedule slot and a mid-run message. Fix misses in the playbooks.
-3. **Connectors check (task 1.13):** can an SDK session started with the user's Claude login reach
-   their claude.ai Gmail and Calendar connectors? Until then, both are MCP entries that need
-   `GMAIL_MCP_URL/TOKEN` and `GCAL_MCP_URL/TOKEN` in `.env` (see `.env.example`).
-4. **M9 team builder:** "I want a team for stocks" gives a proposed team (members, tools, tiers,
+3. **Connectors live check (task 1.13):** on the user's laptop, `claude mcp list` should show their
+   `claude.ai ...` connectors; the Options panel should list them; a worker given one should use it,
+   and a write should ask. Fix the read patterns in `orchestra/connectors.py` if a connector misbehaves.
+4. **M9 team builder:** "I want a marketing team" gives a proposed team (members, tools, tiers,
    schedule, outputs, approvals, missing tools as setup steps) to review and save into the M8 team
    editor. TikTok and stocks are the first examples.
 5. **Leftovers:**
@@ -94,6 +97,7 @@ Open http://127.0.0.1:8000.
 - After v1: parallel agents; the orchestrator picks the cheapest model tier per task; teams for any
   goal from one message; teams are always on but only spend usage on triggers; TikTok team does
   ideas, scripts, rendered videos, posting (with approval) and stats review; stocks team never trades.
+- Teams are built around the user's claude.ai connectors (TikTok is just one example).
 - Teams: no daily cap; room messages steer a running team; schedules use the team's time zone.
 - Open: plan login vs API key for teams,
   which machine hosts always-on teams, TikTok API access, stocks markets and data source.
@@ -140,8 +144,8 @@ You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat
 State: v1 milestones M1 to M5, M7 and M8 are done and tested offline (122 pytest, 37 Vitest), plus the M6 replay page. The first live run worked. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
 keep this session lean and prefer cheap models.
 
-Task: the claude.ai connectors check (task 1.13), then M9 (team builder: "I want a team for stocks"
-gives a proposed team to review and save).
+Task: confirm the claude.ai connectors work live (task 1.13), then M9 (team builder: "I want a
+marketing team" gives a proposed team, with connectors, to review and save).
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to
 feat/chacha-pa; don't merge to main or open a PR unless I ask.

@@ -39,6 +39,8 @@ async def run_agent(
     can_use_tool: Callable | None = None,
     sandbox: dict | None = None,
     add_dirs: list[str] | None = None,
+    env: dict | None = None,
+    disallowed_tools: list[str] | None = None,
     on_tool_use: Callable[[str, dict], None] | None = None,
 ) -> AgentResult:
     """Run one agent loop until it stops, hits max_turns, or errors.
@@ -70,6 +72,10 @@ async def run_agent(
         options.sandbox = sandbox
     if add_dirs:
         options.add_dirs = add_dirs
+    if env:
+        options.env = {**(options.env or {}), **env}
+    if disallowed_tools:
+        options.disallowed_tools = disallowed_tools
     if output_schema:
         options.output_format = {"type": "json_schema", "schema": output_schema}
 

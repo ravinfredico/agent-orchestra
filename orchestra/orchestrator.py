@@ -21,7 +21,9 @@ from claude_agent_sdk import (
 
 from . import prompts
 from .approvals import ApprovalBroker
-from .catalog import Catalog, load_catalog
+from .connectors import DISABLE_ENV
+from .connectors import discover as discover_connectors
+from .catalog import Catalog, load_catalog, with_connectors
 from .config import Config
 from .playbooks import summary_lines
 from .runner import run_agent as default_runner
@@ -89,6 +91,7 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
         permission_mode="dontAsk",
         max_turns=config.budget.max_orchestrator_turns,
         setting_sources=[],
+        env=dict(DISABLE_ENV),          # your claude.ai connectors are for workers that were given them
     )
 
     try:
@@ -156,12 +159,15 @@ def _save(state: RunState) -> None:
 
 
 async def run(task: str, config: Config, runs_dir: Path = Path("runs"), workspace: Path | None = None, *,
-              branch: str | None = None, listeners=None, runner=default_runner) -> RunState:
-    """Create and execute a run in one go (CLI)."""
+              branch: str | None = None, listeners=None, runner=default_runner, catalog: Catalog | None = None,
+              connectors: bool = True) -> RunState:
+    """Create and execute a run in one go (CLI). Your claude.ai connectors join the catalog."""
     state = create_run(task, config, runs_dir, workspace, repo=str(workspace) if workspace else None,
                        branch=branch, listeners=listeners)
+    if catalog is None:
+        catalog = with_connectors(load_catalog(), discover_connectors()) if connectors else load_catalog()
     try:
-        return await execute_run(state, runner=runner)
+        return await execute_run(state, runner=runner, catalog=catalog)
     except asyncio.CancelledError:
         return state
 

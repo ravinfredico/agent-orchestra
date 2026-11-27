@@ -247,10 +247,21 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
   - mcp ids add `mcp_servers[id] = server`, and the server's tools go in `allowed_tools`, except
     outward ones
   - plugin ids add to `plugins`
-- **claude.ai connectors (status):** not verified yet; it needs your real Claude login (task 1.13).
-  Until then Gmail and Google Calendar ship as `kind: "mcp"` entries that read their URL and token from
-  `.env` (`GMAIL_MCP_URL`, `GMAIL_MCP_TOKEN`, `GCAL_MCP_URL`, `GCAL_MCP_TOKEN`). Without those they show
-  as "not set up" and the orchestrator is not offered them.
+- **claude.ai connectors (`orchestra/connectors.py`, F29 to F30):** Claude Code's docs say sessions
+  signed in with a claude.ai account, Agent SDK runs included, load the account's claude.ai connectors
+  automatically; tools are named `mcp__claude_ai_<Name>__<tool>`. So:
+  - Discovery: `claude mcp list` (health check, no model call), parsed for `claude.ai <Name>` lines,
+    cached 5 minutes. Each becomes `kind: "connector"`, id `connector.<name>`, `risk: outward`, with
+    status: connected, or "not set up" with the sign-in fix.
+  - The server adds them on every catalog read (`RunManager.catalog`); the CLI adds them per run.
+    Demo mode shows sample Figma, Notion and Slack connectors.
+  - Per agent (`Catalog.toolset`): chosen connectors go in `read_only_servers` (read name patterns
+    run freely, everything else goes through the approval callback). Connectors not chosen go in
+    `disallowed_tools`. An agent with none, the orchestrator and the checker run with
+    `ENABLE_CLAUDEAI_MCP_SERVERS=false`, so connectors aren't loaded at all.
+  - The approval callback denies any tool the agent wasn't given (`Toolset.owns`).
+  - Not yet confirmed on a real login (task 1.13). The `.env` Gmail and Calendar MCP entries stay as
+    a fallback.
 - **Plugins:** every folder in `plugins/` with `.claude-plugin/plugin.json` becomes `plugin.<name>`.
 - **App variables:** `${ORCHESTRA_ROOT}` (this repo) and `${PYTHON}` (the running Python) are filled in
   by the app, so entries can start servers that ship in `mcp_servers/` on any OS.

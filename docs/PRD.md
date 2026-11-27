@@ -195,7 +195,7 @@ Details per task: [IMPLEMENTATION.md](IMPLEMENTATION.md).
 | Plan login on a server is not clearly allowed by Anthropic's terms | Could break the hosted setup | Host on your own machine, or use an API key on a VPS. Ask Anthropic if unsure. |
 | Pro plan limits run out with several runs at once | Runs crash mid-way | Show the crash clearly. Suggest Max or fewer parallel runs. Usage cap per run. |
 | Shell and browser act on the host machine | Damage to files or accounts | Shell off by default, SDK sandbox, outward approvals, repo allowlist, Docker later. |
-| claude.ai connectors may not be reachable from the SDK | Fewer integrations | Verify in M1. Fallback: add the same services as MCP servers. |
+| claude.ai connectors may not be reachable from the SDK | Fewer integrations | Claude Code's docs say Agent SDK sessions signed in with claude.ai load them (checked 2026-11-27); the app is built for that. Confirm on your laptop. Fallback: the same services as `.env` MCP entries. |
 | The checker passes weak work | False "done" | Concrete "done when" in prompts. Checker reads files, runs tests when shell is on. |
 | The first live run is not tested yet | Unknown engine bugs | M1 ends with a real run before any UI work. |
 
@@ -208,9 +208,11 @@ Added 2026-11-27. Not part of v1. Builds on everything above.
 
 ### Goals
 1. **Parallel:** independent tasks run at the same time, so a run finishes sooner.
-2. **Teams for anything:** you describe a team in plain words ("a team for stocks", "a TikTok
-   team") and ChaCha PA designs it: members, tools, schedule, memory and outputs. The team keeps
-   existing between runs, with its own chat room.
+2. **Teams for anything, working in your real tools:** you describe a team in plain words ("a
+   marketing team", "a team for stocks") and ChaCha PA designs it: members, tools, schedule, memory
+   and outputs. Its tools are your **Claude connectors** (Figma, Gmail, Notion, Slack, Google Drive and
+   anything else you connected at claude.ai), so the team works where you already work. The team
+   keeps existing between runs, with its own chat room. TikTok is one example, not the focus.
 3. **Cheaper:** every task uses the cheapest model that can do it well, so your plan limits last longer.
 
 ### User stories
@@ -227,6 +229,21 @@ Added 2026-11-27. Not part of v1. Builds on everything above.
   sonnet. The pick and the reason are shown on the task card.
 - If a task fails on its tier, the retry moves up one tier, once.
 - You can override the tier for a team or a run.
+
+**Use my Claude connectors.** As you, I want my teams to use the connectors I already set up in
+claude.ai, so I don't configure every service twice.
+- ChaCha PA finds your claude.ai connectors by itself (`claude mcp list`, no usage) and offers them to
+  the orchestrator like any catalog tool, named after the service: Figma, Notion, Slack...
+- Each agent gets only the connectors its job needs. The others are hidden from it, and agents with
+  none don't load them at all (safer, and fewer tokens).
+- Reading through a connector is free. Anything that sends, creates, edits or deletes asks you first,
+  in the run and in the team room.
+- A connector that needs signing in shows as "not set up" with the fix (sign in once with `/mcp` in
+  Claude Code, or reconnect it at claude.ai).
+- New connectors you add at claude.ai show up within 5 minutes, no restart.
+- Example, a marketing team: a strategist reads last month's results in Notion, a copywriter drafts
+  posts, a designer builds the visuals in your Figma file (approval before it edits), and a
+  coordinator posts the plan to Slack (approval) and drafts the newsletter in Gmail.
 
 **Ask for any team.** As you, I want to say "I want a team for stocks" and get one.
 - You describe the goal in one message. The orchestrator proposes a team: members and their roles,
@@ -312,6 +329,9 @@ from ElevenLabs. Each would be one catalog entry; the team builder (F23) lists m
 | F26 | TikTok tool: post stats (read), inbox drafts and direct posts (outward, always approval), post status. Private by default until TikTok's audit. |
 | F27 | Video rendering: vertical 1080x1920 mp4 with Remotion through the sandboxed shell, checked with `ffprobe` before the model checker. |
 | F28 | A `short-video` playbook that wires F25 to F27 for TikTok, Reels and Shorts teams. |
+| F29 | Claude connectors: discover the signed-in account's claude.ai connectors and add them to the catalog with their status (connected, needs sign-in, failed). |
+| F30 | Per-agent connector scoping: an agent sees only its own connectors; reads run freely, everything else needs approval; tools it wasn't given are always denied. |
+| F31 | The team builder (F22) picks connectors for members and lists missing ones as "connect X at claude.ai" setup steps (F23). |
 
 ### Ways to keep it cheap
 - Right model per task (F16). This is the biggest saving.
@@ -335,6 +355,13 @@ from ElevenLabs. Each would be one catalog entry; the team builder (F23) lists m
 | Posting content you didn't review | Reputation | Every post needs approval, always. |
 | A stocks team's output is taken as financial advice, or tries to trade | Money loss | No trading tools in the catalog. Briefs say they are not financial advice. |
 | Teams need paid data APIs (market data, TikTok) | Extra cost and setup | The team builder lists what each team needs before you save it. |
+
+### Connector risks
+| Risk | Impact | Mitigation |
+|---|---|---|
+| A connector needs a sign-in the app can't do (no OAuth screen in background runs) | That connector is skipped | Shown as "not set up" with the fix; sign in once in Claude Code with `/mcp`. |
+| A connector tool that changes things has a read-sounding name | It runs without asking | Only clear read names (get, list, search, read…) skip approval; everything else asks. Tune the list if a connector misbehaves. |
+| Anthropic's terms: claude.ai login is for your own use, not for apps offered to others | Can't share the app on your login | ChaCha PA is personal. For other people, each uses their own login or an API key. |
 
 ### Open questions
 - ~~Hard daily usage cap for teams?~~ Decided 2026-11-27: no cap. Model routing and the Cheap preset only.

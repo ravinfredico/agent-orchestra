@@ -12,7 +12,7 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 ## Progress
 | Milestone | State |
 |---|---|
-| M1 Engine | Done offline (54 pytest tests). Open: 1.13 connectors check and 1.14 first live run, both need your Claude login. |
+| M1 Engine | Done. First live run worked. 1.13 connectors: built offline, needs one live check. |
 | M2 Server | Done (`tests/test_server.py`). |
 | M3 App core | Done. Vitest reducer + component tests, Playwright screenshots reviewed at 1440 and 390 px. |
 | M4 App complete | Done, except the manual screen reader pass in 4.6 and 4.7 (canvas additions). 4.6 automated part done: `npm run a11y` is clean. |
@@ -41,7 +41,7 @@ approvals, and has run once for real.
 | 1.10 | Sandbox (R11) | With `allow_bash`, agents get the sandbox settings and a private `.agents/<name>/` folder. Without it, no Bash and no sandbox. | options built correctly in both cases |
 | 1.11 | Split run, cancel, crash kinds (R12, R15) | `create_run()` returns at once. `execute_run()` logs `run_stopped` on cancel and `run_failed` with `kind` on errors. `auth_mode` is in `run_started`. `run()` still works for the CLI. | cancel mid-attempt gives `run_stopped` and a saved board, injected auth and limit errors map to the right kind, CLI smoke test with a fake runner |
 | 1.12 | Continue and follow-up (R14) | `continue_from()` copies the workspace and puts the parent board and final text into the first prompt. `follow_up()` copies the workspace with a new task. `parent_id` is set. | files copied, prompt contains unfinished tasks, parent link |
-| 1.13 | Verify claude.ai connectors | A short note in ARCHITECTURE.md section 9 says whether SDK sessions can reach your connectors, and which fallback is used. | manual check |
+| 1.13 | Verify claude.ai connectors | Built 2026-11-27 on Claude Code's documented behaviour (ARCHITECTURE section 9): discovery, catalog entries, per-agent scoping, approvals. Left: confirm on your laptop that a worker given `connector.<x>` can call it and others can't. | `tests/test_connectors.py`; manual check |
 | 1.14 | **First live run (CLI)** | The e-wallet task runs end to end on your Pro plan. `log.jsonl` has the full event stream. Bugs found get fixed, with a test each. | manual (see "First manual end-to-end test" below) |
 
 ## M2: Server
@@ -125,10 +125,12 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 ## M9: Team builder (after v1)
 | # | Task | Done when | Tests |
 |---|---|---|---|
+| 9.0 | Connectors in teams | Done offline 2026-11-27: connectors appear in Options and the team editor, members can be given them, approvals show in the room. | `tests/test_connectors.py` |
 | 9.1 | Propose a team | One message ("a team for stocks") gives a proposal: members, tools, tiers, schedule, outputs, approvals, missing tools as setup steps. Questions for gaps. Save on your OK. | fake orchestrator: proposal shape; missing tools listed, never invented |
 | 9.2 | Example: TikTok team | Research, scripts, Remotion videos, posting with approval, stats review. | demo scenario; posting always asks |
 | 9.2a | TikTok and ElevenLabs tools | Done offline 2026-11-27: `mcp_servers/tiktok.py` (stats, inbox drafts, direct posts, status), `elevenlabs` and `tiktok` catalog entries, `short-video` playbook, demo TikTok scenario. Live test needs your keys. | `tests/test_media_tools.py` (fake TikTok API), `test_tiktok_team_demo_in_the_room` |
 | 9.2b | TikTok token refresh | Refresh the access token with the refresh token before it expires (about 24 h). | fake token endpoint |
+| 9.4 | Example: marketing team | Strategist (Notion), copywriter, designer (Figma, approval before edits), coordinator (Slack and Gmail, approval). Demo scenario. | demo scenario; every connector write asks |
 | 9.3 | Example: stocks team | Watchlist, daily brief, research on request, alerts. No trading tools. "Not financial advice" in briefs. | demo scenario; no trading tool in the catalog |
 
 ## Later

@@ -27,6 +27,9 @@ agents, give them tasks, and keep going until every task has passed verification
 
 Tools marked "outward" act on the outside world (send email, create events). The user must approve
 each such action, so only give them to an agent when the task really needs it.
+Tools named `connector.*` are the user's own claude.ai connectors (Figma, Gmail, Notion, Slack...).
+Give a connector only to the agent whose task needs it. Reading through it is free; anything that
+sends, creates or changes something there asks the user first, so batch such actions.
 
 ## Playbooks
 {playbook_lines}
