@@ -298,8 +298,8 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | orchestrator_said | Orchestrator message |
 | nudge | Nothing visible (raw log only) |
 | agent_created | Joined line, rail team row, run bar face |
-| task_assigned | New task card (queued) |
-| attempt_started | Card working / retrying, character working |
+| task_assigned | New task card (queued). Tier chip and reason on the card (M7, canvas pending) |
+| attempt_started | Card working / retrying, character working. Tier chip updates on a step-up |
 | worker_activity | Activity line |
 | file_written | Rail files list, file count badge |
 | checker_started | Card checking, character waiting |

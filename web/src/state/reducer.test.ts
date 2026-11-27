@@ -21,6 +21,15 @@ describe('reducer', () => {
     expect(r.final).toMatch(/report\.md/)
   })
 
+  it('tracks the model tier and the step-up after a failed attempt', () => {
+    const r = reduceAll(demoEvents)
+    const a = r.tasks['analysis-1']
+    expect(a.tierReason).toBe('tables from notes')
+    expect(a.history.map((h) => h.tier)).toEqual(['haiku', 'sonnet'])
+    expect(a.tier).toBe('sonnet')
+    expect(r.agents.writer.model).toBe('sonnet')
+  })
+
   it('builds the thread in event order with joined lines grouped', () => {
     const r = reduceAll(demoEvents)
     const kinds = r.thread.map((i) => i.kind)

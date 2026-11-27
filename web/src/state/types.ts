@@ -16,6 +16,7 @@ export interface Agent {
   role: string
   tools: string[]
   model: string
+  tierReason: string
   colorIndex: number
   activity: string          // latest worker_activity summary while working
   currentTask: string | null
@@ -25,6 +26,7 @@ export interface Agent {
 
 export interface Attempt {
   attempt: number
+  tier: string
   passed: boolean
   reason: string
   short: string
@@ -42,6 +44,8 @@ export interface TaskCardState {
   attempts: number
   short: string
   history: Attempt[]
+  tier: string              // model tier of the current attempt
+  tierReason: string
 }
 
 export interface Approval {

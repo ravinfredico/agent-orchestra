@@ -53,7 +53,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       break
     case 'agent_created': {
       r.agents[e.name] = {
-        name: e.name, role: e.role ?? '', tools: e.tools ?? [], model: e.model ?? '',
+        name: e.name, role: e.role ?? '', tools: e.tools ?? [], model: e.model ?? '', tierReason: e.tier_reason ?? '',
         colorIndex: e.color_index ?? r.agentOrder.length, activity: '', currentTask: null, passed: 0, failed: 0,
       }
       r.agentOrder = [...r.agentOrder, e.name]
@@ -69,6 +69,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       r.tasks[e.task_id] = {
         taskId: e.task_id, title: e.title || e.task_id, agent: e.agent, task: e.task ?? '', doneWhen: e.done_when ?? '',
         replaces: e.replaces ?? '', replacedBy: '', status: 'pending', attempts: 0, short: '', history: [],
+        tier: e.tier ?? '', tierReason: e.tier_reason ?? '',
       }
       r.thread.push({ kind: 'task', seq: e.seq, taskId: e.task_id })
       r.replanning = false
@@ -77,6 +78,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       const t = task(e.task_id)
       if (t) {
         t.attempts = e.attempt
+        if (e.tier) t.tier = e.tier
         t.status = e.attempt > 1 ? 'retrying' : 'running'
         const a = agent(t.agent)
         if (a) { a.currentTask = t.taskId; a.activity = '' }
@@ -107,7 +109,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (t) {
         t.status = 'sent_back'
         t.short = e.short ?? ''
-        t.history = [...t.history, { attempt: e.attempt, passed: false, reason: e.reason ?? '', short: e.short ?? '' }]
+        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: false, reason: e.reason ?? '', short: e.short ?? '' }]
         announce(r, e, `${t.title}: try ${e.attempt} sent back. ${e.short || e.reason || ''}`)
       }
       break
@@ -117,7 +119,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (t) {
         t.status = 'done'
         t.short = e.short ?? ''
-        t.history = [...t.history, { attempt: e.attempt, passed: true, reason: e.reason ?? '', short: e.short ?? '' }]
+        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: true, reason: e.reason ?? '', short: e.short ?? '' }]
         const a = agent(t.agent)
         if (a) { a.currentTask = null; a.activity = ''; a.passed += 1 }
         announce(r, e, `${t.title} passed`)

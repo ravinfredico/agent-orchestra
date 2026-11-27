@@ -36,16 +36,19 @@ def fold(run_dir: Path) -> dict:
             d["playbook"] = {"id": e.get("id"), "title": e.get("title")}
         elif t == "agent_created":
             agents[e["name"]] = {"name": e["name"], "role": e.get("role", ""), "tools": e.get("tools", []),
-                                 "model": e.get("model", ""), "color_index": e.get("color_index", len(agents)),
+                                 "model": e.get("model", ""), "tier_reason": e.get("tier_reason", ""),
+                                 "color_index": e.get("color_index", len(agents)),
                                  "status": "idle"}
         elif t == "task_assigned":
             board[e["task_id"]] = {"task_id": e["task_id"], "title": e.get("title", ""), "agent": e["agent"],
                                    "task": e.get("task", ""), "done_when": e.get("done_when", ""),
                                    "replaces": e.get("replaces", ""), "replaced_by": "", "status": "pending",
-                                   "attempts": 0, "feedback": "", "short": "", "history": []}
+                                   "attempts": 0, "feedback": "", "short": "", "history": [],
+                                   "tier": e.get("tier", ""), "tier_reason": e.get("tier_reason", "")}
         elif t == "attempt_started" and e["task_id"] in board:
             b = board[e["task_id"]]
             b["attempts"] = e["attempt"]
+            b["tier"] = e.get("tier") or b["tier"]
             b["status"] = "running" if e["attempt"] == 1 else "retrying"
             if b["agent"] in agents:
                 agents[b["agent"]]["status"] = "working"
@@ -57,11 +60,11 @@ def fold(run_dir: Path) -> dict:
         elif t == "attempt_failed" and e["task_id"] in board:
             b = board[e["task_id"]]
             b.update(status="retrying", feedback=e.get("reason", ""), short=e.get("short", ""))
-            b["history"].append({"attempt": e["attempt"], "passed": False, "reason": e.get("reason", ""), "short": e.get("short", "")})
+            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": False, "reason": e.get("reason", ""), "short": e.get("short", "")})
         elif t == "task_passed" and e["task_id"] in board:
             b = board[e["task_id"]]
             b.update(status="done", feedback=e.get("reason", ""), short=e.get("short", ""))
-            b["history"].append({"attempt": e["attempt"], "passed": True, "reason": e.get("reason", ""), "short": e.get("short", "")})
+            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": True, "reason": e.get("reason", ""), "short": e.get("short", "")})
             if b["agent"] in agents:
                 agents[b["agent"]]["status"] = "idle"
         elif t == "task_failed" and e["task_id"] in board:

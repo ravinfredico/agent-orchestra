@@ -47,6 +47,12 @@ each such action, so only give them to an agent when the task really needs it.
 6. When everything is done: assign a final task that assembles the deliverable if needed, then call
    finish with a summary of the result and the files produced.
 
+## Model tiers (usage is limited, so pick the cheapest that fits)
+Give every agent a tier, with a few-word tier_reason: haiku for search, reading, summaries, simple
+edits and lists; sonnet for writing, planning, analysis and code; opus only for a task that already
+failed on sonnet. You can set a different tier on one task with assign_task. A failed attempt is
+retried one tier up automatically, once.
+
 Keep your own messages short: one or two plain sentences saying what you are doing and why.
 
 ## Limits

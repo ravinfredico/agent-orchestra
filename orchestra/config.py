@@ -2,6 +2,24 @@
 
 from dataclasses import asdict, dataclass, field
 
+# Model tiers, cheapest first. A failed task retries one tier up, once, up to `max_tier`.
+TIERS = ["haiku", "sonnet", "opus"]
+
+
+def tier_rank(tier: str) -> int:
+    return TIERS.index(tier) if tier in TIERS else TIERS.index("sonnet")
+
+
+def step_up(tier: str, max_tier: str) -> str | None:
+    """The next tier up, or None if `tier` is already at `max_tier` (or the top)."""
+    nxt = tier_rank(tier) + 1
+    return TIERS[nxt] if nxt < len(TIERS) and nxt <= tier_rank(max_tier) else None
+
+
+def clamp_tier(tier: str, max_tier: str) -> str:
+    return TIERS[min(tier_rank(tier), tier_rank(max_tier))]
+
+
 # Tools the checker uses to inspect work. Read-only on purpose (plus Bash when shell is allowed).
 CHECKER_TOOLS = ["Read", "Glob", "Grep"]
 
@@ -22,7 +40,9 @@ class Budget:
 @dataclass
 class Config:
     orchestrator_model: str = "sonnet"
-    worker_model: str = "sonnet"
+    worker_model: str = "sonnet"        # default tier when the orchestrator names none
+    pick_tier: bool = True              # the orchestrator picks a tier per agent and task
+    max_tier: str = "opus"              # highest tier a pick or a step-up may reach
     checker_model: str = "haiku"
     allow_bash: bool = False
     budget: Budget = field(default_factory=Budget)
@@ -41,6 +61,9 @@ class Config:
             "orchestrator_model": self.orchestrator_model,
             "worker_model": self.worker_model,
             "checker_model": self.checker_model,
+            "pick_tier": self.pick_tier,
+            "max_tier": self.max_tier,
+            "max_steps": b.max_worker_turns,
             "max_cost": b.max_cost_usd,
             "max_agents": b.max_agents,
             "max_assignments": b.max_assignments,
@@ -57,6 +80,8 @@ class Config:
             orchestrator_model=o.get("orchestrator_model") or "sonnet",
             worker_model=o.get("worker_model") or "sonnet",
             checker_model=o.get("checker_model") or "haiku",
+            pick_tier=bool(o.get("pick_tier", True)),
+            max_tier=o.get("max_tier") if o.get("max_tier") in TIERS else "opus",
             allow_bash=bool(o.get("allow_bash", False)),
             catalog=o.get("catalog") or None,
             allowed_domains=list(o.get("allowed_domains") or []),
@@ -65,9 +90,10 @@ class Config:
                 max_agents=int(o.get("max_agents", 6)),
                 max_assignments=int(o.get("max_assignments", 15)),
                 max_attempts_per_task=int(o.get("max_attempts", 3)),
+                max_worker_turns=int(o.get("max_steps", 25)),
                 max_cost_usd=float(o.get("max_cost", 5.0)),
             ),
         )
 
 
-__all__ = ["Budget", "Config", "CHECKER_TOOLS", "asdict"]
+__all__ = ["Budget", "Config", "CHECKER_TOOLS", "TIERS", "asdict", "clamp_tier", "step_up", "tier_rank"]

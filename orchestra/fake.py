@@ -171,10 +171,12 @@ def demo_runner(delay: float = 0.6) -> FakeRunner:
 async def demo_script(tools):
     await tools.read_playbook({"id": "research-report"})
     yield "Plan: research each wallet, compare fees and features, then write the report. Research comes first. Hiring three agents."
-    for name, role, tl in [("researcher", "Finds fees, features and sources for each wallet", ["web", "files.write"]),
-                           ("analyst", "Turns research notes into comparison tables", ["files.read", "files.write"]),
-                           ("writer", "Writes the final report from the analysis", ["files.read", "files.write"])]:
-        await tools.create_agent({"name": name, "role": role, "system_prompt": f"You are the {name}.", "tools": tl})
+    for name, role, tl, tier, why in [
+            ("researcher", "Finds fees, features and sources for each wallet", ["web", "files.write"], "haiku", "search and notes"),
+            ("analyst", "Turns research notes into comparison tables", ["files.read", "files.write"], "haiku", "tables from notes"),
+            ("writer", "Writes the final report from the analysis", ["files.read", "files.write"], "sonnet", "long-form writing")]:
+        await tools.create_agent({"name": name, "role": role, "system_prompt": f"You are the {name}.", "tools": tl,
+                                  "tier": tier, "tier_reason": why})
     await tools.assign_task({"agent": "researcher", "task_id": "research-1", "title": "Research wallets",
                              "task": "[research] Research GoPay, OVO, DANA, ShopeePay and LinkAja. One file per wallet in research/.",
                              "done_when": "research/ has 5 files, each with fees, features and 3+ source URLs"})
@@ -187,7 +189,8 @@ async def demo_script(tools):
     if res.get("is_error"):
         yield "The writer can't search the research files. I'm hiring an editor who can, and giving it the report. It will email you when done."
         await tools.create_agent({"name": "editor", "role": "Assembles the report and compiles every source",
-                                  "system_prompt": "You are the editor.", "tools": ["files.read", "files.write", "gmail"]})
+                                  "system_prompt": "You are the editor.", "tools": ["files.read", "files.write", "gmail"],
+                                  "tier": "sonnet", "tier_reason": "editing and sources"})
         await tools.assign_task({"agent": "editor", "task_id": "report-2", "title": "Rewrite the report", "replaces": "report-1",
                                  "task": "[report-editor] Rewrite report.md. Grep research/ for every https:// URL and list them under Sources. Then email the user.",
                                  "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources"})
@@ -268,9 +271,9 @@ async def demo_build_script(tools):
         yield "Shell is off, so nobody can run the code or the tests. Turn on shell commands for a checked build."
     extra = ["shell"] if shell else []
     await tools.create_agent({"name": "developer", "role": "Writes and fixes the app code", "system_prompt": "You are the developer.",
-                              "tools": ["files.read", "files.write", *extra]})
+                              "tools": ["files.read", "files.write", *extra], "tier": "sonnet", "tier_reason": "writes code"})
     await tools.create_agent({"name": "tester", "role": "Writes pytest tests and runs them", "system_prompt": "You are the tester.",
-                              "tools": ["files.read", "files.write", *extra]})
+                              "tools": ["files.read", "files.write", *extra], "tier": "haiku", "tier_reason": "tests from a spec"})
     await tools.assign_task({"agent": "developer", "task_id": "app-1", "title": "Write the todo app",
                              "task": "[dev-core] Write todo.py: add, list, done N, remove N. Save todos in todos.json.",
                              "done_when": '`python todo.py add "buy milk"` then `python todo.py list` prints "1. [ ] buy milk"'})

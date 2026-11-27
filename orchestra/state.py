@@ -41,7 +41,8 @@ class AgentSpec:
     system_prompt: str
     tools: list[str]               # catalog ids
     color_index: int = 0
-    model: str = ""
+    model: str = ""                # tier: haiku | sonnet | opus
+    tier_reason: str = ""
 
 
 @dataclass
@@ -58,6 +59,8 @@ class Task:
     output: str = ""
     feedback: str = ""
     short: str = ""                # checker's few-word reason, for the task card
+    tier: str = ""                 # model tier of the current attempt
+    tier_reason: str = ""
 
 
 @dataclass
@@ -143,6 +146,7 @@ class RunState:
                     "agent": t.agent,
                     "status": t.status,
                     "attempts": t.attempts,
+                    "tier": t.tier,
                     "done_when": t.done_when,
                     "last_feedback": t.feedback[:500],
                 }

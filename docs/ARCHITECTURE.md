@@ -166,9 +166,9 @@ Every line in `log.jsonl` and every SSE message is one event:
 | `playbook_chosen` | `id, title` | orchestrator read a playbook (section 9b) |
 | `orchestrator_said` | `text` | orchestrator's text blocks |
 | `nudge` | `round, pending` | engine pushed the orchestrator to continue; shown only in the raw log |
-| `agent_created` | `name, role, tools, model, color_index` | `tools` are catalog ids |
-| `task_assigned` | `task_id, title, agent, task, done_when, replaces` | |
-| `attempt_started` | `task_id, attempt` | |
+| `agent_created` | `name, role, tools, model, tier_reason, color_index` | `tools` are catalog ids. `model` is the agent's tier (haiku, sonnet, opus) |
+| `task_assigned` | `task_id, title, agent, task, done_when, replaces, tier, tier_reason` | `tier` is the task's model, from the task or its agent |
+| `attempt_started` | `task_id, attempt, tier` | `tier` goes up one step after a failed attempt, once (M7) |
 | `worker_activity` | `task_id, agent, tool, summary` | `summary` max 80 chars, e.g. "reading research/dana.md" |
 | `file_written` | `task_id, agent, path, size` | path relative to the workspace |
 | `checker_started` | `task_id, attempt` | |

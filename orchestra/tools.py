@@ -12,6 +12,7 @@ from claude_agent_sdk import create_sdk_mcp_server, tool
 from . import prompts
 from .approvals import make_can_use_tool
 from .catalog import Catalog, load_catalog
+from .config import TIERS, clamp_tier, step_up
 from .playbooks import Playbook, load_playbooks
 from .runner import run_agent as default_runner
 from .state import AgentSpec, RunState, Task
@@ -119,19 +120,35 @@ class OrchestraTools:
         if unknown:
             return _err(f"Unknown tools {unknown}. Choose only from the catalog: {available}")
 
+        tier, tier_reason, problem = self._pick_tier(args, s.config.worker_model)
+        if problem:
+            return _err(problem)
         spec = AgentSpec(
             name=name,
             role=str(args.get("role", "")),
             system_prompt=str(args.get("system_prompt", "")),
             tools=requested,
             color_index=len(s.agents),
-            model=s.config.worker_model,
+            model=tier,
+            tier_reason=tier_reason,
         )
         s.agents[name] = spec
         s.log("agent_created", name=name, role=spec.role, tools=requested, model=spec.model,
-              color_index=spec.color_index)
+              tier_reason=tier_reason, color_index=spec.color_index)
         s.save_board()
         return _ok(f"Created agent '{name}' with tools {requested}.")
+
+    def _pick_tier(self, args: dict, default: str) -> tuple[str, str, str]:
+        """(tier, reason, error). With pick_tier off, the run's worker model always wins."""
+        cfg = self.s.config
+        asked = str(args.get("tier", "") or "").strip().lower()
+        if asked and asked not in TIERS:
+            return "", "", f"tier must be one of {TIERS}"
+        if not cfg.pick_tier:
+            return clamp_tier(cfg.worker_model, cfg.max_tier), "set by the run", ""
+        tier = clamp_tier(asked or default, cfg.max_tier)
+        reason = str(args.get("tier_reason", "") or "").strip()[:120]
+        return tier, reason, ""
 
     # ---- assign_task: the inner retry + verify loop ------------------------
 
@@ -159,13 +176,19 @@ class OrchestraTools:
             s.log("budget_exhausted", reason=problem)
             return _err(f"Out of budget: {problem}. Call finish with give_up=true.")
 
-        s.usage.assignments += 1
         agent = s.agents[agent_name]
+        tier, tier_reason, problem = self._pick_tier(args, agent.model or cfg.worker_model)
+        if problem:
+            return _err(problem)
+        if not args.get("tier") and cfg.pick_tier:
+            tier_reason = agent.tier_reason  # inherited from the agent
+
+        s.usage.assignments += 1
         t = Task(task_id=task_id, agent=agent_name, task=task_text, done_when=done_when,
-                 title=title[:60], status="pending", replaces=replaces)
+                 title=title[:60], status="pending", replaces=replaces, tier=tier, tier_reason=tier_reason)
         s.board[task_id] = t
         s.log("task_assigned", task_id=task_id, title=t.title, agent=agent_name, task=task_text,
-              done_when=done_when, replaces=replaces)
+              done_when=done_when, replaces=replaces, tier=tier, tier_reason=tier_reason)
 
         toolset = self.catalog.toolset(agent.tools, cfg)
         scratch = s.workspace / ".agents" / agent_name
@@ -177,10 +200,11 @@ class OrchestraTools:
                 sandbox["network"] = {"allowedDomains": list(cfg.allowed_domains)}
 
         feedback: list[str] = []
+        stepped_up = False
         for attempt in range(1, b.max_attempts_per_task + 1):
             t.attempts = attempt
             t.status = "running" if attempt == 1 else "retrying"
-            s.log("attempt_started", task_id=task_id, attempt=attempt)
+            s.log("attempt_started", task_id=task_id, attempt=attempt, tier=t.tier)
 
             # 1. worker does the task
             reported: set[str] = set()
@@ -208,7 +232,7 @@ class OrchestraTools:
                 plugins=toolset.plugins or None,
                 can_use_tool=can_use,
                 sandbox=sandbox,
-                model=cfg.worker_model,
+                model=t.tier,
                 cwd=s.workspace,
                 max_turns=b.max_worker_turns,
                 on_tool_use=on_tool_use,
@@ -250,6 +274,10 @@ class OrchestraTools:
                         f"Worker report:\n{work.text[:MAX_OUTPUT_BACK]}"
                     )
                 fb = reason or "Checker gave no reason"
+                # it failed on its tier: the next try moves one tier up, once
+                if (attempt < b.max_attempts_per_task and not stepped_up
+                        and (nxt := step_up(t.tier, cfg.max_tier))):
+                    t.tier, stepped_up = nxt, True
 
             feedback.append(fb)
             t.feedback, t.short = fb, short
@@ -333,6 +361,9 @@ class OrchestraTools:
                     "role": {"type": "string", "description": "One line describing the specialty"},
                     "system_prompt": {"type": "string", "description": "Full instructions for this agent"},
                     "tools": {"type": "array", "items": {"type": "string", "enum": available}},
+                    "tier": {"type": "string", "enum": TIERS,
+                             "description": "Model: haiku for search, reading, summaries, simple edits; sonnet for writing, planning, code; opus only after a task failed on sonnet"},
+                    "tier_reason": {"type": "string", "description": "A few words on why this tier, shown to the user"},
                 },
                 "required": ["name", "role", "system_prompt", "tools"],
             },
@@ -350,6 +381,9 @@ class OrchestraTools:
                     "task": {"type": "string", "description": "Exact instructions, inputs, and output file names"},
                     "done_when": {"type": "string", "description": "Concrete criteria a checker can verify from files"},
                     "replaces": {"type": "string", "description": "Optional: id of a FAILED task this one supersedes"},
+                    "tier": {"type": "string", "enum": TIERS,
+                             "description": "Optional, defaults to the agent's tier. Model: haiku for search, reading, summaries, simple edits; sonnet for writing, planning, code; opus only after a task failed on sonnet"},
+                    "tier_reason": {"type": "string", "description": "A few words on why this tier, shown to the user"},
                 },
                 "required": ["agent", "task_id", "title", "task", "done_when"],
             },
