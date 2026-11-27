@@ -12,6 +12,7 @@ from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Reques
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 
+from orchestra import builder, fake
 from orchestra.playbooks import load_playbooks
 from orchestra.state import TERMINAL_EVENTS, auth_mode, read_events
 
@@ -237,7 +238,21 @@ def create_app(manager: RunManager | None = None, runs_dir: Path = Path("runs"),
         return teams.catalog_ids()
 
     def team_out(t: dict) -> dict:
-        return {**t, "active_run": teams.active_run(t["id"])}
+        return {**t, "active_run": teams.active_run(t["id"]), **builder.review(t, mgr.catalog)}
+
+    @app.post("/api/teams/propose", dependencies=guard)
+    async def propose_team(body: dict = Body(...)):
+        """Team builder (M9): one message in, a proposed team out. Nothing is saved."""
+        goal = str(body.get("goal", "")).strip()
+        if not goal:
+            raise HTTPException(400, "Describe the team first")
+        try:
+            if mgr.fake_mode:
+                await asyncio.sleep(mgr.fake_delay)
+                return {**builder.clean_proposal(fake.demo_proposal(goal), mgr.catalog), "cost_usd": 0.0}
+            return await builder.propose(goal, mgr.catalog, runner=mgr.runner)
+        except ValueError as e:
+            raise HTTPException(422, f"Couldn't design a team: {e}. Your message is kept.")
 
     @app.get("/api/teams", dependencies=guard)
     async def list_teams():

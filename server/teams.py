@@ -208,9 +208,11 @@ def clean_team(data: dict, catalog_ids: list[str]) -> dict:
         tier = m.get("tier") or "sonnet"
         if tier not in TIERS:
             raise TeamError(400, f"{mname}: tier must be one of {TIERS}")
+        # wants: tools the team builder asked for that aren't in the catalog yet (setup steps)
+        wants = [str(w)[:80] for w in dict.fromkeys(m.get("wants") or []) if str(w).strip() and w not in tools][:10]
         members.append({"name": mname, "role": str(m.get("role", ""))[:200],
                         "system_prompt": str(m.get("system_prompt", "") or f"You are the team's {mname}.")[:8000],
-                        "tools": tools, "tier": tier})
+                        "tools": tools, "wants": wants, "tier": tier})
     schedule = []
     for slot in data.get("schedule") or []:
         cron, task = str(slot.get("cron", "")).strip(), str(slot.get("task", "")).strip()
@@ -229,7 +231,8 @@ def clean_team(data: dict, catalog_ids: list[str]) -> dict:
             raise TeamError(400, f"Unknown time zone '{tz}'. Use a name like Asia/Jakarta, or leave it empty for this machine's.")
     hook = data.get("hook") or {}
     options = Config.from_options(data.get("options") or {}).to_options()
-    return {"name": name, "goal": str(data.get("goal", "")).strip()[:2000], "members": members,
+    outputs = [str(o).strip()[:200] for o in (data.get("outputs") or []) if str(o).strip()][:8]
+    return {"name": name, "goal": str(data.get("goal", "")).strip()[:2000], "members": members, "outputs": outputs,
             "schedule": schedule, "timezone": tz, "enabled": bool(data.get("enabled", True)),
             "hook": {"enabled": bool(hook.get("enabled", False)), "task": str(hook.get("task", "")).strip()[:4000]},
             "options": options}

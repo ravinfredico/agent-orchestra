@@ -72,8 +72,12 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
     state.tools = tools
     task = state.task
     if state.team:  # a saved team: its members exist before the orchestrator starts
+        available = catalog.available_ids(config)
         for m in state.team.get("members", []):
-            await tools.create_agent({**m, "tier_reason": m.get("tier_reason") or "team member"})
+            # a tool that isn't set up yet is skipped; a wanted connector joins once you connect it
+            usable = [t for t in list(m.get("tools", [])) + list(m.get("wants", [])) if t in available]
+            await tools.create_agent({**m, "tools": list(dict.fromkeys(usable)),
+                                      "tier_reason": m.get("tier_reason") or "team member"})
         task = f"{prompts.team_context(state.team)}\n{task}"
     if state.repo:
         task = (f"{task}\n\nYou are working in an EXISTING codebase at the workspace root. "

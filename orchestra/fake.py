@@ -395,14 +395,121 @@ async def demo_tiktok_script(tools):
         yield line
 
 
+# ---- Marketing team (M9 demo): proposal and run ------------------------------------------
+
+MARKETING_PROPOSAL = {
+    "name": "Marketing team",
+    "goal": "Plan the week's social posts from last month's results and draft the newsletter. Nothing goes out without your OK.",
+    "summary": "Here is a team of 4 built on your Notion, Figma, Slack and Gmail. Check it, change anything, then save. Nothing runs until you do.",
+    "members": [
+        {"name": "strategist", "role": "Reads last month's results in Notion and sets the week's angle", "tier": "haiku",
+         "tools": ["connector.notion", "files.write"],
+         "system_prompt": "You are the team's strategist. Read last month's results in Notion and pick one angle for the week. Write insights.md with 3 numbers and the angle."},
+        {"name": "copywriter", "role": "Writes the posts, captions and newsletter text", "tier": "sonnet",
+         "tools": ["files.read", "files.write"],
+         "system_prompt": "You are the team's copywriter. Write short, specific posts in the brand's voice from insights.md. No filler, one idea per post."},
+        {"name": "designer", "role": "Builds the visuals in your Figma file", "tier": "sonnet",
+         "tools": ["connector.figma", "files.read"],
+         "system_prompt": "You are the team's designer. Build one visual per post in the team's Figma file, using its existing styles. Ask before you edit."},
+        {"name": "coordinator", "role": "Posts the plan to Slack and drafts the newsletter in Gmail", "tier": "haiku",
+         "tools": ["connector.slack", "connector.gmail", "files.read", "files.write"],
+         "system_prompt": "You are the team's coordinator. Post the week's plan to Slack and draft the newsletter in Gmail. Every post and draft waits for approval."},
+    ],
+    "schedule": [{"cron": "0 9 * * 1", "task": "Plan this week's posts: angle, 5 posts, visuals, and the plan in Slack"},
+                 {"cron": "0 16 * * 5", "task": "Draft this week's newsletter in Gmail from what we posted"}],
+    "outputs": ["Weekly content plan (plan.md)", "5 post drafts with captions", "Visuals in your Figma file", "Newsletter draft in Gmail"],
+    "questions": [{"question": "Which Slack channel gets the plan?", "options": ["#marketing", "#general"]}],
+}
+
+TIKTOK_PROPOSAL = {
+    "name": "TikTok studio", "goal": "Make and schedule 3 TikToks a week and learn from the stats. Posting always asks first.",
+    "summary": "Here is a team of 5 that researches, writes, renders and schedules TikToks. Check it, then save.",
+    "members": TIKTOK_MEMBERS,
+    "schedule": [{"cron": "0 9 * * 1", "task": "Make this week's 3 TikToks and schedule them"}],
+    "outputs": ["trends.md and stats.md", "3 scripts", "3 vertical videos", "3 scheduled posts"],
+    "questions": [{"question": "Which niche?", "options": ["Student life", "Food", "Tech"]}],
+}
+
+_MARKETING_KEYWORDS = re.compile(r"marketing|newsletter|campaign|brand|social media", re.I)
+
+
+def demo_proposal(goal: str) -> dict:
+    """Demo mode team builder: the model's answer for a marketing (default) or TikTok team."""
+    import copy
+    return copy.deepcopy(TIKTOK_PROPOSAL if _TIKTOK_KEYWORDS.search(goal or "") else MARKETING_PROPOSAL)
+
+
+def demo_marketing_runner(delay: float = 0.6) -> FakeRunner:
+    return FakeRunner({
+        "[mk-insights]": FakeTask(
+            shorts=["3 numbers, 1 angle"], reasons=["insights.md has 3 numbers from last month's Notion report and one angle."],
+            tools=[("mcp__claude_ai_Notion__notion-search", {"query": "October results"}),
+                   ("mcp__claude_ai_Notion__notion-fetch", {"id": "october-results"})],
+            files=[("insights.md", "# Last month\n\n- Carousel posts: 3.1x the saves of single images\n- Best day: Tuesday\n"
+                                   "- Newsletter open rate: 41%\n\nAngle this week: behind-the-scenes carousels.")], cost=0.04),
+        "[mk-posts]": FakeTask(
+            verdicts=[False, True], shorts=["post 4 has no call to action", "5 posts, each with a call to action"],
+            reasons=["Post 4 ends without a call to action; the done-when asks for one in every post.",
+                     "5 posts, each under 150 words with a caption and a call to action."],
+            tools=[("Read", {"file_path": "insights.md"})],
+            files=[(f"posts/0{i}.md", f"# Post {i}\n\nBehind the scenes, part {i}.\n\nCTA: save this for later.") for i in range(1, 6)],
+            cost=0.18),
+        "[mk-visuals]": FakeTask(
+            shorts=["5 frames in Figma"], reasons=["visuals.md links 5 frames, one per post, in the team's Figma file."],
+            tools=[("mcp__claude_ai_Figma__get_metadata", {"fileKey": "brand-kit"})],
+            outward=("mcp__claude_ai_Figma__use_figma", {"action": "create 5 carousel frames from the brand kit"}),
+            files=[("visuals.md", "# Visuals\n\n5 carousel frames in Figma, page 'Week 48'.")], cost=0.12),
+        "[mk-plan]": FakeTask(
+            shorts=["plan and newsletter drafted"],
+            reasons=["plan.md lists 5 posts with days; slack-post.md and newsletter.md are ready. Slack is not signed in, so nothing was posted."],
+            tools=[("Read", {"file_path": "posts/01.md"})],
+            files=[("plan.md", "# Week 48\n\n| Day | Post |\n|---|---|\n| Tue | Post 1 |\n| Wed | Post 2 |\n| Thu | Post 3 |\n| Fri | Post 4 |\n| Sat | Post 5 |"),
+                   ("slack-post.md", "Week 48 plan: behind-the-scenes carousels, Tue to Sat. Details in plan.md."),
+                   ("newsletter.md", "# This week\n\nA look behind the scenes...")], cost=0.05),
+    }, delay=delay)
+
+
+async def demo_marketing_script(tools):
+    yield ("Plan: the strategist reads last month's results in Notion, the copywriter writes 5 posts, then the designer "
+           "builds visuals in Figma (after you approve) while the coordinator drafts the plan and newsletter.")
+    for m in MARKETING_PROPOSAL["members"]:
+        if m["name"] not in tools.s.agents:
+            avail = tools.catalog.available_ids(tools.s.config)
+            await tools.create_agent({**m, "tools": [t for t in m["tools"] if t in avail], "tier_reason": "team member"})
+    await tools.assign_task({"agent": "strategist", "task_id": "insights-1", "title": "Read last month's results",
+                             "task": "[mk-insights] Read last month's results in Notion. Save insights.md with 3 numbers and one angle.",
+                             "done_when": "insights.md has 3 numbers and one angle",
+                             "checks": [{"type": "file_exists", "path": "insights.md"}]})
+    await tools.assign_task({"agent": "copywriter", "task_id": "posts-1", "title": "Write 5 posts",
+                             "task": "[mk-posts] Write 5 posts from insights.md, one file each in posts/.",
+                             "done_when": "5 posts, each under 150 words with a caption and a call to action",
+                             "checks": [{"type": "file_count", "glob": "posts/*.md", "min": 5}]})
+    await tools.assign_tasks({"tasks": [
+        {"agent": "designer", "task_id": "visuals-1", "title": "Build 5 visuals in Figma", "owns": ["visuals.md"],
+         "task": "[mk-visuals] Build one carousel frame per post in the team's Figma file. List them in visuals.md.",
+         "done_when": "5 frames in Figma, listed in visuals.md"},
+        {"agent": "coordinator", "task_id": "plan-1", "title": "Plan and newsletter", "owns": ["plan.md", "slack-post.md", "newsletter.md"],
+         "task": "[mk-plan] Write plan.md, the Slack post and the newsletter draft. Slack is not signed in yet: save the post to slack-post.md.",
+         "done_when": "plan.md, slack-post.md and newsletter.md exist",
+         "checks": [{"type": "file_exists", "path": "plan.md"}]},
+    ]})
+    async for line in _finish(tools, "Week 48 is planned: behind-the-scenes carousels, Tuesday to Saturday. 5 posts are written, "
+                                     "5 visuals are in Figma, and the newsletter is drafted. Slack isn't signed in yet, so the plan "
+                                     "is in slack-post.md for you to paste.\n\nFiles: insights.md, posts/ (5), visuals.md, plan.md, "
+                                     "slack-post.md, newsletter.md."):
+        yield line
+
+
 _TIKTOK_KEYWORDS = re.compile(r"tiktok|video|reel|konten", re.I)
 
 
 def pick_demo(task: str, team: dict | None = None):
-    """Demo mode: TikTok for video tasks or teams, build for build-style tasks, otherwise research."""
+    """Demo mode: TikTok for video tasks or teams, marketing for marketing teams, build for build-style tasks, otherwise research."""
     about = f"{task or ''} {(team or {}).get('name', '')} {(team or {}).get('goal', '')}"
     if _TIKTOK_KEYWORDS.search(about):
         return demo_tiktok_runner, demo_tiktok_script
+    if _MARKETING_KEYWORDS.search(about):
+        return demo_marketing_runner, demo_marketing_script
     if _BUILD_KEYWORDS.search(task or ""):
         return demo_build_runner, demo_build_script
     return demo_runner, demo_script
