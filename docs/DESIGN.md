@@ -313,7 +313,7 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | task_replaced | Old card crossed out |
 | approval_requested | Approval card, run bar "Needs your approval", push |
 | approval_resolved | Approval card collapses |
-| usage | Meters |
+| usage | Meters. Rail "By model" bar and list, "By agent" rows with cost, a thin bar, models used (haiku → sonnet after a step-up) and tasks or checks (M7, canvas `M7-Cheaper`) |
 | budget_exhausted | Meter turns check color, "almost out" then outcome |
 | finished | Finished or Out of budget outcome card |
 | run_failed | Crashed outcome card |

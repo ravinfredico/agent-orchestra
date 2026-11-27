@@ -24,6 +24,7 @@ def fold(run_dir: Path) -> dict:
         "auth_mode": meta.get("auth_mode"), "options": meta.get("options", {}),
         "board": [], "files": [], "final": "", "error": None, "pending_approvals": [], "last_seq": 0,
         "model_calls": 0, "playbook": None,
+        "usage": {"by_agent": {}, "by_model": {}},
     }
     agents: dict[str, dict] = {}
     board: dict[str, dict] = {}
@@ -87,6 +88,7 @@ def fold(run_dir: Path) -> dict:
         elif t == "usage":
             d["cost_usd"] = e.get("cost_usd", d["cost_usd"])
             d["model_calls"] = e.get("model_calls", d["model_calls"])
+            _add_usage(d["usage"], e)
         elif t == "approval_requested":
             pending[e["approval_id"]] = {k: e.get(k) for k in ("approval_id", "task_id", "agent", "tool", "catalog_id", "preview")}
         elif t == "approval_resolved":
@@ -114,6 +116,23 @@ def fold(run_dir: Path) -> dict:
     d["pending_approvals"] = list(pending.values())
     d["needs_approval"] = bool(pending)
     return d
+
+
+def _add_usage(u: dict, e: dict) -> None:
+    """Fold one usage event into the per-agent and per-model breakdown (old logs have neither)."""
+    delta = e.get("delta_usd") or 0.0
+    who, model = e.get("agent") or "unknown", e.get("model") or "unknown"
+    a = u["by_agent"].setdefault(who, {"cost_usd": 0.0, "calls": 0, "role": e.get("role", ""), "models": [],
+                                       "tasks": []})
+    a["cost_usd"] = round(a["cost_usd"] + delta, 4)
+    a["calls"] += 1
+    if model not in a["models"]:
+        a["models"].append(model)
+    if e.get("task_id") and e["task_id"] not in a["tasks"]:
+        a["tasks"].append(e["task_id"])
+    m = u["by_model"].setdefault(model, {"cost_usd": 0.0, "calls": 0})
+    m["cost_usd"] = round(m["cost_usd"] + delta, 4)
+    m["calls"] += 1
 
 
 SUMMARY_KEYS = ("id", "title", "task", "status", "needs_approval", "created_at", "ended_at", "duration_s",

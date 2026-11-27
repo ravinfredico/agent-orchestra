@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,7 +7,7 @@ import { NewRun } from '../pages/NewRun'
 import { reduce, reduceAll, emptyRun } from '../state/reducer'
 import type { RunEvent } from '../state/types'
 import { Character } from './Character'
-import { Announcer, ConfirmDialog, OutcomeCard } from './RunParts'
+import { Announcer, ConfirmDialog, OutcomeCard, UsageBreakdown } from './RunParts'
 import { TaskCard } from './TaskCard'
 
 const events = demo as RunEvent[]
@@ -112,6 +112,21 @@ describe('ConfirmDialog', () => {
     expect(screen.getByRole('button', { name: 'Stop run' })).toHaveFocus()
     await user.keyboard('{Escape}')
     expect(onClose).toHaveBeenCalled()
+  })
+})
+
+describe('UsageBreakdown', () => {
+  it('lists every model and agent with its cost', () => {
+    render(<UsageBreakdown run={finished} />)
+    expect(screen.getByRole('heading', { name: 'By model' })).toBeInTheDocument()
+    const agents = within(screen.getByRole('region', { name: 'By agent' })).getAllByRole('listitem')
+    expect(agents.length).toBe(Object.keys(finished.usageByAgent).length)
+    expect(screen.getByText(/haiku → sonnet · 1 task, 2 tries/)).toBeInTheDocument()
+  })
+
+  it('renders nothing before any usage', () => {
+    const { container } = render(<UsageBreakdown run={emptyRun('x')} />)
+    expect(container).toBeEmptyDOMElement()
   })
 })
 

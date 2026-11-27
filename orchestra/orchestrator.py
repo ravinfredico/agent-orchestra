@@ -99,7 +99,8 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
                     elif isinstance(msg, ResultMessage):
                         # cost on a long-lived session is a running total, so add only the change
                         total = msg.total_cost_usd or 0.0
-                        state.record_usage(msg.num_turns, max(total - orch_cost, 0.0))
+                        state.record_usage(msg.num_turns, max(total - orch_cost, 0.0), role="orchestrator",
+                                           model=config.orchestrator_model)
                         orch_cost = max(orch_cost, total)
                         if msg.is_error and msg.errors:
                             raise RuntimeError("; ".join(msg.errors))

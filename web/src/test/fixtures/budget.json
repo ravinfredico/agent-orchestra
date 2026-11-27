@@ -2,7 +2,7 @@
  {
   "seq": 1,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.909,
+  "t": 1795759356.252,
   "type": "run_started",
   "task": "Research the top 5 Indonesian e-wallets and write a comparison report as report.md",
   "title": "Research the top 5 Indonesian e-wallets\u2026",
@@ -23,7 +23,7 @@
    "allowed_domains": [],
    "playbook": "auto"
   },
-  "workspace": "/tmp/tmp9veyl1yp/20261123-091402-budget/workspace",
+  "workspace": "/tmp/tmp1ab4mvmu/20261123-091402-budget/workspace",
   "repo": null,
   "branch": null,
   "parent_id": null,
@@ -32,7 +32,7 @@
  {
   "seq": 2,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.91,
+  "t": 1795759356.253,
   "type": "playbook_chosen",
   "id": "research-report",
   "title": "Research report"
@@ -40,14 +40,14 @@
  {
   "seq": 3,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.91,
+  "t": 1795759356.253,
   "type": "orchestrator_said",
   "text": "Plan: research each wallet, compare fees and features, then write the report. Research comes first. Hiring three agents."
  },
  {
   "seq": 4,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.91,
+  "t": 1795759356.253,
   "type": "agent_created",
   "name": "researcher",
   "role": "Finds fees, features and sources for each wallet",
@@ -62,7 +62,7 @@
  {
   "seq": 5,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.91,
+  "t": 1795759356.253,
   "type": "agent_created",
   "name": "analyst",
   "role": "Turns research notes into comparison tables",
@@ -77,7 +77,7 @@
  {
   "seq": 6,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.91,
+  "t": 1795759356.254,
   "type": "agent_created",
   "name": "writer",
   "role": "Writes the final report from the analysis",
@@ -92,7 +92,7 @@
  {
   "seq": 7,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.911,
+  "t": 1795759356.254,
   "type": "task_assigned",
   "task_id": "research-1",
   "title": "Research wallets",
@@ -112,7 +112,7 @@
  {
   "seq": 8,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.911,
+  "t": 1795759356.254,
   "type": "attempt_started",
   "task_id": "research-1",
   "attempt": 1,
@@ -121,7 +121,7 @@
  {
   "seq": 9,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.911,
+  "t": 1795759356.254,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -131,7 +131,7 @@
  {
   "seq": 10,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.911,
+  "t": 1795759356.254,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -141,7 +141,7 @@
  {
   "seq": 11,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.911,
+  "t": 1795759356.255,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -151,7 +151,7 @@
  {
   "seq": 12,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.255,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -161,7 +161,7 @@
  {
   "seq": 13,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.255,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -171,7 +171,7 @@
  {
   "seq": 14,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.255,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -181,7 +181,7 @@
  {
   "seq": 15,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.255,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -191,7 +191,7 @@
  {
   "seq": 16,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.255,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -201,7 +201,7 @@
  {
   "seq": 17,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.256,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -211,7 +211,7 @@
  {
   "seq": 18,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.256,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -221,7 +221,7 @@
  {
   "seq": 19,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.912,
+  "t": 1795759356.256,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -231,7 +231,7 @@
  {
   "seq": 20,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.913,
+  "t": 1795759356.256,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -241,18 +241,22 @@
  {
   "seq": 21,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.913,
+  "t": 1795759356.256,
   "type": "usage",
   "cost_usd": 0.41,
   "delta_usd": 0.41,
   "model_calls": 1,
   "turns": 5,
-  "assignments": 1
+  "assignments": 1,
+  "agent": "researcher",
+  "role": "worker",
+  "model": "haiku",
+  "task_id": "research-1"
  },
  {
   "seq": 22,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.913,
+  "t": 1795759356.256,
   "type": "checker_started",
   "task_id": "research-1",
   "attempt": 1
@@ -260,18 +264,22 @@
  {
   "seq": 23,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.913,
+  "t": 1795759356.256,
   "type": "usage",
   "cost_usd": 0.46,
   "delta_usd": 0.05,
   "model_calls": 2,
   "turns": 7,
-  "assignments": 1
+  "assignments": 1,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "research-1"
  },
  {
   "seq": 24,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.913,
+  "t": 1795759356.256,
   "type": "task_passed",
   "task_id": "research-1",
   "attempt": 1,
@@ -289,7 +297,7 @@
  {
   "seq": 25,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.914,
+  "t": 1795759356.257,
   "type": "task_assigned",
   "task_id": "analysis-1",
   "title": "Compare fees",
@@ -309,7 +317,7 @@
  {
   "seq": 26,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.914,
+  "t": 1795759356.257,
   "type": "task_assigned",
   "task_id": "report-1",
   "title": "Write the report",
@@ -331,7 +339,7 @@
  {
   "seq": 27,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.914,
+  "t": 1795759356.257,
   "type": "attempt_started",
   "task_id": "analysis-1",
   "attempt": 1,
@@ -340,7 +348,7 @@
  {
   "seq": 28,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.914,
+  "t": 1795759356.258,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -350,7 +358,7 @@
  {
   "seq": 29,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.914,
+  "t": 1795759356.258,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -360,7 +368,7 @@
  {
   "seq": 30,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.914,
+  "t": 1795759356.258,
   "type": "file_written",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -370,18 +378,22 @@
  {
   "seq": 31,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.914,
+  "t": 1795759356.258,
   "type": "usage",
   "cost_usd": 0.64,
   "delta_usd": 0.18,
   "model_calls": 3,
   "turns": 12,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "analyst",
+  "role": "worker",
+  "model": "haiku",
+  "task_id": "analysis-1"
  },
  {
   "seq": 32,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.259,
   "type": "checker_started",
   "task_id": "analysis-1",
   "attempt": 1
@@ -389,18 +401,22 @@
  {
   "seq": 33,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.259,
   "type": "usage",
   "cost_usd": 0.69,
   "delta_usd": 0.05,
   "model_calls": 4,
   "turns": 14,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "analysis-1"
  },
  {
   "seq": 34,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.259,
   "type": "attempt_failed",
   "task_id": "analysis-1",
   "attempt": 1,
@@ -411,7 +427,7 @@
  {
   "seq": 35,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.259,
   "type": "attempt_started",
   "task_id": "analysis-1",
   "attempt": 2,
@@ -420,7 +436,7 @@
  {
   "seq": 36,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.26,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -430,7 +446,7 @@
  {
   "seq": 37,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.26,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -440,7 +456,7 @@
  {
   "seq": 38,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.26,
   "type": "file_written",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -450,18 +466,22 @@
  {
   "seq": 39,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.915,
+  "t": 1795759356.26,
   "type": "usage",
   "cost_usd": 0.87,
   "delta_usd": 0.18,
   "model_calls": 5,
   "turns": 19,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "analyst",
+  "role": "worker",
+  "model": "sonnet",
+  "task_id": "analysis-1"
  },
  {
   "seq": 40,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.916,
+  "t": 1795759356.261,
   "type": "checker_started",
   "task_id": "analysis-1",
   "attempt": 2
@@ -469,18 +489,22 @@
  {
   "seq": 41,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.916,
+  "t": 1795759356.261,
   "type": "usage",
   "cost_usd": 0.92,
   "delta_usd": 0.05,
   "model_calls": 6,
   "turns": 21,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "analysis-1"
  },
  {
   "seq": 42,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.916,
+  "t": 1795759356.261,
   "type": "task_passed",
   "task_id": "analysis-1",
   "attempt": 2,
@@ -491,7 +515,7 @@
  {
   "seq": 43,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.916,
+  "t": 1795759356.261,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 1,
@@ -500,7 +524,7 @@
  {
   "seq": 44,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.917,
+  "t": 1795759356.262,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -510,7 +534,7 @@
  {
   "seq": 45,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.917,
+  "t": 1795759356.262,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -520,18 +544,22 @@
  {
   "seq": 46,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.917,
+  "t": 1795759356.262,
   "type": "usage",
   "cost_usd": 1.14,
   "delta_usd": 0.22,
   "model_calls": 7,
   "turns": 26,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "writer",
+  "role": "worker",
+  "model": "sonnet",
+  "task_id": "report-1"
  },
  {
   "seq": 47,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.917,
+  "t": 1795759356.263,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 1
@@ -539,18 +567,22 @@
  {
   "seq": 48,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.918,
+  "t": 1795759356.263,
   "type": "usage",
   "cost_usd": 1.19,
   "delta_usd": 0.05,
   "model_calls": 8,
   "turns": 28,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "report-1"
  },
  {
   "seq": 49,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.918,
+  "t": 1795759356.263,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 1,
@@ -561,7 +593,7 @@
  {
   "seq": 50,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.918,
+  "t": 1795759356.263,
   "type": "task_failed",
   "task_id": "report-1",
   "attempts": 1
@@ -569,14 +601,14 @@
  {
   "seq": 51,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.918,
+  "t": 1795759356.264,
   "type": "orchestrator_said",
   "text": "The writer can't search the research files. I'm hiring an editor who can, and giving it the report. It will email you when done."
  },
  {
   "seq": 52,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.918,
+  "t": 1795759356.264,
   "type": "agent_created",
   "name": "editor",
   "role": "Assembles the report and compiles every source",
@@ -592,93 +624,109 @@
  {
   "seq": 53,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.918,
+  "t": 1795759356.264,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.19 of $1.00)"
  },
  {
   "seq": 54,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.264,
   "type": "orchestrator_said",
   "text": "Every task passed verification. Finishing."
  },
  {
   "seq": 55,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.264,
   "type": "usage",
   "cost_usd": 1.24,
   "delta_usd": 0.05,
   "model_calls": 9,
   "turns": 31,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "orchestrator",
+  "role": "orchestrator",
+  "model": "sonnet",
+  "task_id": ""
  },
  {
   "seq": 56,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.264,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.24 of $1.00)"
  },
  {
   "seq": 57,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.264,
   "type": "usage",
   "cost_usd": 1.29,
   "delta_usd": 0.05,
   "model_calls": 10,
   "turns": 34,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "orchestrator",
+  "role": "orchestrator",
+  "model": "sonnet",
+  "task_id": ""
  },
  {
   "seq": 58,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.264,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.29 of $1.00)"
  },
  {
   "seq": 59,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.265,
   "type": "usage",
   "cost_usd": 1.34,
   "delta_usd": 0.05,
   "model_calls": 11,
   "turns": 37,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "orchestrator",
+  "role": "orchestrator",
+  "model": "sonnet",
+  "task_id": ""
  },
  {
   "seq": 60,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.265,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.34 of $1.00)"
  },
  {
   "seq": 61,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.265,
   "type": "usage",
   "cost_usd": 1.39,
   "delta_usd": 0.05,
   "model_calls": 12,
   "turns": 40,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "orchestrator",
+  "role": "orchestrator",
+  "model": "sonnet",
+  "task_id": ""
  },
  {
   "seq": 62,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.265,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.39 of $1.00)"
  },
  {
   "seq": 63,
   "run_id": "20261123-091402-budget",
-  "t": 1795759173.919,
+  "t": 1795759356.265,
   "type": "finished",
   "give_up": true,
   "result": "Run ended without an accepted finish. See board.json and log.jsonl.",

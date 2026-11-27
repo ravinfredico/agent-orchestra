@@ -14,6 +14,9 @@
   --check: #fbbf24;
   --focus: #93c5fd;
   --scrim: rgba(0, 0, 0, 0.6);
+  --tier-haiku: #d4d4d4;
+  --tier-sonnet: #737373;
+  --tier-opus: #404040;
   color-scheme: dark;
 }
 :root[data-theme='light'] {
@@ -30,6 +33,9 @@
   --check: #a16207;
   --focus: #1d4ed8;
   --scrim: rgba(0, 0, 0, 0.35);
+  --tier-haiku: #a3a3a3;
+  --tier-sonnet: #525252;
+  --tier-opus: #171717;
   color-scheme: light;
 }
 :root {

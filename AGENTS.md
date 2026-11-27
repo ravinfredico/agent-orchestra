@@ -28,7 +28,8 @@ Docs:
 | `orchestra/catalog.py` | tool catalog: loads `tools.catalog.json` + `plugins/`, maps ids to SDK options |
 | `orchestra/prompts.py` | orchestrator and checker prompts, checker JSON schema |
 | `orchestra/runner.py` | `run_agent()`: one agent via `claude_agent_sdk.query()`, forwards tool use |
-| `orchestra/tools.py` | `OrchestraTools`: create_agent, assign_task (inner loop), view_board, finish, as in-process MCP server `orchestra` |
+| `orchestra/tools.py` | `OrchestraTools`: create_agent, assign_task (inner loop), assign_tasks (parallel batch), view_board, finish, as in-process MCP server `orchestra` |
+| `orchestra/checks.py` | cheap checks run before the model checker (files, words, commands when shell is on) |
 | `orchestra/approvals.py` | `ApprovalBroker` + `can_use_tool` callback for outward tools |
 | `orchestra/playbooks/` | one markdown playbook per task type; `playbooks.py` loads them, `read_playbook` serves them |
 | `orchestra/orchestrator.py` | `create_run()` / `execute_run()` outer loop, continue and follow-up prompts |
@@ -37,7 +38,7 @@ Docs:
 | `orchestra/gitsafe.py` | `--repo` safety: clean tree, branch `orchestra/<ts>`, `REPOS_ROOT` allowlist |
 | `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth, ntfy pushes (`notify.py`) |
 | `orchestra/envfile.py` | loads `.env` at startup (shell wins, never `ANTHROPIC_API_KEY`) |
-| `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py` |
+| `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py`; `src/presets.ts` holds the Options presets |
 | `tools.catalog.json` | tools the orchestrator may give agents |
 | `demo-video/` | Remotion project for the demo video (`docs/media/chacha-pa-demo.mp4`); footage is demo-mode recordings |
 | `widgets/` | phone home-screen widgets: `scriptable.js` (iPhone), `android-kwgt.md` (Android guide) |
@@ -72,7 +73,7 @@ python scripts/make_fixtures.py                # after changing events: refresh 
 - Agents only get tools from the catalog. Never let the orchestrator invent tools.
 - All agents use `setting_sources=[]`. Use `permission_mode="dontAsk"`, except agents with outward
   tools, which use the approval callback.
-- Use model aliases (`sonnet`, `haiku`, `opus`), not dated model IDs.
+- Use model aliases (`sonnet`, `haiku`, `opus`), not dated model IDs. Tiers are ordered in `config.TIERS`.
 - Events: one envelope `{seq, run_id, t, type, ...}`, defined in `docs/ARCHITECTURE.md` section 7.
   A new event type needs an entry there, a row in the event-to-UI map in `docs/DESIGN.md`, handling in
   `server/summary.py` and `web/src/state/reducer.ts`, and fresh fixtures (`scripts/make_fixtures.py`).
@@ -108,11 +109,14 @@ These files are meant to get better over time.
 ## Status
 - Branch `feat/chacha-pa`. M1 (engine), M2 (server), M3 and M4 (web app), M5 (ntfy, PWA, widgets) done and tested offline.
 - Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
-- Not yet run against a real model. Next: the first live run (IMPLEMENTATION.md, end of M1), then the
-  claude.ai connectors check (task 1.13), then M7 (parallel + cheaper), M6, M8 (teams), M9 (team builder).
+- M7 (parallel and cheaper) done offline: model tier per task with one step-up, cheap checks,
+  Cheap preset, `assign_tasks` with dependencies, usage by agent and model.
+- Not yet run against a real model. Next: the first live run (IMPLEMENTATION.md, end of M1, try the
+  Cheap preset), then the claude.ai connectors check (task 1.13), then M6, M8 (teams), M9 (team builder).
 - `main` has everything (PRs #2, #3); `feat/chacha-pa` is the working branch.
 
 ## Learnings
+- Write multi-line edits as a Python script file, not a bash heredoc: Claude Code's removal check can block heredocs it can't parse.
 - Design work goes into a design tool (Claude Design canvas, then Figma) before any HTML. No
   hand-built HTML prototypes.
 - Ask the user open questions directly, with concrete options for each, rather than listing them

@@ -19,7 +19,8 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | Playbooks | Done: 5 playbooks, `read_playbook`, `playbook_chosen`, Options select (`tests/test_playbooks.py`). |
 | M5 Phone extras | Done offline: 5.1 ntfy, 5.4 PWA, 5.2 iPhone widget (logic tested in `web/src/test/widget.test.ts`), 5.3 Android guide. Open: trying both widgets on real phones. |
 | M6 | Not started. |
-| M7 to M9 (after v1) | Planned 2026-11-27: parallel and cheaper, teams and schedules, team builder. PRD section 13. |
+| M7 Parallel and cheaper | Done offline 2026-11-27: 7.1 to 7.5 (`tests/test_m7.py`, Vitest). Designed on the canvas sheet `M7-Cheaper`. Not yet tried against a real model. |
+| M8, M9 (after v1) | Planned 2026-11-27: teams and schedules, team builder. PRD section 13. |
 
 ## M1: Engine events and capabilities
 Goal: the engine emits the full event stream, can be cancelled, uses the tool catalog, asks for
@@ -106,9 +107,9 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 ## M7: Parallel and cheaper (after v1, PRD section 13)
 | # | Task | Done when | Tests |
 |---|---|---|---|
-| 7.1 | Dependencies and parallel tasks | `assign_task` takes `depends_on` and `owns` (files). Ready tasks run together up to `max_parallel` (default 3). Stop cancels all. | fake runner: 3 independent tasks overlap in time; a dependent one waits; two tasks can't own the same file |
+| 7.1 | Dependencies and parallel tasks | A new `assign_tasks` batch tool takes `depends_on` and `owns` (files); `assign_task` takes them too. Ready tasks run together up to `max_parallel` (default 3). Stop cancels all. | fake runner: 3 independent tasks overlap in time; a dependent one waits; two tasks can't own the same file |
 | 7.2 | Model tier per task | `create_agent`/`assign_task` take `tier` (haiku, sonnet, opus) with a reason. A failed task retries one tier up, once. New event fields shown on the task card. | tier passed to the runner; step-up on failure; event and fixture updated |
-| 7.3 | Cheap checks first | A `done_when` with a `check:` command runs it before the model checker; a failing command skips the model call. | command pass/fail paths; model checker not called when the command fails |
+| 7.3 | Cheap checks first | A task's `checks` (file checks, or a command when shell is on) run before the model checker; a failing command skips the model call. | command pass/fail paths; model checker not called when the command fails |
 | 7.4 | Usage per agent and model | `usage` events carry agent, task and model. Run page shows a breakdown. | totals add up; UI renders the breakdown |
 | 7.5 | Cheap preset and hidden limits in Options | One-click Cheap preset; tries per task, steps per try and max assignments in Options. | options posted correctly |
 

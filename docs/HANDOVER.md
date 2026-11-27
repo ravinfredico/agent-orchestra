@@ -34,7 +34,13 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   - live thread with characters, task cards, approvals and outcomes
   - history, file viewer
   - dark and light themes, phone layout
-- **Tests:** 71 pytest (`python -m pytest tests -q`), 20 Vitest (`cd web && npm test`), type-checked
+- **M7 (after v1), done offline:**
+  - model tier per agent and task (haiku, sonnet, opus) with a reason; a failed try steps up one tier, once, up to `max_tier`
+  - cheap checks (`orchestra/checks.py`) before the model checker; `checks_only` skips it
+  - Options: Default and Cheap presets, highest model, tries, steps, max tasks, tasks at once
+  - `assign_tasks`: parallel batches with `depends_on` and `owns`, one task per agent at a time
+  - usage by agent and by model in the rail
+- **Tests:** 100 pytest (`python -m pytest tests -q`), 27 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -72,9 +78,8 @@ Open http://127.0.0.1:8000.
 5. **M6:** static replay page for the portfolio. (A Remotion demo video already exists:
    `docs/media/chacha-pa-demo.mp4`, source in `demo-video/`. Re-render it after big UI changes.)
 6. **After v1 (planned 2026-11-27, PRD section 13, IMPLEMENTATION M7 to M9):**
-   - **M7 parallel and cheaper:** parallel tasks with dependencies, a model tier per task (cheapest
-     that fits, step up on failure), cheap command checks before the model checker, usage per
-     agent, a Cheap preset. Start here: it also fixes the user's main complaint (usage burns fast).
+   - **M7 parallel and cheaper:** done offline (see "What's built"). Check on the first live run
+     that the orchestrator really uses `assign_tasks`, tiers and checks; fix misses in the playbooks.
    - **M8 teams and schedules:** saved teams with a room (user chat + agent-to-agent talk), memory,
      triggers (schedules, messages, data). Always available, but only spends usage on triggers.
    - **M9 team builder:** "I want a team for stocks" gives a proposed team to review and save.
@@ -119,6 +124,7 @@ Open http://127.0.0.1:8000.
   their account.
 - **Design first:** work goes in the Claude Design canvas, then code. No hand-made HTML prototypes.
 - **Questions:** ask with AskUserQuestion, giving concrete options.
+- **Decided in M7:** check commands run only when shell is on; opus step-up is allowed by default (Cheap caps at sonnet); canvas first for UI.
 - **Commits:** gate them on the test exit code. Piping pytest through `tail` hid a failure once.
 - **New event type:** update ARCHITECTURE section 7, the DESIGN event map, `server/summary.py`,
   `web/src/state/reducer.ts`, then run `python scripts/make_fixtures.py`.
@@ -131,12 +137,12 @@ Open http://127.0.0.1:8000.
 You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat/chacha-pa
 (main has the same code). First read docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: v1 milestones M1 to M5 are done and tested offline (71 pytest, 20 Vitest). It has never run
+State: v1 milestones M1 to M5 and M7 are done and tested offline (100 pytest, 27 Vitest). It has never run
 against a real model. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
 keep this session lean and prefer cheap models.
 
-Task: start M7 (docs/IMPLEMENTATION.md), in order: 7.2 model tier per task, 7.3 cheap checks first,
-7.5 Cheap preset and hidden limits in Options, then 7.1 parallel tasks, then 7.4 usage breakdown.
+Task: the first live run on my laptop with the Cheap preset (docs/IMPLEMENTATION.md, "First manual
+end-to-end test"), then M8 (teams and schedules).
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to
 feat/chacha-pa; don't merge to main or open a PR unless I ask.

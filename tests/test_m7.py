@@ -352,3 +352,39 @@ def test_owner_released_after_task(tmp_path):
 def test_parallel_options_round_trip():
     assert Config.from_options(Config(budget=Budget(max_parallel=5)).to_options()).budget.max_parallel == 5
     assert Config.from_options({"max_parallel": 0}).budget.max_parallel == 1
+
+
+# ---- 7.4 usage per agent, task and model ----------------------------------------------
+
+def test_usage_events_say_who_spent_it(tmp_path):
+    s, t, _ = make(tmp_path, [False, True])
+    run(t.create_agent({**AGENT, "tier": "haiku"}))
+    run(t.assign_task(TASK))
+    u = events(s, "usage")
+    assert [(e["agent"], e["role"], e["model"]) for e in u] == [
+        ("writer", "worker", "haiku"), ("checker", "checker", "haiku"),
+        ("writer", "worker", "sonnet"), ("checker", "checker", "haiku")]
+    assert all(e["task_id"] == "t1" for e in u)
+
+
+def test_usage_breakdown_adds_up(tmp_path):
+    from server.summary import fold
+    s, t, _ = make(tmp_path, [False, True, True])
+    run(t.create_agent({**AGENT, "tier": "haiku"}))
+    run(t.create_agent({**AGENT, "name": "coder", "tier": "sonnet"}))
+    run(t.assign_task(TASK))
+    run(t.assign_task({**TASK, "agent": "coder", "task_id": "t2"}))
+    d = fold(s.run_dir)
+    by_agent, by_model = d["usage"]["by_agent"], d["usage"]["by_model"]
+    assert round(sum(a["cost_usd"] for a in by_agent.values()), 4) == round(d["cost_usd"], 4)
+    assert round(sum(m["cost_usd"] for m in by_model.values()), 4) == round(d["cost_usd"], 4)
+    assert by_agent["writer"]["models"] == ["haiku", "sonnet"] and by_agent["writer"]["calls"] == 2
+    assert by_agent["checker"]["calls"] == 3 and by_agent["coder"]["tasks"] == ["t2"]
+    assert by_model["sonnet"]["calls"] == 2                     # writer's step-up + coder
+
+
+def test_old_usage_events_still_fold(tmp_path):
+    from server.summary import fold
+    s = RunState("x", Config(), tmp_path)
+    s.log("usage", cost_usd=0.5, delta_usd=0.5, model_calls=1, turns=1, assignments=0)
+    assert fold(s.run_dir)["usage"]["by_agent"]["unknown"]["cost_usd"] == 0.5

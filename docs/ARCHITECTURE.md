@@ -144,8 +144,12 @@ Shapes:
  "repo": null, "branch": null, "parent_id": null}
 
 // RunDetail = RunSummary + 
-{"options": {...}, "agents": [{"name", "role", "tools", "model", "color_index", "status"}],
- "board": [{"task_id", "title", "agent", "status", "attempts", "done_when", "feedback", "replaces", "replaced_by"}],
+{"options": {...}, "agents": [{"name", "role", "tools", "model", "tier_reason", "color_index", "status"}],
+ "board": [{"task_id", "title", "agent", "status", "attempts", "done_when", "feedback", "replaces", "replaced_by",
+            "tier", "tier_reason", "checks", "checks_only", "depends_on", "owns",
+            "history": [{"attempt", "tier", "passed", "reason", "short", "checked_by", "checks"}]}],
+ "usage": {"by_agent": {"<name>": {"cost_usd", "calls", "role", "models", "tasks"}},
+           "by_model": {"<model>": {"cost_usd", "calls"}}},
  "files": [...], "final": "...", "error": null, "pending_approvals": [...], "last_seq": 57}
 
 // GET /api/status (for widgets)
@@ -184,7 +188,7 @@ Every line in `log.jsonl` and every SSE message is one event:
 | `task_replaced` | `task_id, by` | |
 | `approval_requested` | `approval_id, task_id, agent, tool, catalog_id, preview` | `preview` is a redacted summary of the tool input |
 | `approval_resolved` | `approval_id, decision` | `approved`, `denied`, or `expired` |
-| `usage` | `cost_usd, delta_usd, model_calls, turns, assignments` | totals after this change |
+| `usage` | `cost_usd, delta_usd, model_calls, turns, assignments, agent, role, model, task_id` | totals after this change. `agent`, `role` (orchestrator, worker, checker), `model` and `task_id` say who spent `delta_usd` (M7). The orchestrator's usage lands when its turn ends |
 | `budget_exhausted` | `reason` | |
 | `finished` | `give_up, result` | terminal. `give_up` true means out of budget |
 | `run_failed` | `error, kind, hint` | terminal. `kind`: `auth`, `limit`, `crash` |

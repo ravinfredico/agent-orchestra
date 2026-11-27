@@ -30,6 +30,14 @@ export interface CheckResult {
   detail: string
 }
 
+export interface AgentUsage {
+  costUsd: number
+  calls: number
+  role: string              // orchestrator | worker | checker
+  models: string[]          // in the order first used
+  tasks: string[]
+}
+
 export interface Attempt {
   attempt: number
   tier: string
@@ -100,6 +108,8 @@ export interface RunView {
   lastEventAt: number | null
   costUsd: number
   modelCalls: number
+  usageByAgent: Record<string, AgentUsage>   // key: worker name, 'orchestrator' or 'checker'
+  usageByModel: Record<string, { costUsd: number; calls: number }>
   assignments: number
   agents: Record<string, Agent>
   agentOrder: string[]

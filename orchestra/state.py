@@ -128,14 +128,19 @@ class RunState:
             return f"assignment limit reached ({b.max_assignments})"
         return None
 
-    def record_usage(self, turns: int, cost: float | None) -> None:
+    def record_usage(self, turns: int, cost: float | None, *, agent: str = "", role: str = "",
+                     model: str = "", task_id: str = "") -> None:
+        """Add one model call. agent/role/model/task_id say who spent it, for the breakdown.
+
+        role is orchestrator, worker or checker; agent is the worker's name, or the role itself."""
         self.usage.model_calls += 1
         self.usage.turns += turns or 0
         delta = cost or 0.0
         self.usage.cost_usd += delta
         self.log("usage", cost_usd=round(self.usage.cost_usd, 4), delta_usd=round(delta, 4),
                  model_calls=self.usage.model_calls, turns=self.usage.turns,
-                 assignments=self.usage.assignments)
+                 assignments=self.usage.assignments, agent=agent or role, role=role, model=model,
+                 task_id=task_id)
 
     # ---- board ---------------------------------------------------------------
 

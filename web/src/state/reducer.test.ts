@@ -50,6 +50,18 @@ describe('reducer', () => {
     expect(r.agents.a.failed).toBe(1)                 // the blocked task is not the agent's failure
   })
 
+  it('breaks usage down by agent and by model, adding up to the total', () => {
+    const r = reduceAll(demoEvents)
+    const byAgent = Object.values(r.usageByAgent).reduce((n, a) => n + a.costUsd, 0)
+    const byModel = Object.values(r.usageByModel).reduce((n, m) => n + m.costUsd, 0)
+    expect(byAgent).toBeCloseTo(r.costUsd, 3)
+    expect(byModel).toBeCloseTo(r.costUsd, 3)
+    expect(r.usageByAgent.analyst.models).toEqual(['haiku', 'sonnet'])
+    expect(r.usageByAgent.checker.role).toBe('checker')
+    expect(r.usageByAgent.orchestrator.models).toEqual(['sonnet'])
+    expect(r.usageByAgent.researcher.tasks).toEqual(['research-1'])
+  })
+
   it('keeps cheap check results on the attempt', () => {
     const t = reduceAll(demoEvents).tasks['research-1']
     expect(t.checks).toEqual(['5+ files match research/*.md'])

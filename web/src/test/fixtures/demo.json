@@ -2,7 +2,7 @@
  {
   "seq": 1,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.891,
+  "t": 1795759356.229,
   "type": "run_started",
   "task": "Research the top 5 Indonesian e-wallets and write a comparison report as report.md",
   "title": "Research the top 5 Indonesian e-wallets\u2026",
@@ -23,7 +23,7 @@
    "allowed_domains": [],
    "playbook": "auto"
   },
-  "workspace": "/tmp/tmpdea1viqb/20261123-091402-demo/workspace",
+  "workspace": "/tmp/tmppz5f_tu0/20261123-091402-demo/workspace",
   "repo": null,
   "branch": null,
   "parent_id": null,
@@ -32,7 +32,7 @@
  {
   "seq": 2,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.892,
+  "t": 1795759356.23,
   "type": "playbook_chosen",
   "id": "research-report",
   "title": "Research report"
@@ -40,14 +40,14 @@
  {
   "seq": 3,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.892,
+  "t": 1795759356.23,
   "type": "orchestrator_said",
   "text": "Plan: research each wallet, compare fees and features, then write the report. Research comes first. Hiring three agents."
  },
  {
   "seq": 4,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.892,
+  "t": 1795759356.231,
   "type": "agent_created",
   "name": "researcher",
   "role": "Finds fees, features and sources for each wallet",
@@ -62,7 +62,7 @@
  {
   "seq": 5,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.892,
+  "t": 1795759356.231,
   "type": "agent_created",
   "name": "analyst",
   "role": "Turns research notes into comparison tables",
@@ -77,7 +77,7 @@
  {
   "seq": 6,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.892,
+  "t": 1795759356.231,
   "type": "agent_created",
   "name": "writer",
   "role": "Writes the final report from the analysis",
@@ -92,7 +92,7 @@
  {
   "seq": 7,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.893,
+  "t": 1795759356.232,
   "type": "task_assigned",
   "task_id": "research-1",
   "title": "Research wallets",
@@ -112,7 +112,7 @@
  {
   "seq": 8,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.893,
+  "t": 1795759356.232,
   "type": "attempt_started",
   "task_id": "research-1",
   "attempt": 1,
@@ -121,7 +121,7 @@
  {
   "seq": 9,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.232,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -131,7 +131,7 @@
  {
   "seq": 10,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.233,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -141,7 +141,7 @@
  {
   "seq": 11,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.233,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -151,7 +151,7 @@
  {
   "seq": 12,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.233,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -161,7 +161,7 @@
  {
   "seq": 13,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.233,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -171,7 +171,7 @@
  {
   "seq": 14,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.233,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -181,7 +181,7 @@
  {
   "seq": 15,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.233,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -191,7 +191,7 @@
  {
   "seq": 16,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.233,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -201,7 +201,7 @@
  {
   "seq": 17,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.234,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -211,7 +211,7 @@
  {
   "seq": 18,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.894,
+  "t": 1795759356.234,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -221,7 +221,7 @@
  {
   "seq": 19,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.895,
+  "t": 1795759356.234,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -231,7 +231,7 @@
  {
   "seq": 20,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.895,
+  "t": 1795759356.234,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -241,18 +241,22 @@
  {
   "seq": 21,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.895,
+  "t": 1795759356.234,
   "type": "usage",
   "cost_usd": 0.41,
   "delta_usd": 0.41,
   "model_calls": 1,
   "turns": 5,
-  "assignments": 1
+  "assignments": 1,
+  "agent": "researcher",
+  "role": "worker",
+  "model": "haiku",
+  "task_id": "research-1"
  },
  {
   "seq": 22,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.895,
+  "t": 1795759356.235,
   "type": "checker_started",
   "task_id": "research-1",
   "attempt": 1
@@ -260,18 +264,22 @@
  {
   "seq": 23,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.895,
+  "t": 1795759356.235,
   "type": "usage",
   "cost_usd": 0.46,
   "delta_usd": 0.05,
   "model_calls": 2,
   "turns": 7,
-  "assignments": 1
+  "assignments": 1,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "research-1"
  },
  {
   "seq": 24,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.895,
+  "t": 1795759356.235,
   "type": "task_passed",
   "task_id": "research-1",
   "attempt": 1,
@@ -289,7 +297,7 @@
  {
   "seq": 25,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.896,
+  "t": 1795759356.235,
   "type": "task_assigned",
   "task_id": "analysis-1",
   "title": "Compare fees",
@@ -309,7 +317,7 @@
  {
   "seq": 26,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.896,
+  "t": 1795759356.235,
   "type": "task_assigned",
   "task_id": "report-1",
   "title": "Write the report",
@@ -331,7 +339,7 @@
  {
   "seq": 27,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.896,
+  "t": 1795759356.236,
   "type": "attempt_started",
   "task_id": "analysis-1",
   "attempt": 1,
@@ -340,7 +348,7 @@
  {
   "seq": 28,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.897,
+  "t": 1795759356.237,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -350,7 +358,7 @@
  {
   "seq": 29,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.897,
+  "t": 1795759356.237,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -360,7 +368,7 @@
  {
   "seq": 30,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.897,
+  "t": 1795759356.237,
   "type": "file_written",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -370,18 +378,22 @@
  {
   "seq": 31,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.897,
+  "t": 1795759356.237,
   "type": "usage",
   "cost_usd": 0.64,
   "delta_usd": 0.18,
   "model_calls": 3,
   "turns": 12,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "analyst",
+  "role": "worker",
+  "model": "haiku",
+  "task_id": "analysis-1"
  },
  {
   "seq": 32,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.897,
+  "t": 1795759356.238,
   "type": "checker_started",
   "task_id": "analysis-1",
   "attempt": 1
@@ -389,18 +401,22 @@
  {
   "seq": 33,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.898,
+  "t": 1795759356.238,
   "type": "usage",
   "cost_usd": 0.69,
   "delta_usd": 0.05,
   "model_calls": 4,
   "turns": 14,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "analysis-1"
  },
  {
   "seq": 34,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.898,
+  "t": 1795759356.238,
   "type": "attempt_failed",
   "task_id": "analysis-1",
   "attempt": 1,
@@ -411,7 +427,7 @@
  {
   "seq": 35,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.898,
+  "t": 1795759356.238,
   "type": "attempt_started",
   "task_id": "analysis-1",
   "attempt": 2,
@@ -420,7 +436,7 @@
  {
   "seq": 36,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.898,
+  "t": 1795759356.238,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -430,7 +446,7 @@
  {
   "seq": 37,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.898,
+  "t": 1795759356.238,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -440,7 +456,7 @@
  {
   "seq": 38,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.898,
+  "t": 1795759356.239,
   "type": "file_written",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -450,18 +466,22 @@
  {
   "seq": 39,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.898,
+  "t": 1795759356.239,
   "type": "usage",
   "cost_usd": 0.87,
   "delta_usd": 0.18,
   "model_calls": 5,
   "turns": 19,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "analyst",
+  "role": "worker",
+  "model": "sonnet",
+  "task_id": "analysis-1"
  },
  {
   "seq": 40,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.899,
+  "t": 1795759356.239,
   "type": "checker_started",
   "task_id": "analysis-1",
   "attempt": 2
@@ -469,18 +489,22 @@
  {
   "seq": 41,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.899,
+  "t": 1795759356.239,
   "type": "usage",
   "cost_usd": 0.92,
   "delta_usd": 0.05,
   "model_calls": 6,
   "turns": 21,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "analysis-1"
  },
  {
   "seq": 42,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.899,
+  "t": 1795759356.239,
   "type": "task_passed",
   "task_id": "analysis-1",
   "attempt": 2,
@@ -491,7 +515,7 @@
  {
   "seq": 43,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.899,
+  "t": 1795759356.24,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 1,
@@ -500,7 +524,7 @@
  {
   "seq": 44,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.9,
+  "t": 1795759356.241,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -510,7 +534,7 @@
  {
   "seq": 45,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.9,
+  "t": 1795759356.241,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -520,18 +544,22 @@
  {
   "seq": 46,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.9,
+  "t": 1795759356.241,
   "type": "usage",
   "cost_usd": 1.14,
   "delta_usd": 0.22,
   "model_calls": 7,
   "turns": 26,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "writer",
+  "role": "worker",
+  "model": "sonnet",
+  "task_id": "report-1"
  },
  {
   "seq": 47,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.9,
+  "t": 1795759356.241,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 1
@@ -539,18 +567,22 @@
  {
   "seq": 48,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.9,
+  "t": 1795759356.241,
   "type": "usage",
   "cost_usd": 1.19,
   "delta_usd": 0.05,
   "model_calls": 8,
   "turns": 28,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "report-1"
  },
  {
   "seq": 49,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.9,
+  "t": 1795759356.241,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 1,
@@ -561,7 +593,7 @@
  {
   "seq": 50,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.901,
+  "t": 1795759356.241,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 2,
@@ -570,7 +602,7 @@
  {
   "seq": 51,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.901,
+  "t": 1795759356.242,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -580,7 +612,7 @@
  {
   "seq": 52,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.901,
+  "t": 1795759356.242,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -590,18 +622,22 @@
  {
   "seq": 53,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.901,
+  "t": 1795759356.242,
   "type": "usage",
   "cost_usd": 1.41,
   "delta_usd": 0.22,
   "model_calls": 9,
   "turns": 33,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "writer",
+  "role": "worker",
+  "model": "opus",
+  "task_id": "report-1"
  },
  {
   "seq": 54,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.901,
+  "t": 1795759356.243,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 2
@@ -609,18 +645,22 @@
  {
   "seq": 55,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.902,
+  "t": 1795759356.243,
   "type": "usage",
   "cost_usd": 1.46,
   "delta_usd": 0.05,
   "model_calls": 10,
   "turns": 35,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "report-1"
  },
  {
   "seq": 56,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.902,
+  "t": 1795759356.243,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 2,
@@ -631,7 +671,7 @@
  {
   "seq": 57,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.902,
+  "t": 1795759356.243,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 3,
@@ -640,7 +680,7 @@
  {
   "seq": 58,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.903,
+  "t": 1795759356.244,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -650,7 +690,7 @@
  {
   "seq": 59,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.903,
+  "t": 1795759356.244,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -660,18 +700,22 @@
  {
   "seq": 60,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.903,
+  "t": 1795759356.244,
   "type": "usage",
   "cost_usd": 1.68,
   "delta_usd": 0.22,
   "model_calls": 11,
   "turns": 40,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "writer",
+  "role": "worker",
+  "model": "opus",
+  "task_id": "report-1"
  },
  {
   "seq": 61,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.903,
+  "t": 1795759356.245,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 3
@@ -679,18 +723,22 @@
  {
   "seq": 62,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.903,
+  "t": 1795759356.245,
   "type": "usage",
   "cost_usd": 1.73,
   "delta_usd": 0.05,
   "model_calls": 12,
   "turns": 42,
-  "assignments": 3
+  "assignments": 3,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "report-1"
  },
  {
   "seq": 63,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.903,
+  "t": 1795759356.245,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 3,
@@ -701,7 +749,7 @@
  {
   "seq": 64,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.903,
+  "t": 1795759356.245,
   "type": "task_failed",
   "task_id": "report-1",
   "attempts": 3
@@ -709,14 +757,14 @@
  {
   "seq": 65,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.904,
+  "t": 1795759356.245,
   "type": "orchestrator_said",
   "text": "The writer can't search the research files. I'm hiring an editor who can, and giving it the report. It will email you when done."
  },
  {
   "seq": 66,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.904,
+  "t": 1795759356.245,
   "type": "agent_created",
   "name": "editor",
   "role": "Assembles the report and compiles every source",
@@ -732,7 +780,7 @@
  {
   "seq": 67,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.904,
+  "t": 1795759356.246,
   "type": "task_assigned",
   "task_id": "report-2",
   "title": "Rewrite the report",
@@ -750,7 +798,7 @@
  {
   "seq": 68,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.905,
+  "t": 1795759356.246,
   "type": "attempt_started",
   "task_id": "report-2",
   "attempt": 1,
@@ -759,7 +807,7 @@
  {
   "seq": 69,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.905,
+  "t": 1795759356.247,
   "type": "worker_activity",
   "task_id": "report-2",
   "agent": "editor",
@@ -769,9 +817,9 @@
  {
   "seq": 70,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.905,
+  "t": 1795759356.247,
   "type": "approval_requested",
-  "approval_id": "ap_4d9b19df",
+  "approval_id": "ap_41749753",
   "task_id": "report-2",
   "agent": "editor",
   "tool": "mcp__gmail__send_message",
@@ -781,15 +829,15 @@
  {
   "seq": 71,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.905,
+  "t": 1795759356.248,
   "type": "approval_resolved",
-  "approval_id": "ap_4d9b19df",
+  "approval_id": "ap_41749753",
   "decision": "approved"
  },
  {
   "seq": 72,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.906,
+  "t": 1795759356.248,
   "type": "worker_activity",
   "task_id": "report-2",
   "agent": "editor",
@@ -799,7 +847,7 @@
  {
   "seq": 73,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.906,
+  "t": 1795759356.248,
   "type": "file_written",
   "task_id": "report-2",
   "agent": "editor",
@@ -809,18 +857,22 @@
  {
   "seq": 74,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.906,
+  "t": 1795759356.248,
   "type": "usage",
   "cost_usd": 1.97,
   "delta_usd": 0.24,
   "model_calls": 13,
   "turns": 47,
-  "assignments": 4
+  "assignments": 4,
+  "agent": "editor",
+  "role": "worker",
+  "model": "sonnet",
+  "task_id": "report-2"
  },
  {
   "seq": 75,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.906,
+  "t": 1795759356.249,
   "type": "checker_started",
   "task_id": "report-2",
   "attempt": 1
@@ -828,18 +880,22 @@
  {
   "seq": 76,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.906,
+  "t": 1795759356.249,
   "type": "usage",
   "cost_usd": 2.02,
   "delta_usd": 0.05,
   "model_calls": 14,
   "turns": 49,
-  "assignments": 4
+  "assignments": 4,
+  "agent": "checker",
+  "role": "checker",
+  "model": "haiku",
+  "task_id": "report-2"
  },
  {
   "seq": 77,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.906,
+  "t": 1795759356.249,
   "type": "task_passed",
   "task_id": "report-2",
   "attempt": 1,
@@ -850,7 +906,7 @@
  {
   "seq": 78,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.906,
+  "t": 1795759356.249,
   "type": "task_replaced",
   "task_id": "report-1",
   "by": "report-2"
@@ -858,25 +914,29 @@
  {
   "seq": 79,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.907,
+  "t": 1795759356.249,
   "type": "orchestrator_said",
   "text": "Every task passed verification. Finishing."
  },
  {
   "seq": 80,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.908,
+  "t": 1795759356.25,
   "type": "usage",
   "cost_usd": 2.07,
   "delta_usd": 0.05,
   "model_calls": 15,
   "turns": 52,
-  "assignments": 4
+  "assignments": 4,
+  "agent": "orchestrator",
+  "role": "orchestrator",
+  "model": "sonnet",
+  "task_id": ""
  },
  {
   "seq": 81,
   "run_id": "20261123-091402-demo",
-  "t": 1795759173.908,
+  "t": 1795759356.25,
   "type": "finished",
   "give_up": false,
   "result": "Wrote report.md comparing GoPay, OVO, DANA, ShopeePay and LinkAja on fees and features, with a recommendation and 17 sources.\n\nFiles: report.md, analysis/comparison.md, research/ (5 files).",

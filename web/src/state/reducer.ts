@@ -15,7 +15,7 @@ export function agentAccessory(index: number) {
 export function emptyRun(id = ''): RunView {
   return {
     id, task: '', title: '', status: 'created', options: {}, authMode: '', repo: null, branch: null,
-    parentId: null, startedAt: null, endedAt: null, lastEventAt: null, costUsd: 0, modelCalls: 0,
+    parentId: null, startedAt: null, endedAt: null, lastEventAt: null, costUsd: 0, modelCalls: 0, usageByAgent: {}, usageByModel: {},
     assignments: 0, agents: {}, agentOrder: [], tasks: {}, approvals: {}, files: {}, thread: [],
     final: '', giveUp: false, budgetReason: '', error: null, replanning: false, playbook: null, lastSeq: 0, announcements: [],
   }
@@ -165,10 +165,22 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (ap) r.approvals[e.approval_id] = { ...ap, decision: e.decision }
       break
     }
-    case 'usage':
+    case 'usage': {
       r.costUsd = e.cost_usd ?? r.costUsd
       r.modelCalls = e.model_calls ?? r.modelCalls
+      const delta = e.delta_usd ?? 0
+      const who = e.agent || 'unknown'
+      const model = e.model || 'unknown'
+      const a = r.usageByAgent[who] ?? { costUsd: 0, calls: 0, role: e.role ?? '', models: [], tasks: [] }
+      r.usageByAgent = { ...r.usageByAgent, [who]: {
+        ...a, costUsd: a.costUsd + delta, calls: a.calls + 1,
+        models: a.models.includes(model) ? a.models : [...a.models, model],
+        tasks: !e.task_id || a.tasks.includes(e.task_id) ? a.tasks : [...a.tasks, e.task_id],
+      } }
+      const m = r.usageByModel[model] ?? { costUsd: 0, calls: 0 }
+      r.usageByModel = { ...r.usageByModel, [model]: { costUsd: m.costUsd + delta, calls: m.calls + 1 } }
       break
+    }
     case 'budget_exhausted':
       r.budgetReason = e.reason ?? ''
       break

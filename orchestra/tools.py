@@ -389,12 +389,13 @@ class OrchestraTools:
                 plugins=toolset.plugins or None,
                 can_use_tool=can_use,
                 sandbox=sandbox,
-                model=t.tier,
+                model=(model := t.tier),
                 cwd=s.workspace,
                 max_turns=b.max_worker_turns,
                 on_tool_use=on_tool_use,
             )
-            s.record_usage(work.turns, work.cost_usd)
+            s.record_usage(work.turns, work.cost_usd, agent=agent_name, role="worker", model=model,
+                           task_id=task_id)
             t.output = work.text
             self._report_new_files(before, reported, task_id, agent_name, t.owns)
 
@@ -424,7 +425,8 @@ class OrchestraTools:
                         output_schema=prompts.CHECKER_SCHEMA,
                         sandbox=sandbox,
                     )
-                    s.record_usage(check.turns, check.cost_usd)
+                    s.record_usage(check.turns, check.cost_usd, role="checker", model=cfg.checker_model,
+                                   task_id=task_id)
                     verdict = check.structured if isinstance(check.structured, dict) else _parse_verdict(check.text)
                     fb = verdict.get("reason", "") or ""
                     short = (verdict.get("short") or prompts.short_reason(fb))[:60]
