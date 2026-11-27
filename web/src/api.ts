@@ -56,8 +56,13 @@ export interface RunOptions {
   orchestrator_model?: string
   worker_model?: string
   checker_model?: string
+  pick_tier?: boolean       // the orchestrator picks a model tier per agent and task
+  max_tier?: string         // highest tier a pick or step-up may reach
   max_cost?: number
   max_agents?: number
+  max_attempts?: number     // tries per task
+  max_steps?: number        // tool-use steps per try
+  max_assignments?: number  // tasks per run
   catalog?: string[] | null
   playbook?: string
 }

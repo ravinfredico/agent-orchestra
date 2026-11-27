@@ -130,6 +130,8 @@ button { cursor: pointer; }
 }
 @keyframes drop { from { opacity: 0; transform: translateY(-4px) scale(0.99); } }
 .options .wide { grid-column: 1 / -1; }
+.presets { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.preset-custom { border-style: dashed; cursor: default; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > span { font-size: 13px; color: var(--text-2); }
 .field input, .field select {
@@ -197,6 +199,12 @@ button { cursor: pointer; }
 .pip-fail { background: var(--fail); box-shadow: none; }
 .card-body { padding: 0 14px 14px 64px; display: flex; flex-direction: column; gap: 10px; animation: rise 200ms var(--ease-out); }
 .card-body .dw { font-size: 13.5px; color: var(--text-2); }
+.card-body .dw .mono { font-family: var(--mono); font-size: 12.5px; }
+.tier-chip { flex: none; font-family: var(--mono); font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); }
+.check-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.check-list li { display: flex; gap: 8px; }
+.check-pass > span:first-child { color: var(--pass); }
+.check-fail > span:first-child { color: var(--fail); }
 .note { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
 .note .muted { margin-right: 4px; }
 

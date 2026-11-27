@@ -53,7 +53,7 @@ describe('TaskCard', () => {
   it('names the card once: agent, title, status', () => {
     render(<TaskCard task={finished.tasks['analysis-1']} run={finished} />)
     const name = screen.getByRole('button').textContent?.replace(/\s+/g, ' ').trim()
-    expect(name).toBe(`${finished.tasks['analysis-1'].agent}: ${finished.tasks['analysis-1'].title}, Passed on try 2`)
+    expect(name).toBe(`${finished.tasks['analysis-1'].agent}: ${finished.tasks['analysis-1'].title}, Passed on try 2, model sonnet ↑, stepped up`)
     expect(screen.queryByRole('img')).toBeNull()
   })
 })
@@ -145,5 +145,33 @@ describe('NewRun', () => {
     await act(async () => { fireEvent.click(start) })
     const post = calls.find((c) => c.url === '/api/runs')
     expect(post?.body).toMatchObject({ task: 'Write a haiku to haiku.md', options: { allow_bash: true, max_cost: 5, playbook: 'writing' } })
+  })
+
+  it('posts the Cheap preset, and an edited field makes it Custom', async () => {
+    const calls: { url: string; body?: unknown }[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+      const body = url === '/api/runs' ? { id: 'r' } : []
+      return new Response(JSON.stringify(body), { status: url === '/api/runs' ? 201 : 200, headers: { 'content-type': 'application/json' } })
+    })
+    const user = userEvent.setup()
+    render(<MemoryRouter><NewRun /></MemoryRouter>)
+    await user.type(screen.getByLabelText('Task'), 'Summarise a page')
+    await user.click(screen.getByRole('button', { name: 'Options' }))
+    await user.click(screen.getByRole('button', { name: 'Cheap' }))
+    expect(screen.getByRole('button', { name: 'Cheap' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText(/^Cheap · \$1 cap/)).toBeInTheDocument()
+    const tries = screen.getByLabelText('Tries per task')
+    await user.clear(tries)
+    await user.type(tries, '3')
+    expect(screen.getByText('Custom')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cheap' }))
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Start run' })) })
+    const post = calls.find((c) => c.url === '/api/runs')
+    expect(post?.body).toMatchObject({ options: {
+      orchestrator_model: 'sonnet', worker_model: 'haiku', pick_tier: true, max_tier: 'sonnet', checker_model: 'haiku',
+      max_cost: 1, max_attempts: 2, max_steps: 15, max_assignments: 8,
+    } })
   })
 })

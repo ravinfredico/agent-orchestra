@@ -82,6 +82,8 @@ Character (36 px) + title (15/600) + status line (13, text-2, with a 7 px dot) +
 | checking | waiting | Checking · try N | check | current ring |
 | retrying | sad, then working | Try N · <short reason, max 5 words> | check | fail dots, current ring |
 | done | happy | Passed | pass | fails, filled |
+
+On the right, before the dots, a mono tier chip names the model of the current try (`haiku`, `sonnet ↑` after a step-up). Open, the card shows the tier and its reason, the cheap checks, and per try the tier and either the checker's reason or each check with ✓ or ✕ ("checks, no model asked"). Canvas: `M7-Cheaper`.
 | failed | sad | Failed · N tries | fail | all fail |
 | replaced | sleepy | Replaced by <new title> | border | none; card at 55% opacity, title struck |
 
@@ -103,7 +105,7 @@ Tap or Enter opens the card in place: "Done when: …", then one checker line pe
 |---|---|
 | Empty | Placeholder "Give the team a task, and say how to tell it's done". Start disabled. |
 | Typing | Start enabled (primary circle). Enter adds a line; Cmd/Ctrl+Enter starts. |
-| Options open | Options button highlighted, panel below with all run options. |
+| Options open | Options button highlighted, panel below with all run options: shell, playbook, repo, connectors, then Preset (Default, Cheap; Custom once a field is edited), Orchestrator, Workers (Orchestrator picks, or Always <tier>), Highest model, Checker, usage cap, max agents, tries per task, steps per try, max tasks. Canvas: `M7-Cheaper`. |
 | Running | Becomes the run bar: team faces, "Running", elapsed and usage, Stop. |
 | Replanning | Run bar says "Replanning". |
 | Waiting for approval | Run bar says "Needs your approval". |
@@ -229,7 +231,7 @@ Phone rules:
 |---|---|
 | Greeting | What should the team do? |
 | Composer placeholder | Give the team a task, and say how to tell it's done |
-| Options summary | $5 cap · shell off |
+| Options summary | $5 cap · shell off (Cheap preset: Cheap · $1 cap · shell off) |
 | Shell option | Allow shell commands. Needed for code and tests. Commands run on this machine. |
 | Repo option | Work in a repository (optional). Needs a clean git tree. The team works on a new branch, so your main branch is never touched. |
 | Running | Running · 00:24 · $0.74 est. |
@@ -298,9 +300,9 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | orchestrator_said | Orchestrator message |
 | nudge | Nothing visible (raw log only) |
 | agent_created | Joined line, rail team row, run bar face |
-| task_assigned | New task card (queued). Tier chip and reason on the card (M7, canvas pending) |
+| task_assigned | New task card (queued). Tier chip and reason on the card (M7, canvas `M7-Cheaper`) |
 | attempt_started | Card working / retrying, character working. Tier chip updates on a step-up |
-| attempt_failed / task_passed with `checked_by: checks` | Card detail shows each check with pass or fail, "no model asked" (M7, canvas pending) |
+| attempt_failed / task_passed with `checked_by: checks` | Card detail shows each check with pass or fail, "no model asked" (M7, canvas `M7-Cheaper`) |
 | worker_activity | Activity line |
 | file_written | Rail files list, file count badge |
 | checker_started | Card checking, character waiting |

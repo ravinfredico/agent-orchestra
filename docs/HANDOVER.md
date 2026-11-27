@@ -9,7 +9,7 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
 | Working branch | `feat/chacha-pa`. |
 | Docs-only branch | `claude/adoring-wright-xydai5`: old, docs up to the implementation plan. |
 | Demo video | `docs/media/chacha-pa-demo.mp4` (97 s, voiceover), README GIF `docs/media/chacha-pa-demo-preview.gif`, source `demo-video/`. |
-| Design canvas | https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNUS (private to the user). Page "Screens" has 13 screens. Page "Style & components" has the Thread sheet and the Character component. |
+| Design canvas | https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNUS (private to the user). Page "Screens" has 13 screens plus the `M7-Cheaper` sheet (tier chip, cheap checks, Cheap preset, parallel cards, usage by agent and model). Page "Style & components" has the Thread sheet and the Character component. |
 | Decisions | `docs/PLAN.md` |
 | Plan and progress | `docs/IMPLEMENTATION.md` (Progress table at the top) |
 

@@ -127,8 +127,14 @@ Shapes:
 ```jsonc
 // options (all optional; defaults shown)
 {"allow_bash": false, "repo": "", "orchestrator_model": "sonnet", "worker_model": "sonnet",
- "checker_model": "haiku", "max_cost": 5.0, "max_agents": 6, "max_assignments": 15,
- "max_attempts": 3, "catalog": ["*"], "allowed_domains": []}
+ "pick_tier": true, "max_tier": "opus", "checker_model": "haiku", "max_cost": 5.0,
+ "max_agents": 6, "max_assignments": 15, "max_attempts": 3, "max_steps": 25,
+ "catalog": ["*"], "allowed_domains": []}
+// worker_model: the default tier when the orchestrator names none (pick_tier: true),
+//   or the tier every worker uses (pick_tier: false).
+// max_tier: highest tier a pick or a step-up may reach. max_steps: tool-use turns per try.
+// The web app's Cheap preset (web/src/presets.ts): worker_model haiku, max_tier sonnet,
+//   max_cost 1, max_attempts 2, max_steps 15, max_assignments 8.
 
 // RunSummary
 {"id": "20261123-091402-a3f1c2", "title": "Indonesian e-wallets report", "task": "...",
