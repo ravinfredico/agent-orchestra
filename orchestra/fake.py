@@ -179,7 +179,8 @@ async def demo_script(tools):
                                   "tier": tier, "tier_reason": why})
     await tools.assign_task({"agent": "researcher", "task_id": "research-1", "title": "Research wallets",
                              "task": "[research] Research GoPay, OVO, DANA, ShopeePay and LinkAja. One file per wallet in research/.",
-                             "done_when": "research/ has 5 files, each with fees, features and 3+ source URLs"})
+                             "done_when": "research/ has 5 files, each with fees, features and 3+ source URLs",
+                             "checks": [{"type": "file_count", "glob": "research/*.md", "min": 5}]})
     await tools.assign_task({"agent": "analyst", "task_id": "analysis-1", "title": "Compare fees",
                              "task": "[analysis] Build a fee table and features matrix in analysis/comparison.md.",
                              "done_when": "The fee table covers all 5 wallets; a features matrix with 5 columns"})

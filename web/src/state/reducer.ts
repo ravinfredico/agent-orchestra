@@ -69,7 +69,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       r.tasks[e.task_id] = {
         taskId: e.task_id, title: e.title || e.task_id, agent: e.agent, task: e.task ?? '', doneWhen: e.done_when ?? '',
         replaces: e.replaces ?? '', replacedBy: '', status: 'pending', attempts: 0, short: '', history: [],
-        tier: e.tier ?? '', tierReason: e.tier_reason ?? '',
+        tier: e.tier ?? '', tierReason: e.tier_reason ?? '', checks: e.checks ?? [], checksOnly: !!e.checks_only,
       }
       r.thread.push({ kind: 'task', seq: e.seq, taskId: e.task_id })
       r.replanning = false
@@ -109,7 +109,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (t) {
         t.status = 'sent_back'
         t.short = e.short ?? ''
-        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: false, reason: e.reason ?? '', short: e.short ?? '' }]
+        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: false, reason: e.reason ?? '', short: e.short ?? '', checkedBy: e.checked_by ?? 'model', checks: e.checks ?? [] }]
         announce(r, e, `${t.title}: try ${e.attempt} sent back. ${e.short || e.reason || ''}`)
       }
       break
@@ -119,7 +119,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (t) {
         t.status = 'done'
         t.short = e.short ?? ''
-        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: true, reason: e.reason ?? '', short: e.short ?? '' }]
+        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: true, reason: e.reason ?? '', short: e.short ?? '', checkedBy: e.checked_by ?? 'model', checks: e.checks ?? [] }]
         const a = agent(t.agent)
         if (a) { a.currentTask = null; a.activity = ''; a.passed += 1 }
         announce(r, e, `${t.title} passed`)

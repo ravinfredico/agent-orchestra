@@ -44,7 +44,8 @@ def fold(run_dir: Path) -> dict:
                                    "task": e.get("task", ""), "done_when": e.get("done_when", ""),
                                    "replaces": e.get("replaces", ""), "replaced_by": "", "status": "pending",
                                    "attempts": 0, "feedback": "", "short": "", "history": [],
-                                   "tier": e.get("tier", ""), "tier_reason": e.get("tier_reason", "")}
+                                   "tier": e.get("tier", ""), "tier_reason": e.get("tier_reason", ""),
+                                   "checks": e.get("checks", []), "checks_only": e.get("checks_only", False)}
         elif t == "attempt_started" and e["task_id"] in board:
             b = board[e["task_id"]]
             b["attempts"] = e["attempt"]
@@ -60,11 +61,13 @@ def fold(run_dir: Path) -> dict:
         elif t == "attempt_failed" and e["task_id"] in board:
             b = board[e["task_id"]]
             b.update(status="retrying", feedback=e.get("reason", ""), short=e.get("short", ""))
-            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": False, "reason": e.get("reason", ""), "short": e.get("short", "")})
+            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": False, "reason": e.get("reason", ""), "short": e.get("short", ""),
+                               "checked_by": e.get("checked_by", "model"), "checks": e.get("checks", [])})
         elif t == "task_passed" and e["task_id"] in board:
             b = board[e["task_id"]]
             b.update(status="done", feedback=e.get("reason", ""), short=e.get("short", ""))
-            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": True, "reason": e.get("reason", ""), "short": e.get("short", "")})
+            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": True, "reason": e.get("reason", ""), "short": e.get("short", ""),
+                               "checked_by": e.get("checked_by", "model"), "checks": e.get("checks", [])})
             if b["agent"] in agents:
                 agents[b["agent"]]["status"] = "idle"
         elif t == "task_failed" and e["task_id"] in board:

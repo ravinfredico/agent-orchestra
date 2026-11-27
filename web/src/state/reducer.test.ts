@@ -30,6 +30,13 @@ describe('reducer', () => {
     expect(r.agents.writer.model).toBe('sonnet')
   })
 
+  it('keeps cheap check results on the attempt', () => {
+    const t = reduceAll(demoEvents).tasks['research-1']
+    expect(t.checks).toEqual(['5+ files match research/*.md'])
+    expect(t.history[0].checks[0]).toMatchObject({ passed: true, detail: '5 found' })
+    expect(t.history[0].checkedBy).toBe('model')
+  })
+
   it('builds the thread in event order with joined lines grouped', () => {
     const r = reduceAll(demoEvents)
     const kinds = r.thread.map((i) => i.kind)

@@ -18,6 +18,10 @@ when: Find facts on the web and write them up as a report, comparison or brief w
 - report: "<file> has <sections>, the table from analysis/, and a Sources section listing every URL
   from research/ (at least <n>)"
 
+## Cheap checks
+- Research: `{"type": "file_count", "glob": "research/*.md", "min": <n>}`. Report: `file_exists` and
+  `contains` checks for each required heading. Leave quality and sources to the model checker.
+
 ## Pitfalls
 - Writers without file search drop sources. Give the writer Grep (`files.read`), and say "list every
   URL found in research/".

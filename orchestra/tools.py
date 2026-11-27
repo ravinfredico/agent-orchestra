@@ -9,7 +9,7 @@ from pathlib import Path
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 
-from . import prompts
+from . import checks, prompts
 from .approvals import make_can_use_tool
 from .catalog import Catalog, load_catalog
 from .config import TIERS, clamp_tier, step_up
@@ -160,6 +160,8 @@ class OrchestraTools:
         task_text = str(args.get("task", ""))
         done_when = str(args.get("done_when", ""))
         replaces = str(args.get("replaces", "") or "").strip()
+        task_checks = args.get("checks") or []
+        checks_only = bool(args.get("checks_only", False))
 
         if agent_name not in s.agents:
             return _err(f"No agent '{agent_name}'. Existing: {list(s.agents)}. Create it first.")
@@ -172,6 +174,10 @@ class OrchestraTools:
         if replaces and (replaces not in s.board or s.board[replaces].status != "failed"):
             return _err(f"'replaces' must name a failed task. Failed tasks: "
                         f"{[k for k, v in s.board.items() if v.status == 'failed']}")
+        if bad := checks.validate(task_checks, cfg.allow_bash):
+            return _err(bad)
+        if checks_only and not task_checks:
+            return _err("checks_only needs at least one check")
         if problem := s.budget_problem():
             s.log("budget_exhausted", reason=problem)
             return _err(f"Out of budget: {problem}. Call finish with give_up=true.")
@@ -188,7 +194,8 @@ class OrchestraTools:
                  title=title[:60], status="pending", replaces=replaces, tier=tier, tier_reason=tier_reason)
         s.board[task_id] = t
         s.log("task_assigned", task_id=task_id, title=t.title, agent=agent_name, task=task_text,
-              done_when=done_when, replaces=replaces, tier=tier, tier_reason=tier_reason)
+              done_when=done_when, replaces=replaces, tier=tier, tier_reason=tier_reason,
+              checks=[checks.label(c) for c in task_checks], checks_only=checks_only)
 
         toolset = self.catalog.toolset(agent.tools, cfg)
         scratch = s.workspace / ".agents" / agent_name
@@ -241,29 +248,40 @@ class OrchestraTools:
             t.output = work.text
             self._report_new_files(before, reported, task_id, agent_name)
 
+            verdict, by, results = None, "model", None
             if work.is_error and not work.text:
-                fb, short = f"Worker errored: {work.error}", "worker errored"
+                fb, short, by = f"Worker errored: {work.error}", "worker errored", "worker"
             else:
-                # 2. independent checker verifies against done_when
-                t.status = "checking"
-                s.log("checker_started", task_id=task_id, attempt=attempt)
-                check = await self.runner(
-                    prompt=prompts.checker_task_prompt(task_text, done_when, work.text),
-                    system_prompt=prompts.CHECKER_PROMPT,
-                    tools=cfg.checker_tools(),
-                    model=cfg.checker_model,
-                    cwd=s.workspace,
-                    max_turns=15,
-                    output_schema=prompts.CHECKER_SCHEMA,
-                    sandbox=sandbox,
-                )
-                s.record_usage(check.turns, check.cost_usd)
-                verdict = check.structured if isinstance(check.structured, dict) else _parse_verdict(check.text)
-                reason = verdict.get("reason", "") or ""
-                short = (verdict.get("short") or prompts.short_reason(reason))[:60]
+                if task_checks:  # 2a. cheap checks first: no model call
+                    ok, results = await checks.run_checks(task_checks, s.workspace)
+                    if not ok:
+                        verdict, by = {"passed": False}, "checks"
+                        fb, short = checks.failure_text(results)
+                    elif checks_only:
+                        verdict, by = {"passed": True}, "checks"
+                        fb = "All checks passed: " + "; ".join(r["check"] for r in results)
+                        short = f"{len(results)} checks passed"
+                if verdict is None:  # 2b. independent model checker verifies against done_when
+                    t.status = "checking"
+                    s.log("checker_started", task_id=task_id, attempt=attempt)
+                    check = await self.runner(
+                        prompt=prompts.checker_task_prompt(task_text, done_when, work.text, results),
+                        system_prompt=prompts.CHECKER_PROMPT,
+                        tools=cfg.checker_tools(),
+                        model=cfg.checker_model,
+                        cwd=s.workspace,
+                        max_turns=15,
+                        output_schema=prompts.CHECKER_SCHEMA,
+                        sandbox=sandbox,
+                    )
+                    s.record_usage(check.turns, check.cost_usd)
+                    verdict = check.structured if isinstance(check.structured, dict) else _parse_verdict(check.text)
+                    fb = verdict.get("reason", "") or ""
+                    short = (verdict.get("short") or prompts.short_reason(fb))[:60]
+                extra = {"checked_by": by, **({"checks": results} if results else {})}
                 if verdict.get("passed"):
-                    t.status, t.feedback, t.short = "done", reason, short
-                    s.log("task_passed", task_id=task_id, attempt=attempt, reason=reason, short=short)
+                    t.status, t.feedback, t.short = "done", fb, short
+                    s.log("task_passed", task_id=task_id, attempt=attempt, reason=fb, short=short, **extra)
                     if replaces:  # the failed task this one superseded no longer blocks finish
                         s.board[replaces].status = "replaced"
                         s.board[replaces].replaced_by = task_id
@@ -273,7 +291,7 @@ class OrchestraTools:
                         f"PASSED on attempt {attempt}.\nChecker: {t.feedback}\n\n"
                         f"Worker report:\n{work.text[:MAX_OUTPUT_BACK]}"
                     )
-                fb = reason or "Checker gave no reason"
+                fb = fb or "Checker gave no reason"
                 # it failed on its tier: the next try moves one tier up, once
                 if (attempt < b.max_attempts_per_task and not stepped_up
                         and (nxt := step_up(t.tier, cfg.max_tier))):
@@ -282,7 +300,8 @@ class OrchestraTools:
             feedback.append(fb)
             t.feedback, t.short = fb, short
             t.status = "retrying"
-            s.log("attempt_failed", task_id=task_id, attempt=attempt, reason=fb, short=short)
+            s.log("attempt_failed", task_id=task_id, attempt=attempt, reason=fb, short=short,
+                  checked_by=by, **({"checks": results} if results else {}))
             if s.budget_problem():
                 break
 
@@ -381,6 +400,8 @@ class OrchestraTools:
                     "task": {"type": "string", "description": "Exact instructions, inputs, and output file names"},
                     "done_when": {"type": "string", "description": "Concrete criteria a checker can verify from files"},
                     "replaces": {"type": "string", "description": "Optional: id of a FAILED task this one supersedes"},
+                    "checks": checks.SCHEMA,
+                    "checks_only": {"type": "boolean", "description": "true if the checks cover all of done_when: passing checks pass the task with no model checker"},
                     "tier": {"type": "string", "enum": TIERS,
                              "description": "Optional, defaults to the agent's tier. Model: haiku for search, reading, summaries, simple edits; sonnet for writing, planning, code; opus only after a task failed on sonnet"},
                     "tier_reason": {"type": "string", "description": "A few words on why this tier, shown to the user"},

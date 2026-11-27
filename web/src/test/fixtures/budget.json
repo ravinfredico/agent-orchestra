@@ -2,7 +2,7 @@
  {
   "seq": 1,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.941,
+  "t": 1795758467.565,
   "type": "run_started",
   "task": "Research the top 5 Indonesian e-wallets and write a comparison report as report.md",
   "title": "Research the top 5 Indonesian e-wallets\u2026",
@@ -22,7 +22,7 @@
    "allowed_domains": [],
    "playbook": "auto"
   },
-  "workspace": "/tmp/tmpjfarjgbu/20261123-091402-budget/workspace",
+  "workspace": "/tmp/tmp0h963o40/20261123-091402-budget/workspace",
   "repo": null,
   "branch": null,
   "parent_id": null,
@@ -31,7 +31,7 @@
  {
   "seq": 2,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.942,
+  "t": 1795758467.566,
   "type": "playbook_chosen",
   "id": "research-report",
   "title": "Research report"
@@ -39,14 +39,14 @@
  {
   "seq": 3,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.942,
+  "t": 1795758467.566,
   "type": "orchestrator_said",
   "text": "Plan: research each wallet, compare fees and features, then write the report. Research comes first. Hiring three agents."
  },
  {
   "seq": 4,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.942,
+  "t": 1795758467.566,
   "type": "agent_created",
   "name": "researcher",
   "role": "Finds fees, features and sources for each wallet",
@@ -61,7 +61,7 @@
  {
   "seq": 5,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.942,
+  "t": 1795758467.566,
   "type": "agent_created",
   "name": "analyst",
   "role": "Turns research notes into comparison tables",
@@ -76,7 +76,7 @@
  {
   "seq": 6,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.942,
+  "t": 1795758467.566,
   "type": "agent_created",
   "name": "writer",
   "role": "Writes the final report from the analysis",
@@ -91,7 +91,7 @@
  {
   "seq": 7,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.943,
+  "t": 1795758467.567,
   "type": "task_assigned",
   "task_id": "research-1",
   "title": "Research wallets",
@@ -100,12 +100,16 @@
   "done_when": "research/ has 5 files, each with fees, features and 3+ source URLs",
   "replaces": "",
   "tier": "haiku",
-  "tier_reason": "search and notes"
+  "tier_reason": "search and notes",
+  "checks": [
+   "5+ files match research/*.md"
+  ],
+  "checks_only": false
  },
  {
   "seq": 8,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.943,
+  "t": 1795758467.567,
   "type": "attempt_started",
   "task_id": "research-1",
   "attempt": 1,
@@ -114,7 +118,7 @@
  {
   "seq": 9,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.943,
+  "t": 1795758467.567,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -124,7 +128,7 @@
  {
   "seq": 10,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.943,
+  "t": 1795758467.567,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -134,7 +138,7 @@
  {
   "seq": 11,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.943,
+  "t": 1795758467.567,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -144,7 +148,7 @@
  {
   "seq": 12,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.943,
+  "t": 1795758467.567,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -154,7 +158,7 @@
  {
   "seq": 13,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -164,7 +168,7 @@
  {
   "seq": 14,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -174,7 +178,7 @@
  {
   "seq": 15,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -184,7 +188,7 @@
  {
   "seq": 16,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -194,7 +198,7 @@
  {
   "seq": 17,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -204,7 +208,7 @@
  {
   "seq": 18,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -214,7 +218,7 @@
  {
   "seq": 19,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -224,7 +228,7 @@
  {
   "seq": 20,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -234,7 +238,7 @@
  {
   "seq": 21,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.944,
+  "t": 1795758467.568,
   "type": "usage",
   "cost_usd": 0.41,
   "delta_usd": 0.41,
@@ -245,7 +249,7 @@
  {
   "seq": 22,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.945,
+  "t": 1795758467.569,
   "type": "checker_started",
   "task_id": "research-1",
   "attempt": 1
@@ -253,7 +257,7 @@
  {
   "seq": 23,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.945,
+  "t": 1795758467.569,
   "type": "usage",
   "cost_usd": 0.46,
   "delta_usd": 0.05,
@@ -264,17 +268,25 @@
  {
   "seq": 24,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.945,
+  "t": 1795758467.569,
   "type": "task_passed",
   "task_id": "research-1",
   "attempt": 1,
   "reason": "All 5 files present. Each lists fees, features and 3 to 4 source URLs.",
-  "short": "all 5 files present"
+  "short": "all 5 files present",
+  "checked_by": "model",
+  "checks": [
+   {
+    "check": "5+ files match research/*.md",
+    "passed": true,
+    "detail": "5 found"
+   }
+  ]
  },
  {
   "seq": 25,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.946,
+  "t": 1795758467.569,
   "type": "task_assigned",
   "task_id": "analysis-1",
   "title": "Compare fees",
@@ -283,12 +295,14 @@
   "done_when": "The fee table covers all 5 wallets; a features matrix with 5 columns",
   "replaces": "",
   "tier": "haiku",
-  "tier_reason": "tables from notes"
+  "tier_reason": "tables from notes",
+  "checks": [],
+  "checks_only": false
  },
  {
   "seq": 26,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.946,
+  "t": 1795758467.569,
   "type": "attempt_started",
   "task_id": "analysis-1",
   "attempt": 1,
@@ -297,7 +311,7 @@
  {
   "seq": 27,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.946,
+  "t": 1795758467.57,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -307,7 +321,7 @@
  {
   "seq": 28,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.946,
+  "t": 1795758467.57,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -317,7 +331,7 @@
  {
   "seq": 29,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.947,
+  "t": 1795758467.57,
   "type": "file_written",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -327,7 +341,7 @@
  {
   "seq": 30,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.947,
+  "t": 1795758467.57,
   "type": "usage",
   "cost_usd": 0.64,
   "delta_usd": 0.18,
@@ -338,7 +352,7 @@
  {
   "seq": 31,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.947,
+  "t": 1795758467.57,
   "type": "checker_started",
   "task_id": "analysis-1",
   "attempt": 1
@@ -346,7 +360,7 @@
  {
   "seq": 32,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.947,
+  "t": 1795758467.57,
   "type": "usage",
   "cost_usd": 0.69,
   "delta_usd": 0.05,
@@ -357,17 +371,18 @@
  {
   "seq": 33,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.947,
+  "t": 1795758467.57,
   "type": "attempt_failed",
   "task_id": "analysis-1",
   "attempt": 1,
   "reason": "Fee table is missing transfer fees for DANA and LinkAja. ShopeePay is absent from the features matrix.",
-  "short": "2 wallets missing fees"
+  "short": "2 wallets missing fees",
+  "checked_by": "model"
  },
  {
   "seq": 34,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.947,
+  "t": 1795758467.57,
   "type": "attempt_started",
   "task_id": "analysis-1",
   "attempt": 2,
@@ -376,7 +391,7 @@
  {
   "seq": 35,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.948,
+  "t": 1795758467.571,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -386,7 +401,7 @@
  {
   "seq": 36,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.948,
+  "t": 1795758467.571,
   "type": "worker_activity",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -396,7 +411,7 @@
  {
   "seq": 37,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.948,
+  "t": 1795758467.571,
   "type": "file_written",
   "task_id": "analysis-1",
   "agent": "analyst",
@@ -406,7 +421,7 @@
  {
   "seq": 38,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.948,
+  "t": 1795758467.571,
   "type": "usage",
   "cost_usd": 0.87,
   "delta_usd": 0.18,
@@ -417,7 +432,7 @@
  {
   "seq": 39,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.948,
+  "t": 1795758467.572,
   "type": "checker_started",
   "task_id": "analysis-1",
   "attempt": 2
@@ -425,7 +440,7 @@
  {
   "seq": 40,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.948,
+  "t": 1795758467.572,
   "type": "usage",
   "cost_usd": 0.92,
   "delta_usd": 0.05,
@@ -436,17 +451,18 @@
  {
   "seq": 41,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.948,
+  "t": 1795758467.572,
   "type": "task_passed",
   "task_id": "analysis-1",
   "attempt": 2,
   "reason": "Fee table complete for all 5 wallets. Features matrix has 5 columns.",
-  "short": "all 5 wallets covered"
+  "short": "all 5 wallets covered",
+  "checked_by": "model"
  },
  {
   "seq": 42,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.949,
+  "t": 1795758467.572,
   "type": "task_assigned",
   "task_id": "report-1",
   "title": "Write the report",
@@ -455,12 +471,14 @@
   "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources",
   "replaces": "",
   "tier": "sonnet",
-  "tier_reason": "long-form writing"
+  "tier_reason": "long-form writing",
+  "checks": [],
+  "checks_only": false
  },
  {
   "seq": 43,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.949,
+  "t": 1795758467.572,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 1,
@@ -469,7 +487,7 @@
  {
   "seq": 44,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.949,
+  "t": 1795758467.573,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -479,7 +497,7 @@
  {
   "seq": 45,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.95,
+  "t": 1795758467.573,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -489,7 +507,7 @@
  {
   "seq": 46,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.95,
+  "t": 1795758467.573,
   "type": "usage",
   "cost_usd": 1.14,
   "delta_usd": 0.22,
@@ -500,7 +518,7 @@
  {
   "seq": 47,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.95,
+  "t": 1795758467.574,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 1
@@ -508,7 +526,7 @@
  {
   "seq": 48,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.95,
+  "t": 1795758467.574,
   "type": "usage",
   "cost_usd": 1.19,
   "delta_usd": 0.05,
@@ -519,17 +537,18 @@
  {
   "seq": 49,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.95,
+  "t": 1795758467.574,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 1,
   "reason": "Sources list has 6 URLs; needs 10+. Recommendation section is missing.",
-  "short": "6 sources, needs 10+"
+  "short": "6 sources, needs 10+",
+  "checked_by": "model"
  },
  {
   "seq": 50,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.95,
+  "t": 1795758467.574,
   "type": "task_failed",
   "task_id": "report-1",
   "attempts": 1
@@ -537,14 +556,14 @@
  {
   "seq": 51,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.574,
   "type": "orchestrator_said",
   "text": "The writer can't search the research files. I'm hiring an editor who can, and giving it the report. It will email you when done."
  },
  {
   "seq": 52,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.574,
   "type": "agent_created",
   "name": "editor",
   "role": "Assembles the report and compiles every source",
@@ -560,21 +579,21 @@
  {
   "seq": 53,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.19 of $1.00)"
  },
  {
   "seq": 54,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "orchestrator_said",
   "text": "Every task passed verification. Finishing."
  },
  {
   "seq": 55,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "usage",
   "cost_usd": 1.24,
   "delta_usd": 0.05,
@@ -585,14 +604,14 @@
  {
   "seq": 56,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.24 of $1.00)"
  },
  {
   "seq": 57,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "usage",
   "cost_usd": 1.29,
   "delta_usd": 0.05,
@@ -603,14 +622,14 @@
  {
   "seq": 58,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.29 of $1.00)"
  },
  {
   "seq": 59,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "usage",
   "cost_usd": 1.34,
   "delta_usd": 0.05,
@@ -621,14 +640,14 @@
  {
   "seq": 60,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.34 of $1.00)"
  },
  {
   "seq": 61,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "usage",
   "cost_usd": 1.39,
   "delta_usd": 0.05,
@@ -639,14 +658,14 @@
  {
   "seq": 62,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "budget_exhausted",
   "reason": "cost limit reached ($1.39 of $1.00)"
  },
  {
   "seq": 63,
   "run_id": "20261123-091402-budget",
-  "t": 1795758346.951,
+  "t": 1795758467.575,
   "type": "finished",
   "give_up": true,
   "result": "Run ended without an accepted finish. See board.json and log.jsonl.",

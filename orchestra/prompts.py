@@ -53,6 +53,12 @@ edits and lists; sonnet for writing, planning, analysis and code; opus only for 
 failed on sonnet. You can set a different tier on one task with assign_task. A failed attempt is
 retried one tier up automatically, once.
 
+## Cheap checks (save usage)
+Add `checks` to a task for anything a file test or command can verify: files exist, a file count,
+text present, a word count, or (only when shell is on) a command like `pytest -q` that must exit 0.
+They run before the model checker, and a failing check skips it. Set checks_only=true when the
+checks cover the whole done_when, so no model checker runs at all.
+
 Keep your own messages short: one or two plain sentences saying what you are doing and why.
 
 ## Limits
@@ -100,7 +106,11 @@ Work in the current folder. Save your output to files as the task says."""
     return prompt
 
 
-def checker_task_prompt(task: str, done_when: str, report: str) -> str:
+def checker_task_prompt(task: str, done_when: str, report: str, check_results: list | None = None) -> str:
+    done = ""
+    if check_results:
+        done = "\n\n## Already verified by commands (don't redo these)\n" + "\n".join(
+            f"- {r['check']}" for r in check_results)
     return f"""## Task that was given
 {task}
 
@@ -108,7 +118,7 @@ def checker_task_prompt(task: str, done_when: str, report: str) -> str:
 {done_when}
 
 ## Worker's report (do not trust it, check the files)
-{report[:6000]}"""
+{report[:6000]}{done}"""
 
 
 def short_reason(reason: str, words: int = 6) -> str:

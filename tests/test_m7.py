@@ -121,3 +121,98 @@ def test_options_round_trip():
     c = Config.from_options(o)
     assert (c.pick_tier, c.max_tier, c.budget.max_worker_turns) == (False, "sonnet", 12)
     assert Config.from_options({"max_tier": "bogus"}).max_tier == "opus"
+
+
+# ---- 7.3 cheap checks first ------------------------------------------------------
+
+from orchestra import checks  # noqa: E402
+
+
+async def write_report(cwd, **kw):
+    (cwd / "report.md").write_text("# Report\n\n## Sources\none two three four five")
+
+
+def test_checks_validate():
+    assert checks.validate([{"type": "file_exists", "path": "a"}], False) is None
+    assert "needs" in checks.validate([{"type": "contains", "path": "a"}], False)
+    assert "Unknown" in checks.validate([{"type": "rm -rf"}], False)
+    assert "shell" in checks.validate([{"type": "command", "run": "pytest -q"}], False)
+    assert checks.validate([{"type": "command", "run": "pytest -q"}], True) is None
+
+
+def test_check_kinds(tmp_path):
+    (tmp_path / "r").mkdir()
+    for i in range(3):
+        (tmp_path / "r" / f"{i}.md").write_text("x")
+    (tmp_path / "a.md").write_text("Hello World " * 10)
+    ok, res = run(checks.run_checks([
+        {"type": "file_exists", "path": "a.md"},
+        {"type": "file_count", "glob": "r/*.md", "min": 3},
+        {"type": "contains", "path": "a.md", "text": "hello world"},
+        {"type": "min_words", "path": "a.md", "min": 20},
+        {"type": "command", "run": "python -c \"import sys; sys.exit(0)\""},
+    ], tmp_path))
+    assert ok, res
+    ok, res = run(checks.run_checks([
+        {"type": "file_exists", "path": "../outside.md"},
+        {"type": "file_count", "glob": "r/*.md", "min": 4},
+        {"type": "min_words", "path": "a.md", "min": 21},
+        {"type": "command", "run": "python -c \"import sys; sys.exit(3)\""},
+        {"type": "contains", "path": "nope.md", "text": "x"},
+    ], tmp_path))
+    assert not ok and not any(r["passed"] for r in res)
+    assert res[0]["detail"] == "path leaves the workspace" and res[3]["detail"].startswith("exit 3")
+
+
+def test_failing_check_skips_model_checker(tmp_path):
+    attempts = {"n": 0}                               # 2nd attempt: worker writes the file, checker passes
+
+    async def worker(cwd, **kw):
+        attempts["n"] += 1
+        if attempts["n"] == 2:
+            await write_report(cwd)
+    s2, t2, calls2 = make(tmp_path, [True], worker=worker)
+    run(t2.create_agent(AGENT))
+    res = run(t2.assign_task({**TASK, "checks": [{"type": "file_exists", "path": "report.md"}]}))
+    assert "PASSED on attempt 2" in text(res)
+    assert [c["checker"] for c in calls2] == [False, False, True]   # no checker after attempt 1
+    failed = events(s2, "attempt_failed")[0]
+    assert failed["checked_by"] == "checks" and "no model was asked" in failed["reason"]
+    assert failed["checks"][0]["passed"] is False
+    assert events(s2, "task_assigned")[0]["checks"] == ["report.md exists"]
+    assert "Already verified by commands" in calls2[-1]["prompt"]
+
+
+def test_checks_only_skips_model_checker(tmp_path):
+    s, t, calls = make(tmp_path, [], worker=write_report)
+    run(t.create_agent(AGENT))
+    res = run(t.assign_task({**TASK, "checks_only": True, "checks": [
+        {"type": "file_exists", "path": "report.md"}, {"type": "contains", "path": "report.md", "text": "## Sources"}]}))
+    assert "PASSED on attempt 1" in text(res)
+    assert not any(c["checker"] for c in calls)
+    assert events(s, "task_passed")[0]["checked_by"] == "checks"
+    assert s.usage.model_calls == 1                 # the worker only
+
+
+def test_command_check_refused_without_shell(tmp_path):
+    _, t, calls = make(tmp_path)
+    run(t.create_agent(AGENT))
+    res = run(t.assign_task({**TASK, "checks": [{"type": "command", "run": "pytest -q"}]}))
+    assert res.get("is_error") and "shell" in text(res) and not calls
+
+
+def test_checks_only_needs_checks(tmp_path):
+    _, t, _ = make(tmp_path)
+    run(t.create_agent(AGENT))
+    assert run(t.assign_task({**TASK, "checks_only": True})).get("is_error")
+
+
+def test_summary_folds_tier_and_checks(tmp_path):
+    from server.summary import fold
+    s, t, _ = make(tmp_path, [False, True], worker=write_report)
+    run(t.create_agent({**AGENT, "tier": "haiku", "tier_reason": "simple"}))
+    run(t.assign_task({**TASK, "checks": [{"type": "file_exists", "path": "report.md"}]}))
+    b = fold(s.run_dir)["board"][0]
+    assert (b["tier"], b["tier_reason"], b["checks"]) == ("sonnet", "simple", ["report.md exists"])
+    assert [h["tier"] for h in b["history"]] == ["haiku", "sonnet"]
+    assert b["history"][0]["checks"][0]["passed"] and b["history"][0]["checked_by"] == "model"

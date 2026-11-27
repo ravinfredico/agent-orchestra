@@ -300,6 +300,7 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | agent_created | Joined line, rail team row, run bar face |
 | task_assigned | New task card (queued). Tier chip and reason on the card (M7, canvas pending) |
 | attempt_started | Card working / retrying, character working. Tier chip updates on a step-up |
+| attempt_failed / task_passed with `checked_by: checks` | Card detail shows each check with pass or fail, "no model asked" (M7, canvas pending) |
 | worker_activity | Activity line |
 | file_written | Rail files list, file count badge |
 | checker_started | Card checking, character waiting |

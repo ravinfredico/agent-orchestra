@@ -24,9 +24,17 @@ export interface Agent {
   failed: number
 }
 
+export interface CheckResult {
+  check: string
+  passed: boolean
+  detail: string
+}
+
 export interface Attempt {
   attempt: number
   tier: string
+  checkedBy: string         // model | checks | worker
+  checks: CheckResult[]
   passed: boolean
   reason: string
   short: string
@@ -46,6 +54,8 @@ export interface TaskCardState {
   history: Attempt[]
   tier: string              // model tier of the current attempt
   tierReason: string
+  checks: string[]          // cheap check labels, run before the model checker
+  checksOnly: boolean
 }
 
 export interface Approval {

@@ -167,13 +167,13 @@ Every line in `log.jsonl` and every SSE message is one event:
 | `orchestrator_said` | `text` | orchestrator's text blocks |
 | `nudge` | `round, pending` | engine pushed the orchestrator to continue; shown only in the raw log |
 | `agent_created` | `name, role, tools, model, tier_reason, color_index` | `tools` are catalog ids. `model` is the agent's tier (haiku, sonnet, opus) |
-| `task_assigned` | `task_id, title, agent, task, done_when, replaces, tier, tier_reason` | `tier` is the task's model, from the task or its agent |
+| `task_assigned` | `task_id, title, agent, task, done_when, replaces, tier, tier_reason, checks, checks_only` | `tier` is the task's model, from the task or its agent. `checks` are labels of cheap checks (section 9c) |
 | `attempt_started` | `task_id, attempt, tier` | `tier` goes up one step after a failed attempt, once (M7) |
 | `worker_activity` | `task_id, agent, tool, summary` | `summary` max 80 chars, e.g. "reading research/dana.md" |
 | `file_written` | `task_id, agent, path, size` | path relative to the workspace |
 | `checker_started` | `task_id, attempt` | |
-| `attempt_failed` | `task_id, attempt, reason, short` | `short` max 6 words |
-| `task_passed` | `task_id, attempt, reason` | |
+| `attempt_failed` | `task_id, attempt, reason, short, checked_by, checks?` | `short` max 6 words. `checked_by`: `model`, `checks` or `worker` (it errored). `checks`: `[{check, passed, detail}]` |
+| `task_passed` | `task_id, attempt, reason, short, checked_by, checks?` | as `attempt_failed` |
 | `task_failed` | `task_id, attempts` | |
 | `task_replaced` | `task_id, by` | |
 | `approval_requested` | `approval_id, task_id, agent, tool, catalog_id, preview` | `preview` is a redacted summary of the tool input |
@@ -250,6 +250,24 @@ Inspired by Lauren Tan's pstack (`/poteto-mode` routes work to a playbook).
 - `options.playbook` (`"auto"` by default) lets you force one from the Options panel.
 - Playbooks give hints, not fixed roles: the orchestrator still invents the agents.
 - When a kind of run keeps failing the same way, fix the playbook's pitfalls, not only the prompt.
+
+## 9c. Cheap checks (M7)
+`orchestra/checks.py`. A task can carry `checks`, run after each worker attempt and before the
+model checker, with no model call:
+
+| Type | Fields | Passes when |
+|---|---|---|
+| `file_exists` | `path` | the file exists in the workspace |
+| `file_count` | `glob, min` | at least `min` files match |
+| `contains` | `path, text` | the file contains the text (any case) |
+| `min_words` | `path, min` | the file has at least `min` words |
+| `command` | `run` | the command exits 0 within 120 s. Only when shell is on for the run |
+
+- A failing check fails the attempt with a reason for the worker; the model checker is skipped.
+- Passing checks are listed in the checker prompt so it doesn't redo them.
+- `checks_only: true` passes the task on passing checks, with no model checker.
+- Paths and globs can't leave the workspace. Commands run in the workspace, not in the SDK sandbox,
+  which is why they need shell on.
 
 ## 10. Approvals for outward tools
 - Servers with outward tools are left out of `allowed_tools`, so the CLI asks the SDK's `can_use_tool`
