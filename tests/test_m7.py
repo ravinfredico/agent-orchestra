@@ -216,3 +216,139 @@ def test_summary_folds_tier_and_checks(tmp_path):
     assert (b["tier"], b["tier_reason"], b["checks"]) == ("sonnet", "simple", ["report.md exists"])
     assert [h["tier"] for h in b["history"]] == ["haiku", "sonnet"]
     assert b["history"][0]["checks"][0]["passed"] and b["history"][0]["checked_by"] == "model"
+
+
+# ---- 7.1 dependencies and parallel tasks -------------------------------------------
+
+import time  # noqa: E402
+
+
+def make_timed(tmp_path, fail=(), delay=0.05, config=None):
+    """Worker sleeps `delay`, checker fails the task ids in `fail`. Records (task, start, end)."""
+    state = RunState("demo task", config or Config(), tmp_path)
+    spans = []
+
+    async def fake_runner(*, prompt, output_schema=None, **kw):
+        tid = prompt.split("[", 1)[1].split("]", 1)[0] if "[" in prompt else "?"
+        if output_schema:
+            ok = tid not in fail
+            return AgentResult(text="", structured={"passed": ok, "reason": "r", "short": "s"}, turns=1, cost_usd=0.01)
+        start = time.monotonic()
+        await asyncio.sleep(delay)
+        spans.append((tid, start, time.monotonic()))
+        return AgentResult(text="done", turns=1, cost_usd=0.01)
+
+    t = OrchestraTools(state, runner=fake_runner)
+    for name in ("a1", "a2", "a3", "a4"):
+        run(t.create_agent({**AGENT, "name": name}))
+    return state, t, spans
+
+
+def ptask(tid, agent, **kw):
+    return {"agent": agent, "task_id": tid, "title": tid, "task": f"[{tid}] do it", "done_when": "x", **kw}
+
+
+def overlaps(spans, a, b):
+    sa = [s for s in spans if s[0] == a][0]
+    sb = [s for s in spans if s[0] == b][0]
+    return sa[1] < sb[2] and sb[1] < sa[2]
+
+
+def test_independent_tasks_overlap_and_dependent_waits(tmp_path):
+    s, t, spans = make_timed(tmp_path)
+    res = run(t.assign_tasks({"tasks": [
+        ptask("r1", "a1"), ptask("r2", "a2"), ptask("r3", "a3"),
+        ptask("rep", "a4", depends_on=["r1", "r2", "r3"]),
+    ]}))
+    assert not res.get("is_error"), text(res)
+    assert "4 of 4 tasks passed" in text(res)
+    assert overlaps(spans, "r1", "r2") and overlaps(spans, "r2", "r3")
+    rep = [x for x in spans if x[0] == "rep"][0]
+    assert all(rep[1] >= x[2] for x in spans if x[0] != "rep")   # started after all three ended
+    assigned = events(s, "task_assigned")
+    assert assigned[3]["depends_on"] == ["r1", "r2", "r3"]
+
+
+def test_max_parallel_limits_concurrency(tmp_path):
+    s, t, spans = make_timed(tmp_path, config=Config(budget=Budget(max_parallel=2)))
+    run(t.assign_tasks({"tasks": [ptask("r1", "a1"), ptask("r2", "a2"), ptask("r3", "a3")]}))
+    points = sorted([(x[1], 1) for x in spans] + [(x[2], -1) for x in spans])
+    level = peak = 0
+    for _, d in points:
+        level += d
+        peak = max(peak, level)
+    assert peak == 2
+
+
+def test_same_agent_tasks_run_one_at_a_time(tmp_path):
+    _, t, spans = make_timed(tmp_path)
+    run(t.assign_tasks({"tasks": [ptask("r1", "a1"), ptask("r2", "a1")]}))
+    assert not overlaps(spans, "r1", "r2")
+
+
+def test_dependent_of_failed_task_is_not_started(tmp_path):
+    s, t, spans = make_timed(tmp_path, fail={"r1"}, config=Config(budget=Budget(max_attempts_per_task=1)))
+    res = run(t.assign_tasks({"tasks": [ptask("r1", "a1"), ptask("r2", "a2"), ptask("rep", "a3", depends_on=["r1"])]}))
+    assert res.get("is_error") and "1 of 3 tasks passed" in text(res)
+    assert "NOT STARTED" in text(res)
+    assert s.board["rep"].status == "failed" and s.board["rep"].attempts == 0
+    assert "rep" not in [x[0] for x in spans]
+    blocked = [e for e in events(s, "task_failed") if e["task_id"] == "rep"][0]
+    assert blocked["attempts"] == 0 and "r1" in blocked["reason"]
+    # the blocked task can be replaced like any failed one
+    assert not run(t.assign_task({**ptask("rep-2", "a3"), "replaces": "rep"})).get("is_error")
+
+
+def test_two_parallel_tasks_cannot_own_the_same_file(tmp_path):
+    s, t, spans = make_timed(tmp_path)
+    res = run(t.assign_tasks({"tasks": [ptask("r1", "a1", owns=["report.md"]), ptask("r2", "a2", owns=["report.md"])]}))
+    assert res.get("is_error") and "both own" in text(res) and not spans and not s.board
+    # fine when one waits for the other
+    res = run(t.assign_tasks({"tasks": [ptask("r1", "a1", owns=["report.md"]),
+                                        ptask("r2", "a2", owns=["report.md"], depends_on=["r1"])]}))
+    assert not res.get("is_error"), text(res)
+
+
+def test_batch_validation(tmp_path):
+    s, t, _ = make_timed(tmp_path)
+    loop = run(t.assign_tasks({"tasks": [ptask("x", "a1", depends_on=["y"]), ptask("y", "a2", depends_on=["x"])]}))
+    assert loop.get("is_error") and "loop" in text(loop)
+    assert "unknown task" in text(run(t.assign_tasks({"tasks": [ptask("x", "a1", depends_on=["nope"])]})))
+    assert "unique" in text(run(t.assign_tasks({"tasks": [ptask("x", "a1"), ptask("x", "a2")]})))
+    assert "No agent" in text(run(t.assign_tasks({"tasks": [ptask("x", "ghost")]})))
+    assert not s.board                                             # nothing registered on refusal
+
+
+def test_batch_respects_assignment_budget(tmp_path):
+    s, t, _ = make_timed(tmp_path, config=Config(budget=Budget(max_assignments=2)))
+    res = run(t.assign_tasks({"tasks": [ptask("r1", "a1"), ptask("r2", "a2"), ptask("r3", "a3")]}))
+    assert res.get("is_error") and "only 2 assignments left" in text(res)
+
+
+def test_stop_cancels_every_running_task(tmp_path):
+    s, t, spans = make_timed(tmp_path, delay=5)
+
+    async def go():
+        job = asyncio.create_task(t.assign_tasks({"tasks": [ptask("r1", "a1"), ptask("r2", "a2")]}))
+        await asyncio.sleep(0.1)
+        job.cancel()
+        try:
+            await job
+        except asyncio.CancelledError:
+            pass
+        return [x for x in asyncio.all_tasks() if x.get_name().startswith("task-")]
+
+    assert run(go()) == []                                         # no orphan worker tasks
+    assert not spans                                               # nobody finished
+    assert not t._owned
+
+
+def test_owner_released_after_task(tmp_path):
+    _, t, _ = make_timed(tmp_path)
+    run(t.assign_task(ptask("r1", "a1", owns=["a.md"])))
+    assert t._owned == {}
+
+
+def test_parallel_options_round_trip():
+    assert Config.from_options(Config(budget=Budget(max_parallel=5)).to_options()).budget.max_parallel == 5
+    assert Config.from_options({"max_parallel": 0}).budget.max_parallel == 1

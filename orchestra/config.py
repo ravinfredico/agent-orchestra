@@ -35,6 +35,7 @@ class Budget:
     max_orchestrator_turns: int = 60    # orchestrator turns per session
     max_nudges: int = 3                 # times we push the orchestrator to keep going
     max_cost_usd: float = 5.0           # estimated cost across the whole run
+    max_parallel: int = 3               # tasks from one assign_tasks batch running at once
 
 
 @dataclass
@@ -64,6 +65,7 @@ class Config:
             "pick_tier": self.pick_tier,
             "max_tier": self.max_tier,
             "max_steps": b.max_worker_turns,
+            "max_parallel": b.max_parallel,
             "max_cost": b.max_cost_usd,
             "max_agents": b.max_agents,
             "max_assignments": b.max_assignments,
@@ -91,6 +93,7 @@ class Config:
                 max_assignments=int(o.get("max_assignments", 15)),
                 max_attempts_per_task=int(o.get("max_attempts", 3)),
                 max_worker_turns=int(o.get("max_steps", 25)),
+                max_parallel=max(1, int(o.get("max_parallel", 3))),
                 max_cost_usd=float(o.get("max_cost", 5.0)),
             ),
         )

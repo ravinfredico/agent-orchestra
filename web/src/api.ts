@@ -63,6 +63,7 @@ export interface RunOptions {
   max_attempts?: number     // tries per task
   max_steps?: number        // tool-use steps per try
   max_assignments?: number  // tasks per run
+  max_parallel?: number     // tasks running at once
   catalog?: string[] | null
   playbook?: string
 }

@@ -61,6 +61,8 @@ class Task:
     short: str = ""                # checker's few-word reason, for the task card
     tier: str = ""                 # model tier of the current attempt
     tier_reason: str = ""
+    depends_on: list[str] = field(default_factory=list)  # tasks that must pass first
+    owns: list[str] = field(default_factory=list)        # files only this task may write while it runs
 
 
 @dataclass

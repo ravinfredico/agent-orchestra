@@ -181,12 +181,13 @@ async def demo_script(tools):
                              "task": "[research] Research GoPay, OVO, DANA, ShopeePay and LinkAja. One file per wallet in research/.",
                              "done_when": "research/ has 5 files, each with fees, features and 3+ source URLs",
                              "checks": [{"type": "file_count", "glob": "research/*.md", "min": 5}]})
-    await tools.assign_task({"agent": "analyst", "task_id": "analysis-1", "title": "Compare fees",
-                             "task": "[analysis] Build a fee table and features matrix in analysis/comparison.md.",
-                             "done_when": "The fee table covers all 5 wallets; a features matrix with 5 columns"})
-    res = await tools.assign_task({"agent": "writer", "task_id": "report-1", "title": "Write the report",
-                                   "task": "[report-writer] Write report.md from analysis/ and research/.",
-                                   "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources"})
+    res = await tools.assign_tasks({"tasks": [
+        {"agent": "analyst", "task_id": "analysis-1", "title": "Compare fees", "owns": ["analysis/"],
+         "task": "[analysis] Build a fee table and features matrix in analysis/comparison.md.",
+         "done_when": "The fee table covers all 5 wallets; a features matrix with 5 columns"},
+        {"agent": "writer", "task_id": "report-1", "title": "Write the report", "depends_on": ["analysis-1"],
+         "owns": ["report.md"], "task": "[report-writer] Write report.md from analysis/ and research/.",
+         "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources"}]})
     if res.get("is_error"):
         yield "The writer can't search the research files. I'm hiring an editor who can, and giving it the report. It will email you when done."
         await tools.create_agent({"name": "editor", "role": "Assembles the report and compiles every source",

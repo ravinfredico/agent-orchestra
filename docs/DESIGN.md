@@ -82,6 +82,7 @@ Character (36 px) + title (15/600) + status line (13, text-2, with a 7 px dot) +
 | checking | waiting | Checking · try N | check | current ring |
 | retrying | sad, then working | Try N · <short reason, max 5 words> | check | fail dots, current ring |
 | done | happy | Passed | pass | fails, filled |
+| not started (dependency failed, M7) | sleepy | Not started · <title> failed | fail | none |
 
 On the right, before the dots, a mono tier chip names the model of the current try (`haiku`, `sonnet ↑` after a step-up). Open, the card shows the tier and its reason, the cheap checks, and per try the tier and either the checker's reason or each check with ✓ or ✕ ("checks, no model asked"). Canvas: `M7-Cheaper`.
 | failed | sad | Failed · N tries | fail | all fail |
@@ -105,7 +106,7 @@ Tap or Enter opens the card in place: "Done when: …", then one checker line pe
 |---|---|
 | Empty | Placeholder "Give the team a task, and say how to tell it's done". Start disabled. |
 | Typing | Start enabled (primary circle). Enter adds a line; Cmd/Ctrl+Enter starts. |
-| Options open | Options button highlighted, panel below with all run options: shell, playbook, repo, connectors, then Preset (Default, Cheap; Custom once a field is edited), Orchestrator, Workers (Orchestrator picks, or Always <tier>), Highest model, Checker, usage cap, max agents, tries per task, steps per try, max tasks. Canvas: `M7-Cheaper`. |
+| Options open | Options button highlighted, panel below with all run options: shell, playbook, repo, connectors, then Preset (Default, Cheap; Custom once a field is edited), Orchestrator, Workers (Orchestrator picks, or Always <tier>), Highest model, Checker, usage cap, max agents, tries per task, steps per try, max tasks, tasks at once. Canvas: `M7-Cheaper`. |
 | Running | Becomes the run bar: team faces, "Running", elapsed and usage, Stop. |
 | Replanning | Run bar says "Replanning". |
 | Waiting for approval | Run bar says "Needs your approval". |
@@ -300,7 +301,7 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | orchestrator_said | Orchestrator message |
 | nudge | Nothing visible (raw log only) |
 | agent_created | Joined line, rail team row, run bar face |
-| task_assigned | New task card (queued). Tier chip and reason on the card (M7, canvas `M7-Cheaper`) |
+| task_assigned | New task card (queued; "Queued · waits for <title>" when it has unfinished dependencies). Tier chip and reason on the card (M7, canvas `M7-Cheaper`) |
 | attempt_started | Card working / retrying, character working. Tier chip updates on a step-up |
 | attempt_failed / task_passed with `checked_by: checks` | Card detail shows each check with pass or fail, "no model asked" (M7, canvas `M7-Cheaper`) |
 | worker_activity | Activity line |
@@ -308,7 +309,7 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | checker_started | Card checking, character waiting |
 | attempt_failed | Card retrying with reason, character sad |
 | task_passed | Card done, character happy (hop) |
-| task_failed | Card failed |
+| task_failed | Card failed (with `attempts: 0`: "Not started", M7) |
 | task_replaced | Old card crossed out |
 | approval_requested | Approval card, run bar "Needs your approval", push |
 | approval_resolved | Approval card collapses |

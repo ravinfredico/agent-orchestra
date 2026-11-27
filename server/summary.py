@@ -45,7 +45,8 @@ def fold(run_dir: Path) -> dict:
                                    "replaces": e.get("replaces", ""), "replaced_by": "", "status": "pending",
                                    "attempts": 0, "feedback": "", "short": "", "history": [],
                                    "tier": e.get("tier", ""), "tier_reason": e.get("tier_reason", ""),
-                                   "checks": e.get("checks", []), "checks_only": e.get("checks_only", False)}
+                                   "checks": e.get("checks", []), "checks_only": e.get("checks_only", False),
+                                   "depends_on": e.get("depends_on", []), "owns": e.get("owns", [])}
         elif t == "attempt_started" and e["task_id"] in board:
             b = board[e["task_id"]]
             b["attempts"] = e["attempt"]
@@ -72,6 +73,8 @@ def fold(run_dir: Path) -> dict:
                 agents[b["agent"]]["status"] = "idle"
         elif t == "task_failed" and e["task_id"] in board:
             board[e["task_id"]]["status"] = "failed"
+            if e.get("reason"):  # never started: a dependency failed or the budget ran out
+                board[e["task_id"]].update(feedback=e["reason"], short="not started")
             a = agents.get(board[e["task_id"]]["agent"])
             if a:
                 a["status"] = "idle"

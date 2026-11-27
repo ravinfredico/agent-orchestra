@@ -70,6 +70,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
         taskId: e.task_id, title: e.title || e.task_id, agent: e.agent, task: e.task ?? '', doneWhen: e.done_when ?? '',
         replaces: e.replaces ?? '', replacedBy: '', status: 'pending', attempts: 0, short: '', history: [],
         tier: e.tier ?? '', tierReason: e.tier_reason ?? '', checks: e.checks ?? [], checksOnly: !!e.checks_only,
+        dependsOn: e.depends_on ?? [], notStarted: '',
       }
       r.thread.push({ kind: 'task', seq: e.seq, taskId: e.task_id })
       r.replanning = false
@@ -130,9 +131,14 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       const t = task(e.task_id)
       if (t) {
         t.status = 'failed'
+        r.replanning = true
+        if (!e.attempts && e.reason) {  // never started: its agent did nothing wrong
+          t.notStarted = e.reason
+          announce(r, e, `${t.title} not started`)
+          break
+        }
         const a = agent(t.agent)
         if (a) { a.currentTask = null; a.activity = ''; a.failed += 1 }
-        r.replanning = true
         announce(r, e, `${t.title} failed after ${e.attempts} tries`)
       }
       break
@@ -231,8 +237,11 @@ export function cardLook(t: TaskCardState, r?: RunView, maxAttempts = 3): CardLo
   }
   const stopped = r && !isLive(r)
   switch (t.status) {
-    case 'pending':
-      return { mood: 'sleepy', line: stopped ? 'Not started' : 'Queued', dot: 'border', pips }
+    case 'pending': {
+      const waits = (t.dependsOn || []).filter((d) => r?.tasks[d] && r.tasks[d].status !== 'done').map((d) => r!.tasks[d].title)
+      const line = stopped ? 'Not started' : waits.length ? `Queued · waits for ${waits.join(', ')}` : 'Queued'
+      return { mood: 'sleepy', line, dot: 'border', pips }
+    }
     case 'running':
       return { mood: stopped ? 'sleepy' : 'working', line: stopped ? `Interrupted · try ${t.attempts}` : `Working · try ${t.attempts}`, dot: 'text', pips }
     case 'retrying':
@@ -244,6 +253,10 @@ export function cardLook(t: TaskCardState, r?: RunView, maxAttempts = 3): CardLo
     case 'done':
       return { mood: 'happy', line: fails ? `Passed on try ${t.attempts}` : 'Passed', dot: 'pass', pips }
     case 'failed':
+      if (t.notStarted) {
+        const failed = (t.dependsOn || []).filter((d) => r?.tasks[d] && r.tasks[d].status !== 'done').map((d) => r!.tasks[d].title)
+        return { mood: 'sleepy', line: `Not started · ${failed.length ? `${failed.join(', ')} failed` : 'out of budget'}`, dot: 'fail', pips: [] }
+      }
       return { mood: 'sad', line: `Failed · ${t.attempts} ${t.attempts === 1 ? 'try' : 'tries'}`, dot: 'fail', pips }
     case 'replaced': {
       const by = r?.tasks[t.replacedBy]?.title || t.replacedBy

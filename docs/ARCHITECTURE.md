@@ -128,7 +128,7 @@ Shapes:
 // options (all optional; defaults shown)
 {"allow_bash": false, "repo": "", "orchestrator_model": "sonnet", "worker_model": "sonnet",
  "pick_tier": true, "max_tier": "opus", "checker_model": "haiku", "max_cost": 5.0,
- "max_agents": 6, "max_assignments": 15, "max_attempts": 3, "max_steps": 25,
+ "max_agents": 6, "max_assignments": 15, "max_attempts": 3, "max_steps": 25, "max_parallel": 3,
  "catalog": ["*"], "allowed_domains": []}
 // worker_model: the default tier when the orchestrator names none (pick_tier: true),
 //   or the tier every worker uses (pick_tier: false).
@@ -173,14 +173,14 @@ Every line in `log.jsonl` and every SSE message is one event:
 | `orchestrator_said` | `text` | orchestrator's text blocks |
 | `nudge` | `round, pending` | engine pushed the orchestrator to continue; shown only in the raw log |
 | `agent_created` | `name, role, tools, model, tier_reason, color_index` | `tools` are catalog ids. `model` is the agent's tier (haiku, sonnet, opus) |
-| `task_assigned` | `task_id, title, agent, task, done_when, replaces, tier, tier_reason, checks, checks_only` | `tier` is the task's model, from the task or its agent. `checks` are labels of cheap checks (section 9c) |
+| `task_assigned` | `task_id, title, agent, task, done_when, replaces, tier, tier_reason, checks, checks_only, depends_on, owns` | `tier` is the task's model, from the task or its agent. `checks` are labels of cheap checks (section 9d) |
 | `attempt_started` | `task_id, attempt, tier` | `tier` goes up one step after a failed attempt, once (M7) |
 | `worker_activity` | `task_id, agent, tool, summary` | `summary` max 80 chars, e.g. "reading research/dana.md" |
 | `file_written` | `task_id, agent, path, size` | path relative to the workspace |
 | `checker_started` | `task_id, attempt` | |
 | `attempt_failed` | `task_id, attempt, reason, short, checked_by, checks?` | `short` max 6 words. `checked_by`: `model`, `checks` or `worker` (it errored). `checks`: `[{check, passed, detail}]` |
 | `task_passed` | `task_id, attempt, reason, short, checked_by, checks?` | as `attempt_failed` |
-| `task_failed` | `task_id, attempts` | |
+| `task_failed` | `task_id, attempts, reason?` | `attempts: 0` with `reason`: never started (a dependency failed, or out of budget). It can be replaced like any failed task |
 | `task_replaced` | `task_id, by` | |
 | `approval_requested` | `approval_id, task_id, agent, tool, catalog_id, preview` | `preview` is a redacted summary of the tool input |
 | `approval_resolved` | `approval_id, decision` | `approved`, `denied`, or `expired` |
@@ -257,7 +257,26 @@ Inspired by Lauren Tan's pstack (`/poteto-mode` routes work to a playbook).
 - Playbooks give hints, not fixed roles: the orchestrator still invents the agents.
 - When a kind of run keeps failing the same way, fix the playbook's pitfalls, not only the prompt.
 
-## 9c. Cheap checks (M7)
+## 9c. Parallel tasks (M7)
+`assign_tasks({tasks: [...]})` takes several tasks, each with the `assign_task` fields plus:
+- `depends_on`: task ids that must pass first, from the same batch or already done.
+- `owns`: files or folders only this task writes while it runs.
+
+Rules:
+- The whole batch is checked before anything starts: unknown agents or dependencies, loops, two
+  tasks that may run at once owning the same path, a path owned by a running task, or more tasks
+  than assignments left. Any problem refuses the batch and registers nothing.
+- All tasks are logged as `task_assigned` up front (queued cards). A task starts when its
+  dependencies have passed, its agent is free (one task per agent at a time), and fewer than
+  `max_parallel` (default 3) are running.
+- A task whose dependency did not pass is never started: `task_failed` with `attempts: 0` and a
+  `reason`. The orchestrator replaces it like any failed task.
+- With `owns`, the post-attempt file scan only reports changes inside the owned paths, so parallel
+  tasks don't claim each other's files.
+- The call returns when every task has ended: "N of M tasks passed", then each result.
+- Stop cancels the orchestrator's turn; `assign_tasks` cancels every running task before it returns.
+
+## 9d. Cheap checks (M7)
 `orchestra/checks.py`. A task can carry `checks`, run after each worker attempt and before the
 model checker, with no model call:
 

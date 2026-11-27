@@ -8,7 +8,7 @@ import { DEFAULT_PRESET, PRESETS, presetOf } from '../presets'
 import { CHECKER_COLOR, ORCHESTRATOR_COLOR } from '../state/reducer'
 
 const DEFAULTS: Required<Omit<RunOptions, 'catalog'>> & { catalog: string[] | null } = {
-  allow_bash: false, repo: '', max_agents: 6, catalog: null, playbook: 'auto', ...DEFAULT_PRESET,
+  allow_bash: false, repo: '', max_agents: 6, max_parallel: 3, catalog: null, playbook: 'auto', ...DEFAULT_PRESET,
 }
 const TIERS = ['haiku', 'sonnet', 'opus']
 
@@ -63,7 +63,7 @@ export function NewRun() {
   }
 
   const preset = presetOf(opts)
-  const num = (k: 'max_cost' | 'max_agents' | 'max_attempts' | 'max_steps' | 'max_assignments') =>
+  const num = (k: 'max_cost' | 'max_agents' | 'max_attempts' | 'max_steps' | 'max_assignments' | 'max_parallel') =>
     (e: React.ChangeEvent<HTMLInputElement>) => set(k, Number(e.target.value))
   const summary = `${preset === 'cheap' ? 'Cheap · ' : ''}$${opts.max_cost} cap · shell ${opts.allow_bash ? 'on' : 'off'}${opts.repo ? ' · repo' : ''}`
   return (
@@ -193,6 +193,10 @@ export function NewRun() {
           <label className="field">
             <span>Max tasks</span>
             <input type="number" className="mono" min={1} max={40} value={opts.max_assignments} onChange={num('max_assignments')} inputMode="numeric" />
+          </label>
+          <label className="field">
+            <span>Tasks at once</span>
+            <input type="number" className="mono" min={1} max={6} value={opts.max_parallel} onChange={num('max_parallel')} inputMode="numeric" />
           </label>
         </section>
       )}

@@ -2,7 +2,7 @@
  {
   "seq": 1,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.546,
+  "t": 1795759173.891,
   "type": "run_started",
   "task": "Research the top 5 Indonesian e-wallets and write a comparison report as report.md",
   "title": "Research the top 5 Indonesian e-wallets\u2026",
@@ -14,6 +14,7 @@
    "pick_tier": true,
    "max_tier": "opus",
    "max_steps": 25,
+   "max_parallel": 3,
    "max_cost": 5.0,
    "max_agents": 6,
    "max_assignments": 15,
@@ -22,7 +23,7 @@
    "allowed_domains": [],
    "playbook": "auto"
   },
-  "workspace": "/tmp/tmp264rknzr/20261123-091402-demo/workspace",
+  "workspace": "/tmp/tmpdea1viqb/20261123-091402-demo/workspace",
   "repo": null,
   "branch": null,
   "parent_id": null,
@@ -31,7 +32,7 @@
  {
   "seq": 2,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.547,
+  "t": 1795759173.892,
   "type": "playbook_chosen",
   "id": "research-report",
   "title": "Research report"
@@ -39,14 +40,14 @@
  {
   "seq": 3,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.548,
+  "t": 1795759173.892,
   "type": "orchestrator_said",
   "text": "Plan: research each wallet, compare fees and features, then write the report. Research comes first. Hiring three agents."
  },
  {
   "seq": 4,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.548,
+  "t": 1795759173.892,
   "type": "agent_created",
   "name": "researcher",
   "role": "Finds fees, features and sources for each wallet",
@@ -61,7 +62,7 @@
  {
   "seq": 5,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.548,
+  "t": 1795759173.892,
   "type": "agent_created",
   "name": "analyst",
   "role": "Turns research notes into comparison tables",
@@ -76,7 +77,7 @@
  {
   "seq": 6,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.548,
+  "t": 1795759173.892,
   "type": "agent_created",
   "name": "writer",
   "role": "Writes the final report from the analysis",
@@ -91,7 +92,7 @@
  {
   "seq": 7,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.549,
+  "t": 1795759173.893,
   "type": "task_assigned",
   "task_id": "research-1",
   "title": "Research wallets",
@@ -104,12 +105,14 @@
   "checks": [
    "5+ files match research/*.md"
   ],
-  "checks_only": false
+  "checks_only": false,
+  "depends_on": [],
+  "owns": []
  },
  {
   "seq": 8,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.549,
+  "t": 1795759173.893,
   "type": "attempt_started",
   "task_id": "research-1",
   "attempt": 1,
@@ -118,7 +121,7 @@
  {
   "seq": 9,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.549,
+  "t": 1795759173.894,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -128,7 +131,7 @@
  {
   "seq": 10,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.549,
+  "t": 1795759173.894,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -138,7 +141,7 @@
  {
   "seq": 11,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.549,
+  "t": 1795759173.894,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -148,7 +151,7 @@
  {
   "seq": 12,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.894,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -158,7 +161,7 @@
  {
   "seq": 13,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.894,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -168,7 +171,7 @@
  {
   "seq": 14,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.894,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -178,7 +181,7 @@
  {
   "seq": 15,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.894,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -188,7 +191,7 @@
  {
   "seq": 16,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.894,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -198,7 +201,7 @@
  {
   "seq": 17,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.894,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -208,7 +211,7 @@
  {
   "seq": 18,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.894,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -218,7 +221,7 @@
  {
   "seq": 19,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.895,
   "type": "worker_activity",
   "task_id": "research-1",
   "agent": "researcher",
@@ -228,7 +231,7 @@
  {
   "seq": 20,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.895,
   "type": "file_written",
   "task_id": "research-1",
   "agent": "researcher",
@@ -238,7 +241,7 @@
  {
   "seq": 21,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.55,
+  "t": 1795759173.895,
   "type": "usage",
   "cost_usd": 0.41,
   "delta_usd": 0.41,
@@ -249,7 +252,7 @@
  {
   "seq": 22,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.551,
+  "t": 1795759173.895,
   "type": "checker_started",
   "task_id": "research-1",
   "attempt": 1
@@ -257,7 +260,7 @@
  {
   "seq": 23,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.551,
+  "t": 1795759173.895,
   "type": "usage",
   "cost_usd": 0.46,
   "delta_usd": 0.05,
@@ -268,7 +271,7 @@
  {
   "seq": 24,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.551,
+  "t": 1795759173.895,
   "type": "task_passed",
   "task_id": "research-1",
   "attempt": 1,
@@ -286,7 +289,7 @@
  {
   "seq": 25,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.551,
+  "t": 1795759173.896,
   "type": "task_assigned",
   "task_id": "analysis-1",
   "title": "Compare fees",
@@ -297,172 +300,16 @@
   "tier": "haiku",
   "tier_reason": "tables from notes",
   "checks": [],
-  "checks_only": false
+  "checks_only": false,
+  "depends_on": [],
+  "owns": [
+   "analysis/"
+  ]
  },
  {
   "seq": 26,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.552,
-  "type": "attempt_started",
-  "task_id": "analysis-1",
-  "attempt": 1,
-  "tier": "haiku"
- },
- {
-  "seq": 27,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.552,
-  "type": "worker_activity",
-  "task_id": "analysis-1",
-  "agent": "analyst",
-  "tool": "Read",
-  "summary": "reading research/dana.md"
- },
- {
-  "seq": 28,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.552,
-  "type": "worker_activity",
-  "task_id": "analysis-1",
-  "agent": "analyst",
-  "tool": "Write",
-  "summary": "writing analysis/comparison.md"
- },
- {
-  "seq": 29,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.552,
-  "type": "file_written",
-  "task_id": "analysis-1",
-  "agent": "analyst",
-  "path": "analysis/comparison.md",
-  "size": null
- },
- {
-  "seq": 30,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.552,
-  "type": "usage",
-  "cost_usd": 0.64,
-  "delta_usd": 0.18,
-  "model_calls": 3,
-  "turns": 12,
-  "assignments": 2
- },
- {
-  "seq": 31,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.553,
-  "type": "checker_started",
-  "task_id": "analysis-1",
-  "attempt": 1
- },
- {
-  "seq": 32,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.553,
-  "type": "usage",
-  "cost_usd": 0.69,
-  "delta_usd": 0.05,
-  "model_calls": 4,
-  "turns": 14,
-  "assignments": 2
- },
- {
-  "seq": 33,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.553,
-  "type": "attempt_failed",
-  "task_id": "analysis-1",
-  "attempt": 1,
-  "reason": "Fee table is missing transfer fees for DANA and LinkAja. ShopeePay is absent from the features matrix.",
-  "short": "2 wallets missing fees",
-  "checked_by": "model"
- },
- {
-  "seq": 34,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.553,
-  "type": "attempt_started",
-  "task_id": "analysis-1",
-  "attempt": 2,
-  "tier": "sonnet"
- },
- {
-  "seq": 35,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.554,
-  "type": "worker_activity",
-  "task_id": "analysis-1",
-  "agent": "analyst",
-  "tool": "Read",
-  "summary": "reading research/dana.md"
- },
- {
-  "seq": 36,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.554,
-  "type": "worker_activity",
-  "task_id": "analysis-1",
-  "agent": "analyst",
-  "tool": "Write",
-  "summary": "writing analysis/comparison.md"
- },
- {
-  "seq": 37,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.554,
-  "type": "file_written",
-  "task_id": "analysis-1",
-  "agent": "analyst",
-  "path": "analysis/comparison.md",
-  "size": null
- },
- {
-  "seq": 38,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.554,
-  "type": "usage",
-  "cost_usd": 0.87,
-  "delta_usd": 0.18,
-  "model_calls": 5,
-  "turns": 19,
-  "assignments": 2
- },
- {
-  "seq": 39,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.554,
-  "type": "checker_started",
-  "task_id": "analysis-1",
-  "attempt": 2
- },
- {
-  "seq": 40,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.554,
-  "type": "usage",
-  "cost_usd": 0.92,
-  "delta_usd": 0.05,
-  "model_calls": 6,
-  "turns": 21,
-  "assignments": 2
- },
- {
-  "seq": 41,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.554,
-  "type": "task_passed",
-  "task_id": "analysis-1",
-  "attempt": 2,
-  "reason": "Fee table complete for all 5 wallets. Features matrix has 5 columns.",
-  "short": "all 5 wallets covered",
-  "checked_by": "model"
- },
- {
-  "seq": 42,
-  "run_id": "20261123-091402-demo",
-  "t": 1795758467.555,
+  "t": 1795759173.896,
   "type": "task_assigned",
   "task_id": "report-1",
   "title": "Write the report",
@@ -473,12 +320,178 @@
   "tier": "sonnet",
   "tier_reason": "long-form writing",
   "checks": [],
-  "checks_only": false
+  "checks_only": false,
+  "depends_on": [
+   "analysis-1"
+  ],
+  "owns": [
+   "report.md"
+  ]
+ },
+ {
+  "seq": 27,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.896,
+  "type": "attempt_started",
+  "task_id": "analysis-1",
+  "attempt": 1,
+  "tier": "haiku"
+ },
+ {
+  "seq": 28,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.897,
+  "type": "worker_activity",
+  "task_id": "analysis-1",
+  "agent": "analyst",
+  "tool": "Read",
+  "summary": "reading research/dana.md"
+ },
+ {
+  "seq": 29,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.897,
+  "type": "worker_activity",
+  "task_id": "analysis-1",
+  "agent": "analyst",
+  "tool": "Write",
+  "summary": "writing analysis/comparison.md"
+ },
+ {
+  "seq": 30,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.897,
+  "type": "file_written",
+  "task_id": "analysis-1",
+  "agent": "analyst",
+  "path": "analysis/comparison.md",
+  "size": null
+ },
+ {
+  "seq": 31,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.897,
+  "type": "usage",
+  "cost_usd": 0.64,
+  "delta_usd": 0.18,
+  "model_calls": 3,
+  "turns": 12,
+  "assignments": 3
+ },
+ {
+  "seq": 32,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.897,
+  "type": "checker_started",
+  "task_id": "analysis-1",
+  "attempt": 1
+ },
+ {
+  "seq": 33,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.898,
+  "type": "usage",
+  "cost_usd": 0.69,
+  "delta_usd": 0.05,
+  "model_calls": 4,
+  "turns": 14,
+  "assignments": 3
+ },
+ {
+  "seq": 34,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.898,
+  "type": "attempt_failed",
+  "task_id": "analysis-1",
+  "attempt": 1,
+  "reason": "Fee table is missing transfer fees for DANA and LinkAja. ShopeePay is absent from the features matrix.",
+  "short": "2 wallets missing fees",
+  "checked_by": "model"
+ },
+ {
+  "seq": 35,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.898,
+  "type": "attempt_started",
+  "task_id": "analysis-1",
+  "attempt": 2,
+  "tier": "sonnet"
+ },
+ {
+  "seq": 36,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.898,
+  "type": "worker_activity",
+  "task_id": "analysis-1",
+  "agent": "analyst",
+  "tool": "Read",
+  "summary": "reading research/dana.md"
+ },
+ {
+  "seq": 37,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.898,
+  "type": "worker_activity",
+  "task_id": "analysis-1",
+  "agent": "analyst",
+  "tool": "Write",
+  "summary": "writing analysis/comparison.md"
+ },
+ {
+  "seq": 38,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.898,
+  "type": "file_written",
+  "task_id": "analysis-1",
+  "agent": "analyst",
+  "path": "analysis/comparison.md",
+  "size": null
+ },
+ {
+  "seq": 39,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.898,
+  "type": "usage",
+  "cost_usd": 0.87,
+  "delta_usd": 0.18,
+  "model_calls": 5,
+  "turns": 19,
+  "assignments": 3
+ },
+ {
+  "seq": 40,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.899,
+  "type": "checker_started",
+  "task_id": "analysis-1",
+  "attempt": 2
+ },
+ {
+  "seq": 41,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.899,
+  "type": "usage",
+  "cost_usd": 0.92,
+  "delta_usd": 0.05,
+  "model_calls": 6,
+  "turns": 21,
+  "assignments": 3
+ },
+ {
+  "seq": 42,
+  "run_id": "20261123-091402-demo",
+  "t": 1795759173.899,
+  "type": "task_passed",
+  "task_id": "analysis-1",
+  "attempt": 2,
+  "reason": "Fee table complete for all 5 wallets. Features matrix has 5 columns.",
+  "short": "all 5 wallets covered",
+  "checked_by": "model"
  },
  {
   "seq": 43,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.555,
+  "t": 1795759173.899,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 1,
@@ -487,7 +500,7 @@
  {
   "seq": 44,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.556,
+  "t": 1795759173.9,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -497,7 +510,7 @@
  {
   "seq": 45,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.556,
+  "t": 1795759173.9,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -507,7 +520,7 @@
  {
   "seq": 46,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.556,
+  "t": 1795759173.9,
   "type": "usage",
   "cost_usd": 1.14,
   "delta_usd": 0.22,
@@ -518,7 +531,7 @@
  {
   "seq": 47,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.556,
+  "t": 1795759173.9,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 1
@@ -526,7 +539,7 @@
  {
   "seq": 48,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.556,
+  "t": 1795759173.9,
   "type": "usage",
   "cost_usd": 1.19,
   "delta_usd": 0.05,
@@ -537,7 +550,7 @@
  {
   "seq": 49,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.556,
+  "t": 1795759173.9,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 1,
@@ -548,7 +561,7 @@
  {
   "seq": 50,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.556,
+  "t": 1795759173.901,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 2,
@@ -557,7 +570,7 @@
  {
   "seq": 51,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.557,
+  "t": 1795759173.901,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -567,7 +580,7 @@
  {
   "seq": 52,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.557,
+  "t": 1795759173.901,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -577,7 +590,7 @@
  {
   "seq": 53,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.557,
+  "t": 1795759173.901,
   "type": "usage",
   "cost_usd": 1.41,
   "delta_usd": 0.22,
@@ -588,7 +601,7 @@
  {
   "seq": 54,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.557,
+  "t": 1795759173.901,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 2
@@ -596,7 +609,7 @@
  {
   "seq": 55,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.557,
+  "t": 1795759173.902,
   "type": "usage",
   "cost_usd": 1.46,
   "delta_usd": 0.05,
@@ -607,7 +620,7 @@
  {
   "seq": 56,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.557,
+  "t": 1795759173.902,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 2,
@@ -618,7 +631,7 @@
  {
   "seq": 57,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.557,
+  "t": 1795759173.902,
   "type": "attempt_started",
   "task_id": "report-1",
   "attempt": 3,
@@ -627,7 +640,7 @@
  {
   "seq": 58,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.558,
+  "t": 1795759173.903,
   "type": "worker_activity",
   "task_id": "report-1",
   "agent": "writer",
@@ -637,7 +650,7 @@
  {
   "seq": 59,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.558,
+  "t": 1795759173.903,
   "type": "file_written",
   "task_id": "report-1",
   "agent": "writer",
@@ -647,7 +660,7 @@
  {
   "seq": 60,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.558,
+  "t": 1795759173.903,
   "type": "usage",
   "cost_usd": 1.68,
   "delta_usd": 0.22,
@@ -658,7 +671,7 @@
  {
   "seq": 61,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.559,
+  "t": 1795759173.903,
   "type": "checker_started",
   "task_id": "report-1",
   "attempt": 3
@@ -666,7 +679,7 @@
  {
   "seq": 62,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.559,
+  "t": 1795759173.903,
   "type": "usage",
   "cost_usd": 1.73,
   "delta_usd": 0.05,
@@ -677,7 +690,7 @@
  {
   "seq": 63,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.559,
+  "t": 1795759173.903,
   "type": "attempt_failed",
   "task_id": "report-1",
   "attempt": 3,
@@ -688,7 +701,7 @@
  {
   "seq": 64,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.559,
+  "t": 1795759173.903,
   "type": "task_failed",
   "task_id": "report-1",
   "attempts": 3
@@ -696,14 +709,14 @@
  {
   "seq": 65,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.56,
+  "t": 1795759173.904,
   "type": "orchestrator_said",
   "text": "The writer can't search the research files. I'm hiring an editor who can, and giving it the report. It will email you when done."
  },
  {
   "seq": 66,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.56,
+  "t": 1795759173.904,
   "type": "agent_created",
   "name": "editor",
   "role": "Assembles the report and compiles every source",
@@ -719,7 +732,7 @@
  {
   "seq": 67,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.56,
+  "t": 1795759173.904,
   "type": "task_assigned",
   "task_id": "report-2",
   "title": "Rewrite the report",
@@ -730,12 +743,14 @@
   "tier": "sonnet",
   "tier_reason": "editing and sources",
   "checks": [],
-  "checks_only": false
+  "checks_only": false,
+  "depends_on": [],
+  "owns": []
  },
  {
   "seq": 68,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.56,
+  "t": 1795759173.905,
   "type": "attempt_started",
   "task_id": "report-2",
   "attempt": 1,
@@ -744,7 +759,7 @@
  {
   "seq": 69,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.561,
+  "t": 1795759173.905,
   "type": "worker_activity",
   "task_id": "report-2",
   "agent": "editor",
@@ -754,9 +769,9 @@
  {
   "seq": 70,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.561,
+  "t": 1795759173.905,
   "type": "approval_requested",
-  "approval_id": "ap_21ff041b",
+  "approval_id": "ap_4d9b19df",
   "task_id": "report-2",
   "agent": "editor",
   "tool": "mcp__gmail__send_message",
@@ -766,15 +781,15 @@
  {
   "seq": 71,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.561,
+  "t": 1795759173.905,
   "type": "approval_resolved",
-  "approval_id": "ap_21ff041b",
+  "approval_id": "ap_4d9b19df",
   "decision": "approved"
  },
  {
   "seq": 72,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.562,
+  "t": 1795759173.906,
   "type": "worker_activity",
   "task_id": "report-2",
   "agent": "editor",
@@ -784,7 +799,7 @@
  {
   "seq": 73,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.562,
+  "t": 1795759173.906,
   "type": "file_written",
   "task_id": "report-2",
   "agent": "editor",
@@ -794,7 +809,7 @@
  {
   "seq": 74,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.562,
+  "t": 1795759173.906,
   "type": "usage",
   "cost_usd": 1.97,
   "delta_usd": 0.24,
@@ -805,7 +820,7 @@
  {
   "seq": 75,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.563,
+  "t": 1795759173.906,
   "type": "checker_started",
   "task_id": "report-2",
   "attempt": 1
@@ -813,7 +828,7 @@
  {
   "seq": 76,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.563,
+  "t": 1795759173.906,
   "type": "usage",
   "cost_usd": 2.02,
   "delta_usd": 0.05,
@@ -824,7 +839,7 @@
  {
   "seq": 77,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.563,
+  "t": 1795759173.906,
   "type": "task_passed",
   "task_id": "report-2",
   "attempt": 1,
@@ -835,7 +850,7 @@
  {
   "seq": 78,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.563,
+  "t": 1795759173.906,
   "type": "task_replaced",
   "task_id": "report-1",
   "by": "report-2"
@@ -843,14 +858,14 @@
  {
   "seq": 79,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.563,
+  "t": 1795759173.907,
   "type": "orchestrator_said",
   "text": "Every task passed verification. Finishing."
  },
  {
   "seq": 80,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.563,
+  "t": 1795759173.908,
   "type": "usage",
   "cost_usd": 2.07,
   "delta_usd": 0.05,
@@ -861,7 +876,7 @@
  {
   "seq": 81,
   "run_id": "20261123-091402-demo",
-  "t": 1795758467.563,
+  "t": 1795759173.908,
   "type": "finished",
   "give_up": false,
   "result": "Wrote report.md comparing GoPay, OVO, DANA, ShopeePay and LinkAja on fees and features, with a recommendation and 17 sources.\n\nFiles: report.md, analysis/comparison.md, research/ (5 files).",

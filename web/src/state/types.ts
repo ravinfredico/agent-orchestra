@@ -56,6 +56,8 @@ export interface TaskCardState {
   tierReason: string
   checks: string[]          // cheap check labels, run before the model checker
   checksOnly: boolean
+  dependsOn: string[]       // task ids that must pass first (parallel batches)
+  notStarted: string        // why it never started (a dependency failed, out of budget), else ''
 }
 
 export interface Approval {

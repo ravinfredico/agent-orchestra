@@ -30,6 +30,26 @@ describe('reducer', () => {
     expect(r.agents.writer.model).toBe('sonnet')
   })
 
+  it('shows what a queued task waits for, and why a blocked one never started', () => {
+    const at = demoEvents.findIndex((e) => e.type === 'task_assigned' && e.task_id === 'report-1')
+    const mid = reduceAll(demoEvents.slice(0, at + 1))
+    expect(mid.tasks['report-1'].dependsOn).toEqual(['analysis-1'])
+    expect(cardLook(mid.tasks['report-1'], mid).line).toBe('Queued · waits for Compare fees')
+
+    const base = { run_id: 'x', t: 1 }
+    const evs = [
+      { ...base, seq: 1, type: 'run_started', task: 't', title: 't', options: {} },
+      { ...base, seq: 2, type: 'agent_created', name: 'a', role: '', tools: [], model: 'haiku', color_index: 0 },
+      { ...base, seq: 3, type: 'task_assigned', task_id: 'r1', title: 'Research', agent: 'a', done_when: 'x' },
+      { ...base, seq: 4, type: 'task_assigned', task_id: 'rep', title: 'Report', agent: 'a', done_when: 'x', depends_on: ['r1'] },
+      { ...base, seq: 5, type: 'task_failed', task_id: 'r1', attempts: 2 },
+      { ...base, seq: 6, type: 'task_failed', task_id: 'rep', attempts: 0, reason: 'depends on r1, which did not pass' },
+    ] as RunEvent[]
+    const r = reduceAll(evs)
+    expect(cardLook(r.tasks.rep, r).line).toBe('Not started · Research failed')
+    expect(r.agents.a.failed).toBe(1)                 // the blocked task is not the agent's failure
+  })
+
   it('keeps cheap check results on the attempt', () => {
     const t = reduceAll(demoEvents).tasks['research-1']
     expect(t.checks).toEqual(['5+ files match research/*.md'])
