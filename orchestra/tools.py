@@ -506,12 +506,27 @@ class OrchestraTools:
             )
         if give_up and not s.budget_problem() and pending:
             return _err("give_up is only allowed once the budget is exhausted. Keep working.")
+        if s.inbox:  # you said something it hasn't seen yet: handle that before finishing
+            return _err("Not accepted yet. " + prompts.user_messages(s.take_messages())
+                        + "\nHandle this (assign more work if needed), then call finish again.")
         s.final_result = result
         # logged by the outer loop once the orchestrator's turn (and its usage) has ended,
         # so `finished` is always the last event in the log
         s.pending_finish = {"give_up": give_up, "result": result, "tasks": len(s.board)}
         s.save_board()
         return _ok("Accepted. The run is complete, stop now.")
+
+    # ---- steering -------------------------------------------------------------
+
+    def _with_messages(self, handler):
+        """Wrap a tool handler so your mid-run messages ride along with its result."""
+        async def wrapped(args: dict) -> dict:
+            res = await handler(args)
+            msgs = self.s.take_messages()
+            if msgs:
+                res = {**res, "content": [*res["content"], {"type": "text", "text": prompts.user_messages(msgs)}]}
+            return res
+        return wrapped
 
     # ---- MCP server ---------------------------------------------------------
 
@@ -526,7 +541,7 @@ class OrchestraTools:
                 "properties": {"id": {"type": "string", "enum": list(self.playbooks)}},
                 "required": ["id"],
             },
-        )(self.read_playbook)
+        )(self._with_messages(self.read_playbook))
 
         create = tool(
             "create_agent",
@@ -544,7 +559,7 @@ class OrchestraTools:
                 },
                 "required": ["name", "role", "system_prompt", "tools"],
             },
-        )(self.create_agent)
+        )(self._with_messages(self.create_agent))
 
         task_props = {
             "agent": {"type": "string"},
@@ -569,7 +584,7 @@ class OrchestraTools:
             "assign_task",
             "Give one task to an agent. It is retried and independently verified. Returns PASSED or FAILED.",
             {"type": "object", "properties": task_props, "required": required},
-        )(self.assign_task)
+        )(self._with_messages(self.assign_task))
 
         assign_many = tool(
             "assign_tasks",
@@ -581,12 +596,12 @@ class OrchestraTools:
                                                                    "required": required}}},
                 "required": ["tasks"],
             },
-        )(self.assign_tasks)
+        )(self._with_messages(self.assign_tasks))
 
         board = tool(
             "view_board", "Show all tasks, statuses, feedback, and remaining budget.",
             {"type": "object", "properties": {}},
-        )(self.view_board)
+        )(self._with_messages(self.view_board))
 
         fin = tool(
             "finish",

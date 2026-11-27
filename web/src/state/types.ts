@@ -87,6 +87,7 @@ export interface FileEntry {
 
 export type ThreadItem =
   | { kind: 'task_message'; seq: number; text: string }
+  | { kind: 'user_message'; seq: number; text: string }   // sent mid-run (steering)
   | { kind: 'say'; seq: number; text: string }
   | { kind: 'playbook'; seq: number; id: string; title: string }
   | { kind: 'joined'; seq: number; names: string[] }
@@ -103,6 +104,8 @@ export interface RunView {
   repo: string | null
   branch: string | null
   parentId: string | null
+  teamId: string | null
+  teamName: string | null
   startedAt: number | null
   endedAt: number | null
   lastEventAt: number | null

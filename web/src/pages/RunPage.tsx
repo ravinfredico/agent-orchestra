@@ -15,6 +15,8 @@ function Item({ item, run, last }: { item: ThreadItem; run: RunView; last: boole
   switch (item.kind) {
     case 'task_message':
       return <div className="msg-user enter">{item.text}</div>
+    case 'user_message':
+      return <div className="msg-user enter"><span className="visually-hidden">You, during the run: </span>{item.text}</div>
     case 'say':
       return (
         <div className="msg-orch enter">

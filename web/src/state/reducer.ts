@@ -15,7 +15,7 @@ export function agentAccessory(index: number) {
 export function emptyRun(id = ''): RunView {
   return {
     id, task: '', title: '', status: 'created', options: {}, authMode: '', repo: null, branch: null,
-    parentId: null, startedAt: null, endedAt: null, lastEventAt: null, costUsd: 0, modelCalls: 0, usageByAgent: {}, usageByModel: {},
+    parentId: null, teamId: null, teamName: null, startedAt: null, endedAt: null, lastEventAt: null, costUsd: 0, modelCalls: 0, usageByAgent: {}, usageByModel: {},
     assignments: 0, agents: {}, agentOrder: [], tasks: {}, approvals: {}, files: {}, thread: [],
     final: '', giveUp: false, budgetReason: '', error: null, replanning: false, playbook: null, lastSeq: 0, announcements: [],
   }
@@ -40,9 +40,14 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       Object.assign(r, {
         id: e.run_id, task: e.task ?? '', title: e.title ?? '', status: 'running', options: e.options ?? {},
         authMode: e.auth_mode ?? '', repo: e.repo ?? null, branch: e.branch ?? null, parentId: e.parent_id ?? null,
+        teamId: e.team_id ?? null, teamName: e.team_name ?? null,
         startedAt: e.t,
       })
       r.thread.push({ kind: 'task_message', seq: e.seq, text: e.task ?? '' })
+      break
+    case 'user_message':
+      r.thread.push({ kind: 'user_message', seq: e.seq, text: e.text ?? '' })
+      announce(r, e, `You said: ${e.text ?? ''}`)
       break
     case 'playbook_chosen':
       r.playbook = { id: e.id, title: e.title }

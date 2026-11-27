@@ -129,3 +129,27 @@ def short_reason(reason: str, words: int = 6) -> str:
     """Fallback when the checker gives no `short`: the first few words of the reason."""
     parts = (reason or "").replace("\n", " ").split()
     return " ".join(parts[:words]).rstrip(".,;:")
+
+
+def user_messages(msgs: list[str]) -> str:
+    """Your mid-run messages, as the orchestrator sees them."""
+    body = "\n".join(f"- {m}" for m in msgs)
+    return (f"\n## Message from the user (sent while you were working)\n{body}\n"
+            "Take it into account now: change the plan, add or replace tasks if needed. "
+            "Answer briefly in your next message.")
+
+
+def team_context(team: dict) -> str:
+    """The first-prompt section for a saved team: who is on it, and what it remembers."""
+    members = "\n".join(f"- {m['name']} ({m.get('tier') or 'default tier'}): {m.get('role', '')}"
+                         for m in team.get("members", []))
+    memory = (team.get("memory") or "").strip() or "(empty)"
+    return f"""## Your team: {team.get('name', '')}
+{team.get('goal', '')}
+
+These agents already exist. Reuse them; create a new one only if no member fits.
+{members}
+
+## Team memory (past work and the user's feedback; don't redo what is already known)
+{memory[:8000]}
+"""

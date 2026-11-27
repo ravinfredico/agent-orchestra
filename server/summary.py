@@ -25,6 +25,7 @@ def fold(run_dir: Path) -> dict:
         "board": [], "files": [], "final": "", "error": None, "pending_approvals": [], "last_seq": 0,
         "model_calls": 0, "playbook": None,
         "usage": {"by_agent": {}, "by_model": {}},
+        "team_id": meta.get("team_id"), "trigger": meta.get("trigger"), "messages": [],
     }
     agents: dict[str, dict] = {}
     board: dict[str, dict] = {}
@@ -33,7 +34,9 @@ def fold(run_dir: Path) -> dict:
     for e in events:
         t = e["type"]
         d["last_seq"] = e["seq"]
-        if t == "playbook_chosen":
+        if t == "user_message":
+            d["messages"].append({"t": e["t"], "text": e.get("text", "")})
+        elif t == "playbook_chosen":
             d["playbook"] = {"id": e.get("id"), "title": e.get("title")}
         elif t == "agent_created":
             agents[e["name"]] = {"name": e["name"], "role": e.get("role", ""), "tools": e.get("tools", []),
@@ -136,7 +139,7 @@ def _add_usage(u: dict, e: dict) -> None:
 
 
 SUMMARY_KEYS = ("id", "title", "task", "status", "needs_approval", "created_at", "ended_at", "duration_s",
-                "cost_usd", "agents", "tasks_total", "tasks_passed", "repo", "branch", "parent_id")
+                "cost_usd", "agents", "tasks_total", "tasks_passed", "repo", "branch", "parent_id", "team_id")
 
 
 def summary(detail: dict) -> dict:

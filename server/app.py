@@ -17,6 +17,7 @@ from orchestra.state import TERMINAL_EVENTS, auth_mode, read_events
 
 from . import auth
 from .runs import RunError, RunManager
+from .teams import TeamError, TeamRunner, TeamStore, room_items
 
 VERSION = "0.1.0"
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
@@ -28,23 +29,35 @@ TEXT_TYPES = {".md": "text/markdown", ".py": "text/x-python", ".ts": "text/plain
               ".html": "text/plain", ".css": "text/plain", ".sh": "text/plain"}
 
 
-def create_app(manager: RunManager | None = None, runs_dir: Path = Path("runs"), web_dist: Path = WEB_DIST) -> FastAPI:
+def create_app(manager: RunManager | None = None, runs_dir: Path = Path("runs"), web_dist: Path = WEB_DIST,
+               teams_dir: Path | None = None, schedule: bool = True) -> FastAPI:
     mgr = manager or RunManager(runs_dir)
+
+    store = TeamStore(teams_dir or mgr.runs_dir.parent / "teams")  # teams/ next to runs/
+    teams = TeamRunner(store, mgr, lambda: [e.id for e in mgr.catalog.entries if e.enabled])
 
     @asynccontextmanager
     async def lifespan(app):
         mgr.recover()
+        scheduler = asyncio.create_task(teams.loop()) if schedule else None
         yield
+        if scheduler:
+            scheduler.cancel()
         for h in list(mgr.active.values()):
             if h.task:
                 h.task.cancel()
 
     app = FastAPI(title="ChaCha PA", version=VERSION, lifespan=lifespan)
     app.state.manager = mgr
+    app.state.teams = teams
     guard = [Depends(auth.require_auth)]
 
     @app.exception_handler(RunError)
     async def run_error(_, exc: RunError):
+        return JSONResponse({"detail": exc.message}, status_code=exc.status)
+
+    @app.exception_handler(TeamError)
+    async def team_error(_, exc: TeamError):
         return JSONResponse({"detail": exc.message}, status_code=exc.status)
 
     # ---- auth & health ---------------------------------------------------------
@@ -212,6 +225,58 @@ def create_app(manager: RunManager | None = None, runs_dir: Path = Path("runs"),
                                  headers={"Content-Disposition": f'attachment; filename="{run_id}.zip"'})
 
     # ---- widget ---------------------------------------------------------------------
+
+    @app.post("/api/runs/{run_id}/messages", dependencies=guard, status_code=202)
+    async def steer_run(run_id: str, body: dict = Body(...)):
+        mgr.steer(run_id, str(body.get("text", "")))
+        return {"ok": True}
+
+    # ---- teams (M8) ---------------------------------------------------------------
+
+    def catalog_ids() -> list[str]:
+        return teams.catalog_ids()
+
+    def team_out(t: dict) -> dict:
+        return {**t, "active_run": teams.active_run(t["id"])}
+
+    @app.get("/api/teams", dependencies=guard)
+    async def list_teams():
+        return [team_out(t) for t in store.list()]
+
+    @app.post("/api/teams", dependencies=guard, status_code=201)
+    async def create_team(body: dict = Body(...)):
+        return team_out(store.create(body, catalog_ids()))
+
+    @app.get("/api/teams/{team_id}", dependencies=guard)
+    async def get_team(team_id: str):
+        return team_out(store.get(team_id))
+
+    @app.put("/api/teams/{team_id}", dependencies=guard)
+    async def update_team(team_id: str, body: dict = Body(...)):
+        return team_out(store.update(team_id, body, catalog_ids()))
+
+    @app.delete("/api/teams/{team_id}", dependencies=guard, status_code=204)
+    async def delete_team(team_id: str):
+        if teams.active_run(team_id):
+            raise TeamError(409, "Stop the team's run before deleting it")
+        store.delete(team_id)
+        return Response(status_code=204)
+
+    @app.get("/api/teams/{team_id}/room", dependencies=guard)
+    async def team_room(team_id: str, limit: int = 200):
+        store.get(team_id)
+        return {"items": room_items(store.events(team_id), teams.run_dirs(team_id), limit),
+                "active_run": teams.active_run(team_id)}
+
+    @app.post("/api/teams/{team_id}/messages", dependencies=guard, status_code=202)
+    async def team_message(team_id: str, body: dict = Body(...)):
+        return await teams.message(team_id, str(body.get("text", "")))
+
+    @app.post("/api/hooks/{team_id}/{secret}", status_code=202)  # no login: the secret in the URL is the key
+    async def team_hook(team_id: str, secret: str, request: Request):
+        raw = (await request.body())[:65536].decode("utf-8", errors="replace")
+        res = await teams.webhook(team_id, secret, raw)
+        return {"ok": True, "run_id": res["run_id"]}
 
     @app.get("/api/status", dependencies=guard)
     async def status():
