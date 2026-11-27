@@ -127,6 +127,8 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 |---|---|---|---|
 | 9.1 | Propose a team | One message ("a team for stocks") gives a proposal: members, tools, tiers, schedule, outputs, approvals, missing tools as setup steps. Questions for gaps. Save on your OK. | fake orchestrator: proposal shape; missing tools listed, never invented |
 | 9.2 | Example: TikTok team | Research, scripts, Remotion videos, posting with approval, stats review. | demo scenario; posting always asks |
+| 9.2a | TikTok and ElevenLabs tools | Done offline 2026-11-27: `mcp_servers/tiktok.py` (stats, inbox drafts, direct posts, status), `elevenlabs` and `tiktok` catalog entries, `short-video` playbook, demo TikTok scenario. Live test needs your keys. | `tests/test_media_tools.py` (fake TikTok API), `test_tiktok_team_demo_in_the_room` |
+| 9.2b | TikTok token refresh | Refresh the access token with the refresh token before it expires (about 24 h). | fake token endpoint |
 | 9.3 | Example: stocks team | Watchlist, daily brief, research on request, alerts. No trading tools. "Not financial advice" in briefs. | demo scenario; no trading tool in the catalog |
 
 ## Later

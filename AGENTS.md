@@ -30,6 +30,7 @@ Docs:
 | `orchestra/runner.py` | `run_agent()`: one agent via `claude_agent_sdk.query()`, forwards tool use |
 | `orchestra/tools.py` | `OrchestraTools`: create_agent, assign_task (inner loop), assign_tasks (parallel batch), view_board, finish, as in-process MCP server `orchestra` |
 | `orchestra/checks.py` | cheap checks run before the model checker (files, words, commands when shell is on) |
+| `mcp_servers/` | MCP servers that ship with the app: `tiktok.py` (stats, drafts, posts). Catalog entries start them with `${PYTHON}` and `${ORCHESTRA_ROOT}` |
 | `orchestra/approvals.py` | `ApprovalBroker` + `can_use_tool` callback for outward tools |
 | `orchestra/playbooks/` | one markdown playbook per task type; `playbooks.py` loads them, `read_playbook` serves them |
 | `orchestra/orchestrator.py` | `create_run()` / `execute_run()` outer loop, continue and follow-up prompts |

@@ -353,7 +353,7 @@ def demo_tiktok_runner(delay: float = 0.6) -> FakeRunner:
 
 
 async def demo_tiktok_script(tools):
-    await tools.read_playbook({"id": "general"})
+    await tools.read_playbook({"id": "short-video"})
     yield ("Plan: the trend scout and the analyst work at the same time, then the script writer drafts 3 videos, "
            "the editor renders them, and the poster schedules them once you approve.")
     for m in TIKTOK_MEMBERS:

@@ -266,6 +266,35 @@ Added 2026-11-27. Not part of v1. Builds on everything above.
 - **Post to TikTok:** uploads or schedules posts. Every post waits for your approval (outward action).
 - **Performance review:** reads views, likes and watch time of past posts and writes what to do more or less of.
 
+### Making the TikTok team real (added 2026-11-27)
+Each step of the pipeline uses a catalog tool. Agents still only get tools from the catalog.
+
+| Step | Agent (tier) | Tool | Status |
+|---|---|---|---|
+| Find trends | trend scout (haiku) | `web` | built in |
+| Read last week's stats | analyst (haiku) | `tiktok` → `list_videos` (views, likes, comments, shares) | built: `mcp_servers/tiktok.py` |
+| Write scripts, captions, hashtags | script writer (sonnet) | `files.read`, `files.write` | built in |
+| Voiceover | voice (haiku) | `elevenlabs` (ElevenLabs MCP: text to speech) | catalog entry, needs `ELEVENLABS_API_KEY` |
+| Render 1080x1920 videos | editor (sonnet) | `shell` + Remotion (`npx remotion render`) | needs Shell on and npm in the sandbox's allowed domains |
+| Send to TikTok | poster (haiku) | `tiktok` → `upload_draft` (inbox) or `publish_video` | built; every upload asks you first |
+| Learn from results | analyst | `tiktok` → `list_videos`, then team memory | built (memory line per run) |
+
+The `short-video` playbook tells the orchestrator this order, the done-when checks (file counts,
+`ffprobe` on each mp4) and the pitfalls.
+
+**Your setup, once:**
+1. ElevenLabs: create an API key, put it in `.env` as `ELEVENLABS_API_KEY`, and install `uv` (the
+   server runs with `uvx elevenlabs-mcp`). Voiceovers use your ElevenLabs credits.
+2. TikTok: register an app on TikTok for Developers with Login Kit and the Content Posting API. Get a
+   user access token with `user.info.basic`, `video.list`, `video.upload` and `video.publish`, and put
+   it in `.env` as `TIKTOK_ACCESS_TOKEN`. Until TikTok audits the app, posts can only be private and
+   your account must be private, so start with drafts in your inbox. Apply for the audit early.
+3. Rendering: turn on Shell for the team's runs and allow `registry.npmjs.org`.
+4. Tokens expire: TikTok access tokens last about a day. Refreshing them automatically is not built yet.
+
+**Later candidates:** stock footage (Pexels API), AI images or clips, auto captions (Whisper), music
+from ElevenLabs. Each would be one catalog entry; the team builder (F23) lists missing ones as setup steps.
+
 ### Requirements
 | # | Requirement |
 |---|---|
@@ -279,6 +308,10 @@ Added 2026-11-27. Not part of v1. Builds on everything above.
 | F22 | Team builder: from one message, propose a team (members, tools, tiers, schedule, outputs, approvals), ask about gaps, save on your OK. |
 | F23 | Missing tools are listed in the proposal as setup steps, never invented. |
 | F24 | Example team connectors: TikTok posting (with approval) and stats; market data and news for the stocks team. |
+| F25 | Voiceover tool: ElevenLabs as a catalog entry (text to speech into the workspace). Calls and voice agents need approval. Off until the key is set. |
+| F26 | TikTok tool: post stats (read), inbox drafts and direct posts (outward, always approval), post status. Private by default until TikTok's audit. |
+| F27 | Video rendering: vertical 1080x1920 mp4 with Remotion through the sandboxed shell, checked with `ffprobe` before the model checker. |
+| F28 | A `short-video` playbook that wires F25 to F27 for TikTok, Reels and Shorts teams. |
 
 ### Ways to keep it cheap
 - Right model per task (F16). This is the biggest saving.
@@ -294,6 +327,9 @@ Added 2026-11-27. Not part of v1. Builds on everything above.
 | "Always on" on a Claude plan uses up the 5-hour and weekly limits | Runs stop mid-way, other Claude use blocked | Triggers only, cheap models, team budget. Consider an API key for teams. |
 | Anthropic's terms for automated, continuous use of a plan login | Account risk | Check the terms before always-on use on a plan. The Agent SDK docs point to API keys for products. |
 | TikTok API access needs a registered developer app, and posting may need TikTok's review (unreviewed apps may only post privately) | Posting not possible at first | Start with drafts you post yourself. Apply for access early. Check TikTok's current rules. |
+| ElevenLabs credits run out, or a team makes too many voiceovers | Extra cost, failed runs | One voiceover per script; the playbook forbids retakes unless the checker fails one. |
+| ElevenLabs' local MCP server is being replaced by a hosted one (OAuth) | The catalog entry may stop working | Switch the entry to the hosted server once SDK sessions can sign in to it (same check as task 1.13). |
+| TikTok access tokens expire after about a day | Scheduled posts fail | Refresh tokens by hand for now; automatic refresh is a follow-up. |
 | Parallel agents edit the same file | Lost work | File ownership per task; the orchestrator is told to split files. |
 | Agents talking to each other burn tokens | Higher usage | Keep agent-to-agent messages short and only at hand-offs; show them from the event log. |
 | Posting content you didn't review | Reputation | Every post needs approval, always. |

@@ -12,6 +12,7 @@ import copy
 import fnmatch
 import json
 import os
+import sys
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -80,10 +81,14 @@ class Toolset:
         return m.group(1) if m else tool_name
 
 
+# Filled in by the app, not .env: lets catalog entries start servers that ship in this repo.
+BUILTIN_VARS = {"ORCHESTRA_ROOT": str(Path(__file__).resolve().parent.parent), "PYTHON": sys.executable}
+
+
 def _substitute(value, missing: set):
     if isinstance(value, str):
         def rep(m):
-            v = os.environ.get(m.group(1))
+            v = BUILTIN_VARS.get(m.group(1)) or os.environ.get(m.group(1)) or None
             if v is None:
                 missing.add(m.group(1))
                 return ""

@@ -252,6 +252,15 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
   `.env` (`GMAIL_MCP_URL`, `GMAIL_MCP_TOKEN`, `GCAL_MCP_URL`, `GCAL_MCP_TOKEN`). Without those they show
   as "not set up" and the orchestrator is not offered them.
 - **Plugins:** every folder in `plugins/` with `.claude-plugin/plugin.json` becomes `plugin.<name>`.
+- **App variables:** `${ORCHESTRA_ROOT}` (this repo) and `${PYTHON}` (the running Python) are filled in
+  by the app, so entries can start servers that ship in `mcp_servers/` on any OS.
+- **Video-team entries (2026-11-27):**
+  - `elevenlabs`: `uvx elevenlabs-mcp` with `ELEVENLABS_API_KEY`; files land in the workspace. Tools
+    matching `*call*`, `*agent*`, `*phone*`, `*whatsapp*` are outward (calls and voice agents).
+  - `tiktok`: `${PYTHON} ${ORCHESTRA_ROOT}/mcp_servers/tiktok.py` with `TIKTOK_ACCESS_TOKEN`, on TikTok's
+    v2 APIs: `creator_info`, `list_videos`, `post_status` (read); `upload_draft`, `publish_video`
+    (outward). Uploads go in one chunk up to 64 MB. `publish_video` is `SELF_ONLY` unless
+    `TIKTOK_PRIVACY` or the call says otherwise, because unaudited apps can only post privately.
 - **Picking per run:** the new-run Options panel lists non-builtin entries as chips (from
   `GET /api/catalog`). The chosen ids go in `options.catalog`. Builtins are always available.
 - The orchestrator prompt lists each enabled entry as `id: description (risk)`. The `create_agent`
@@ -262,7 +271,7 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
 Inspired by Lauren Tan's pstack (`/poteto-mode` routes work to a playbook).
 - One markdown file per playbook in `orchestra/playbooks/`, front matter `id`, `title`, `when`.
   Body: steps, suggested roles and catalog tools, done-when templates, pitfalls.
-- Shipped: `research-report`, `build-with-tests`, `repo-change`, `writing`, `general`.
+- Shipped: `research-report`, `build-with-tests`, `repo-change`, `writing`, `short-video`, `general`.
 - The orchestrator prompt lists every playbook's summary. Its first tool call is
   `read_playbook(id)`, which returns the full text and logs `playbook_chosen`.
 - `options.playbook` (`"auto"` by default) lets you force one from the Options panel.

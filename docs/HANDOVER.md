@@ -44,9 +44,12 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   front, memory in the first prompt plus a line per finished run, triggers (room message, schedule,
   secret webhook), steering (message a running orchestrator, also from the run page), team room,
   team editor, Teams in the sidebar.
+- **Video-team tools (PRD section 13, "Making the TikTok team real"):** `elevenlabs` and `tiktok`
+  catalog entries, `mcp_servers/tiktok.py`, `short-video` playbook. Need `ELEVENLABS_API_KEY` (+ uv)
+  and `TIKTOK_ACCESS_TOKEN` in `.env`; not tried live yet.
 - **M6 replay page:** `web/src/replay/`, built with `npm run build:replay`, published by
   `.github/workflows/replay-pages.yml` once Pages is turned on (Settings → Pages → Source: GitHub Actions).
-- **Tests:** 116 pytest (`python -m pytest tests -q`), 37 Vitest (`cd web && npm test`), type-checked
+- **Tests:** 122 pytest (`python -m pytest tests -q`), 37 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -134,7 +137,7 @@ Open http://127.0.0.1:8000.
 You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat/chacha-pa
 (main has the same code). First read docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: v1 milestones M1 to M5, M7 and M8 are done and tested offline (116 pytest, 37 Vitest), plus the M6 replay page. The first live run worked. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
+State: v1 milestones M1 to M5, M7 and M8 are done and tested offline (122 pytest, 37 Vitest), plus the M6 replay page. The first live run worked. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
 keep this session lean and prefer cheap models.
 
 Task: the claude.ai connectors check (task 1.13), then M9 (team builder: "I want a team for stocks"
