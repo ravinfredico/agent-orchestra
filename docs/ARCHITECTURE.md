@@ -338,6 +338,7 @@ accepted starts the team's next run. Long `assign_tasks` batches delay delivery 
 The room (`room_items`) is folded from the team's run logs plus `events.jsonl`: your messages (the
 task of a message-started run and every `user_message`), orchestrator replies, hand-offs
 (`task_assigned`: orchestrator → agent), checker results, final results, and system lines.
+Approval requests show in the room with Approve and Deny (they call the run's approvals endpoint).
 
 ## 9f. Replay page (M6)
 - Source: `web/replay.html` and `web/src/replay/` (`Replay.tsx` player, `clock.ts` pacing and scrub,

@@ -317,3 +317,23 @@ def test_demo_run_survives_a_mid_run_message(tmp_path):
     assert state.status == "finished"
     said = [e["text"] for e in read_events(state.run_dir) if e["type"] == "orchestrator_said"]
     assert any("Got your message" in t for t in said)
+
+
+def test_tiktok_team_demo_in_the_room(tmp_path, monkeypatch):
+    monkeypatch.delenv("APP_TOKEN", raising=False)
+    mgr = RunManager(tmp_path / "runs", fake_mode=True, fake_delay=0.0)
+    with TestClient(create_app(mgr, web_dist=tmp_path / "x", schedule=False)) as c:
+        tid = c.post("/api/teams", json={"name": "TikTok studio", "goal": "Student life videos",
+                                         "members": fake.TIKTOK_MEMBERS}).json()["id"]
+        rid = c.post(f"/api/teams/{tid}/messages", json={"text": "Make 3 videos for this week"}).json()["run_id"]
+        c.post(f"/api/teams/{tid}/messages", json={"text": "No cooking videos please"})
+        ap = wait(lambda: next((i for i in c.get(f"/api/teams/{tid}/room").json()["items"] if i["kind"] == "approval"), None))
+        assert ap["from"] == "poster" and ap["run_id"] == rid
+        assert c.post(f"/api/runs/{rid}/approvals/{ap['approval_id']}", json={"decision": "approve"}).status_code == 200
+        d = wait(lambda: (x := c.get(f"/api/runs/{rid}").json())["status"] == "finished" and x)
+        assert "No cooking" in d["final"]
+        room = c.get(f"/api/teams/{tid}/room").json()["items"]
+        assert any(i["kind"] == "system" and i["text"] == "Approved: schedule posts" and i["approval_id"] == ap["approval_id"]
+                   for i in room)
+        assert any(i["kind"] == "agent" and "cooking" in i["text"] for i in room)           # the reply to your message
+        assert {i["to"] for i in room if i["kind"] == "handoff"} >= {"trendscout", "analyst", "scriptwriter", "editor", "poster"}

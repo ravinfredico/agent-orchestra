@@ -127,7 +127,7 @@ class RunManager:
     async def _execute(self, handle: RunHandle) -> None:
         state = handle.state
         if self.fake_mode:
-            make_runner, script = fake.pick_demo(state.task)
+            make_runner, script = fake.pick_demo(state.task, state.team)
             runner = self.runner or make_runner(self.fake_delay)
             factory = self.client_factory or fake.fake_client_factory(script, {"state": state})
         else:

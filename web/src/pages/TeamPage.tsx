@@ -27,11 +27,35 @@ function face(name: string | undefined, team: Team | null) {
   return { color: agentColor(i), accessory: agentAccessory(i) }
 }
 
-function RoomLine({ item, team }: { item: RoomItem; team: Team | null }) {
+function RoomLine({ item, team, answered, onAnswer }: { item: RoomItem; team: Team | null; answered: boolean; onAnswer: () => void }) {
+  const [busy, setBusy] = useState(false)
   if (item.kind === 'you') return <div className="msg-user room-you">{item.text}</div>
   if (item.kind === 'system') return <div className="room-system"><span>{item.text}</span></div>
   const who = item.from || 'orchestrator'
   const f = face(who, team)
+  if (item.kind === 'approval') {
+    const decide = async (yes: boolean) => {
+      if (!item.run_id || !item.approval_id) return
+      setBusy(true)
+      try { await api.approve(item.run_id, item.approval_id, yes); onAnswer() } finally { setBusy(false) }
+    }
+    return (
+      <div className="room-line room-approval" role="group" aria-label={`Approval: ${who} ${item.text}`}>
+        <Character color={f.color} accessory={f.accessory} mood={answered ? 'neutral' : 'waiting'} size={28} animate={false} />
+        <div>
+          <span className="room-from">{who} · needs your approval</span>
+          <span className="room-text">{item.text.replace(' Approve it in the run.', '')}</span>
+          {!answered && (
+            <span className="team-actions room-approve">
+              <button className="btn btn-sm btn-primary" disabled={busy} onClick={() => decide(true)}>Approve</button>
+              <button className="btn btn-sm" disabled={busy} onClick={() => decide(false)}>Deny</button>
+              {item.run_id && <Link to={`/runs/${item.run_id}`}>see details</Link>}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
   return (
     <div className={`room-line${item.kind === 'result' ? (item.passed ? ' room-pass' : ' room-fail') : ''}`}>
       <Character color={f.color} accessory={f.accessory} mood={item.final ? 'happy' : item.kind === 'result' && !item.passed ? 'sad' : 'neutral'} size={28} animate={false} />
@@ -88,7 +112,11 @@ export function TeamPage() {
           {items.length === 0 && (
             <p className="muted room-empty">No messages yet. Write below to start a run, or wait for the next scheduled slot.</p>
           )}
-          {items.map((it, i) => <RoomLine key={`${it.run_id ?? 'team'}-${it.t}-${i}`} item={it} team={team} />)}
+          {items.map((it, i) => (
+            <RoomLine key={`${it.run_id ?? 'team'}-${it.t}-${i}`} item={it} team={team} onAnswer={reload}
+              answered={it.kind === 'approval' && (!activeRun || it.run_id !== activeRun
+                || items.some((x) => x.kind === 'system' && x.approval_id === it.approval_id))} />
+          ))}
           <div ref={bottom} />
         </div>
         <div className="runbar-wrap">

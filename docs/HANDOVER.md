@@ -60,6 +60,8 @@ cd web && npm install && npm run build && cd ..
 python -m server --fake
 ```
 `--fake` plays a scripted run with no model calls. It picks the scenario from the task text:
+TikTok or video tasks and teams play a 5-member TikTok team (trends and stats in parallel, scripts, renders,
+posting with approval);
 build-style tasks ("build", "app", "tests"…) play a developer + tester building a todo CLI whose
 tests really pass (`orchestra/demo_files/`); anything else plays the e-wallet research report.
 Drop `--fake` to use the real Claude plan login.

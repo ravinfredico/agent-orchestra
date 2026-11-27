@@ -128,6 +128,8 @@ def demo_catalog() -> Catalog:
     entries = [_entry_from_dict(d) for d in BUILTIN_ENTRIES]
     entries.append(Entry(id="gmail", kind="mcp", risk="outward", server={"type": "http", "url": "http://demo"},
                          outward_tools=["send*"], description="Search, read and send email (demo)"))
+    entries.append(Entry(id="tiktok", kind="mcp", risk="outward", server={"type": "http", "url": "http://demo"},
+                         outward_tools=["post*", "schedule*"], description="Read post stats, schedule posts (demo)"))
     return Catalog(entries)
 
 
@@ -305,8 +307,96 @@ async def _finish(tools, result: str):
         await tools.finish({"result": result})
 
 
-def pick_demo(task: str):
-    """Demo mode: the build scenario for build-style tasks, otherwise the research one."""
+# ---- TikTok team scenario (picked for TikTok or video tasks and teams) ------------------
+
+TIKTOK_MEMBERS = [
+    {"name": "trendscout", "role": "Finds trends, sounds and hooks", "tools": ["web", "files.write"], "tier": "haiku"},
+    {"name": "analyst", "role": "Reads last week's post stats", "tools": ["tiktok", "files.write"], "tier": "haiku"},
+    {"name": "scriptwriter", "role": "Writes hooks, scripts and captions", "tools": ["files.read", "files.write"], "tier": "sonnet"},
+    {"name": "editor", "role": "Renders vertical videos with Remotion", "tools": ["files.read", "files.write"], "tier": "sonnet"},
+    {"name": "poster", "role": "Schedules posts, always with your approval", "tools": ["files.read", "tiktok"], "tier": "haiku"},
+]
+_IDEAS = [("01-kos-tour", "A Rp1.5 million kos room tour in Depok"), ("02-krl-rush", "Surviving the 7am KRL rush"),
+          ("03-thesis-cafe", "Ranking Jakarta cafes for thesis writing")]
+
+
+def demo_tiktok_runner(delay: float = 0.6) -> FakeRunner:
+    return FakeRunner({
+        "[tt-trends]": FakeTask(
+            shorts=["8 trends, 3 picked"], reasons=["trends.md lists 8 trends with sounds and why each fits; 3 are picked."],
+            tools=[("WebSearch", {"query": "TikTok trends Indonesia student life this week"}),
+                   ("WebFetch", {"url": "https://ads.tiktok.com/business/creativecenter/trends"})],
+            files=[("trends.md", "# Trends this week\n\n1. Room tours on a budget (sound: 'Lagi Tren')\n2. Commute POV\n3. Cafe rankings\n"
+                                 "\nPicked: room tour, commute POV, cafe ranking.")], cost=0.06),
+        "[tt-stats]": FakeTask(
+            shorts=["5 posts reviewed"], reasons=["stats.md covers last week's 5 posts with views, likes, watch time and 3 lessons."],
+            tools=[("mcp__tiktok__get_post_stats", {"days": 7})],
+            files=[("stats.md", "# Last week\n\n| Post | Views | Watch time |\n|---|---|---|\n| Cooking hack | 2.1k | 31% |\n"
+                                "| Campus tour | 18.4k | 64% |\n\nLessons: hooks under 2 s, faces in frame 1, skip cooking.")], cost=0.05),
+        "[tt-scripts]": FakeTask(
+            verdicts=[False, True], shorts=["2 hooks over 3 seconds", "3 scripts, hooks under 2 s"],
+            reasons=["Scripts 1 and 3 open with a 5 second intro; the stats say hooks must land in 2 seconds.",
+                     "All 3 scripts open with a hook under 2 seconds, have captions and 5 hashtags each."],
+            tools=[("Read", {"file_path": "trends.md"}), ("Read", {"file_path": "stats.md"})],
+            files=[(f"scripts/{slug}.md", f"# {title}\n\nHook (0-2 s): ...\n\nCaption: ...\n\n#anakkos #jakarta #mahasiswa #fyp #studentlife")
+                   for slug, title in _IDEAS], cost=0.2),
+        "[tt-render]": FakeTask(
+            shorts=["3 storyboards, 1080x1920"], reasons=["3 storyboards at 1080x1920 with voiceover lines, each under 30 s."],
+            tools=[("Read", {"file_path": "scripts/01-kos-tour.md"})],
+            files=[(f"videos/{slug}.storyboard.md", f"# {title}\n\nFormat: 1080x1920, 24 s, voiceover\n\n(demo: no real render)")
+                   for slug, title in _IDEAS], cost=0.22),
+        "[tt-post]": FakeTask(
+            shorts=["3 posts scheduled"], reasons=["3 posts scheduled for Mon, Wed and Fri at 18:00 WIB."],
+            outward=("mcp__tiktok__schedule_posts", {"posts": [s for s, _ in _IDEAS], "times": ["Mon 18:00", "Wed 18:00", "Fri 18:00"]}),
+            files=[("schedule.md", "# Scheduled\n\n- Mon 18:00 kos tour\n- Wed 18:00 KRL rush\n- Fri 18:00 thesis cafes")], cost=0.04),
+    }, delay=delay)
+
+
+async def demo_tiktok_script(tools):
+    await tools.read_playbook({"id": "general"})
+    yield ("Plan: the trend scout and the analyst work at the same time, then the script writer drafts 3 videos, "
+           "the editor renders them, and the poster schedules them once you approve.")
+    for m in TIKTOK_MEMBERS:
+        if m["name"] not in tools.s.agents:
+            await tools.create_agent({**m, "system_prompt": f"You are the team's {m['name']}.", "tier_reason": "team member"})
+    await tools.assign_tasks({"tasks": [
+        {"agent": "trendscout", "task_id": "trends-1", "title": "Find this week's trends", "owns": ["trends.md"],
+         "task": "[tt-trends] Find 8 student-life trends in Indonesia this week with sounds. Pick the 3 best. Save trends.md.",
+         "done_when": "trends.md lists 8 trends with a sound each and marks 3 picks",
+         "checks": [{"type": "file_exists", "path": "trends.md"}]},
+        {"agent": "analyst", "task_id": "stats-1", "title": "Review last week", "owns": ["stats.md"],
+         "task": "[tt-stats] Read last week's post stats. Save stats.md with a table and 3 lessons.",
+         "done_when": "stats.md has every post from the last 7 days and 3 lessons",
+         "checks": [{"type": "contains", "path": "stats.md", "text": "Lessons"}]},
+    ]})
+    msgs = tools.s.take_messages()
+    if msgs:
+        yield f"Got it: \"{msgs[-1]}\". The stats agree (cooking had the lowest watch time), so none of the 3 ideas are cooking."
+    await tools.assign_task({"agent": "scriptwriter", "task_id": "scripts-1", "title": "Write 3 scripts",
+                             "task": "[tt-scripts] Write 3 scripts from the picked trends, using the lessons in stats.md. One file each in scripts/.",
+                             "done_when": "3 scripts, each with a hook under 2 seconds, a caption and 5 hashtags",
+                             "checks": [{"type": "file_count", "glob": "scripts/*.md", "min": 3}]})
+    await tools.assign_task({"agent": "editor", "task_id": "render-1", "title": "Render 3 videos",
+                             "task": "[tt-render] Render the 3 scripts as 1080x1920 videos with a voiceover, under 30 s each.",
+                             "done_when": "3 vertical videos, each under 30 s, in videos/"})
+    yield "Videos are ready. The poster will schedule them for Mon, Wed and Fri at 18:00, after you approve."
+    await tools.assign_task({"agent": "poster", "task_id": "post-1", "title": "Schedule 3 posts",
+                             "task": "[tt-post] Schedule the 3 videos on TikTok for Mon, Wed and Fri at 18:00 WIB.",
+                             "done_when": "3 posts scheduled at the agreed times"})
+    async for line in _finish(tools, "3 TikToks ready and scheduled for Mon, Wed and Fri at 18:00: a kos room tour, the KRL rush, "
+                                     "and a thesis-cafe ranking. No cooking. Hooks are under 2 seconds, as last week's stats suggest.\n\n"
+                                     "Files: trends.md, stats.md, scripts/ (3), videos/ (3), schedule.md."):
+        yield line
+
+
+_TIKTOK_KEYWORDS = re.compile(r"tiktok|video|reel|konten", re.I)
+
+
+def pick_demo(task: str, team: dict | None = None):
+    """Demo mode: TikTok for video tasks or teams, build for build-style tasks, otherwise research."""
+    about = f"{task or ''} {(team or {}).get('name', '')} {(team or {}).get('goal', '')}"
+    if _TIKTOK_KEYWORDS.search(about):
+        return demo_tiktok_runner, demo_tiktok_script
     if _BUILD_KEYWORDS.search(task or ""):
         return demo_build_runner, demo_build_script
     return demo_runner, demo_script

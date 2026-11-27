@@ -469,3 +469,5 @@ pre.code { margin: 0; padding: 16px; border-radius: 12px; background: var(--surf
   .replay-badge { display: none; }
   .replay-count { display: none; }
 }
+.room-approval > div { border: 1px solid var(--check); border-radius: 14px; padding: 10px 14px; }
+.room-approve { margin-top: 8px; font-size: 13.5px; }

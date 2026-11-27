@@ -44,7 +44,7 @@ Desktop                                         Phone
 | P2 | Phone live run | `P2-Live` | Team strip of faces, thread, run bar with meter and Stop. |
 | P3 | Phone files | `P3-Files` | Bottom sheet with file chips and the rendered file. |
 | P4 | Phone history | `P4-History` | Runs list with search and New run. |
-| T1 | Team room | `M8-Teams` | Sidebar Teams section, room (your bubbles right; orchestrator, hand-offs "orchestrator → agent" and checker results left; system lines centred), message box, team panel (goal, members with tier chips, triggers in words, memory, Edit, Pause). Below 1280 px the panel is a drawer opened from the header. |
+| T1 | Team room | `M8-Teams` | Sidebar Teams section, room (your bubbles right; orchestrator, hand-offs "orchestrator → agent" and checker results left; system lines centred; approval requests with Approve / Deny and a check-coloured border), message box, team panel (goal, members with tier chips, triggers in words, memory, Edit, Pause). Below 1280 px the panel is a drawer opened from the header. |
 | T2 | Team editor | `M8-Teams` | Name, time zone, goal, members (name, role, model, tool chips), schedule slots (cron + task), webhook toggle with task and URL, memory, Save, Cancel, Delete (asks twice). |
 | R1 | Replay page | `M6-Replay` | The run screen without the sidebar, a header with "Replay · a recorded run, no live agents" and a GitHub link, and a player instead of the run bar: play/pause, position slider, event count, speed 1× 2× 4×. The end card is "Replay finished" with the result and Play again. |
 | — | Message during a run | `M8-Teams` | A message box above the run bar while live: "Message the orchestrator. It reads this at its next step." Your message joins the thread at once as a user bubble. |

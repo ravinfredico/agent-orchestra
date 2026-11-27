@@ -25,7 +25,8 @@ from orchestra.state import read_events
 MEMORY_MAX = 8000          # chars kept in memory.md; the oldest past runs drop off first
 PAST_HEADER = "## Past runs"
 ROOM_KINDS = {"run_started", "user_message", "orchestrator_said", "task_assigned", "task_passed",
-              "task_failed", "finished", "run_failed", "run_stopped", "run_interrupted"}
+              "task_failed", "approval_requested", "approval_resolved", "finished", "run_failed", "run_stopped",
+              "run_interrupted"}
 
 
 class TeamError(Exception):
@@ -254,6 +255,7 @@ def room_items(team_events: list[dict], run_dirs: list[Path], limit: int = 200) 
     for d in run_dirs:
         run_id = Path(d).name
         titles: dict[str, str] = {}
+        asked: dict[str, str] = {}   # approval id -> what was asked
         for e in read_events(d):
             if e["type"] not in ROOM_KINDS:
                 continue
@@ -281,6 +283,14 @@ def room_items(team_events: list[dict], run_dirs: list[Path], limit: int = 200) 
             elif t == "task_failed":
                 items.append({**base, "kind": "result", "from": "checker", "passed": False,
                               "text": f"{titles.get(e['task_id'], e['task_id'])} failed"})
+            elif t == "approval_requested":
+                asked[e.get("approval_id")] = str(e.get("tool", "")).split("__")[-1].replace("_", " ")
+                items.append({**base, "kind": "approval", "from": e.get("agent", ""), "approval_id": e.get("approval_id"),
+                              "text": f"wants to {str(e.get('tool', '')).split('__')[-1].replace('_', ' ')}. Approve it in the run."})
+            elif t == "approval_resolved":
+                word = {"approved": "Approved", "denied": "Denied"}.get(e.get("decision"), "Not answered")
+                items.append({**base, "kind": "system", "approval_id": e.get("approval_id"),
+                              "text": f"{word}: {asked.get(e.get('approval_id'), 'an action')}"})
             elif t == "finished":
                 items.append({**base, "kind": "agent", "from": "orchestrator", "final": True,
                               "text": e.get("result", "")})

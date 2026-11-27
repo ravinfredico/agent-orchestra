@@ -94,7 +94,8 @@ export interface Team {
 export type TeamInput = Omit<Team, 'id' | 'active_run' | 'hook'> & { hook: { enabled: boolean; task: string } }
 export interface RoomItem {
   t: number
-  kind: 'you' | 'agent' | 'handoff' | 'result' | 'system'
+  kind: 'you' | 'agent' | 'handoff' | 'result' | 'system' | 'approval'
+  approval_id?: string
   text: string
   from?: string
   to?: string
