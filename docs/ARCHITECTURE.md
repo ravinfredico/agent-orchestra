@@ -414,6 +414,11 @@ runs/index.db    SQLite: runs table + FTS5 over task and title
 - `runs/` is in `.gitignore`.
 
 ## 13. Security
+**Sign-in:** the app contains no login code. It never asks for, reads, stores or sends Claude
+credentials. The SDK starts the installed Claude Code, which uses its own sign-in (`auth_mode()` only
+checks whether `ANTHROPIC_API_KEY` is set, to label the mode). Plan login is for personal use; see
+README "Sign-in and terms".
+
 - uvicorn binds to `127.0.0.1` only. The server refuses to start on any other host unless
   `APP_TOKEN` is set.
 - **Auth:** when `APP_TOKEN` is set, `POST /api/login` with the token sets an HttpOnly, SameSite=Strict

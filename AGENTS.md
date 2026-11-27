@@ -9,8 +9,9 @@ their tools from a catalog. It assigns each task with a concrete `done_when`, an
 independent checker passes every task.
 
 **ChaCha PA** is the web app being built around it: type a task, watch the team work live, on laptop
-or phone. Runs on the user's Claude Pro plan through the Claude Code login (`ANTHROPIC_API_KEY`
-unset). API-key mode is also supported.
+or phone. It never touches logins: it runs the installed Claude Code with whatever sign-in it has
+(the user's Claude plan for personal use, or `ANTHROPIC_API_KEY`). Self-hosted only; see README
+"Sign-in and terms".
 
 Docs:
 - `docs/HANDOVER.md` start here in a new session: state, next steps, gotchas
@@ -97,6 +98,7 @@ python scripts/make_fixtures.py                # after changing events: refresh 
 - Outward actions (send, post, book) always need user approval.
 - Shell stays off by default and runs sandboxed when on.
 - Don't set `ANTHROPIC_API_KEY` in code or tests. Plan mode depends on it being unset.
+- Never add login code: no sign-in screens, no reading or storing Claude credentials or tokens.
 - Keep the CLI working when changing the engine.
 
 ## Self-improvement
@@ -119,7 +121,7 @@ These files are meant to get better over time.
 - M6 replay page built; publishing waits for you to turn on GitHub Pages (Actions source).
 - claude.ai connectors in the catalog, scoped per agent (built offline; confirm live, task 1.13).
 - First live run worked (2026-11-27). Next: confirm connectors live, then M9 (team builder; marketing example first).
-- `main` has everything (PRs #2, #3); `feat/chacha-pa` is the working branch.
+- `main` has v1 (PRs #2, #3); M7 onward is only on `feat/chacha-pa` (the working branch).
 
 ## Learnings
 - Write multi-line edits as a Python script file, not a bash heredoc: Claude Code's removal check can block heredocs it can't parse.

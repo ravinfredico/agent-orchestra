@@ -156,6 +156,10 @@ fail, retry and finish, live, on a laptop or a phone.
 | Phone | Every screen works at 390 px wide. Touch targets at least 44 px. |
 
 ## 8. From local v1 to private hosting
+**Sign-in rule (2026-11-27):** ChaCha PA never asks for, reads or stores credentials; it runs the
+Claude Code installed on the machine, signed in however its owner chose. Self-hosted only. Claude
+plan login is for personal use; sharing, hosting or heavy automation uses the owner's API key.
+
 1. **v1, local:** the server runs on your laptop at `http://127.0.0.1:8000`. Plan login.
 2. **Always-on:** the same server runs on a machine that stays on. Option A is your own machine
    (plan login stays on your device). Option B is a VPS (use an API key, per Anthropic's docs).
@@ -361,7 +365,7 @@ from ElevenLabs. Each would be one catalog entry; the team builder (F23) lists m
 |---|---|---|
 | A connector needs a sign-in the app can't do (no OAuth screen in background runs) | That connector is skipped | Shown as "not set up" with the fix; sign in once in Claude Code with `/mcp`. |
 | A connector tool that changes things has a read-sounding name | It runs without asking | Only clear read names (get, list, search, read…) skip approval; everything else asks. Tune the list if a connector misbehaves. |
-| Anthropic's terms: claude.ai login is for your own use, not for apps offered to others | Can't share the app on your login | ChaCha PA is personal. For other people, each uses their own login or an API key. |
+| Anthropic's terms: unless approved, third-party apps may not offer claude.ai login or plan limits | Others can't be pointed at their Claude plans | The app has no login code and runs the user's own Claude Code. Plan login is for personal use; anyone who shares, hosts or automates uses their own API key (README, "Sign-in and terms"). In API key mode connectors don't load, so services are added as MCP entries. |
 
 ### Open questions
 - ~~Hard daily usage cap for teams?~~ Decided 2026-11-27: no cap. Model routing and the Cheap preset only.

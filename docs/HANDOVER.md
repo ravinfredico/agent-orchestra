@@ -5,7 +5,7 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
 ## Where things are
 | What | Where |
 |---|---|
-| `main` | Has everything (PRs #2 and #3 merged). Same code as `feat/chacha-pa`. Work on a branch and let the user merge. |
+| `main` | Has v1 (PRs #2 and #3). Everything from M7 on is only on `feat/chacha-pa`; the user merges when ready. |
 | Working branch | `feat/chacha-pa`. |
 | Docs-only branch | `claude/adoring-wright-xydai5`: old, docs up to the implementation plan. |
 | Demo video | `docs/media/chacha-pa-demo.mp4` (97 s, voiceover), README GIF `docs/media/chacha-pa-demo-preview.gif`, source `demo-video/`. |
@@ -52,7 +52,7 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   and `TIKTOK_ACCESS_TOKEN` in `.env`; not tried live yet.
 - **M6 replay page:** `web/src/replay/`, built with `npm run build:replay`, published by
   `.github/workflows/replay-pages.yml` once Pages is turned on (Settings → Pages → Source: GitHub Actions).
-- **Tests:** 122 pytest (`python -m pytest tests -q`), 37 Vitest (`cd web && npm test`), type-checked
+- **Tests:** 129 pytest (`python -m pytest tests -q`), 37 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -94,6 +94,9 @@ Open http://127.0.0.1:8000.
    hosting (decide own machine vs VPS first; always-on teams need a machine that stays on).
 
 ## Decided (don't re-ask)
+- Sign-in: the app never touches logins; it runs the user's installed Claude Code. Self-hosted, open
+  source. Plan login for personal use; API key for anyone who shares, hosts or automates heavily
+  (README "Sign-in and terms"). Never add login code.
 - After v1: parallel agents; the orchestrator picks the cheapest model tier per task; teams for any
   goal from one message; teams are always on but only spend usage on triggers; TikTok team does
   ideas, scripts, rendered videos, posting (with approval) and stats review; stocks team never trades.
@@ -139,13 +142,23 @@ Open http://127.0.0.1:8000.
 ## Handover prompt (paste into a new session)
 ```
 You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat/chacha-pa
-(main has the same code). First read docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
+(main only has v1; everything from M7 on is on feat/chacha-pa). First fetch the branch, then read
+docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: v1 milestones M1 to M5, M7 and M8 are done and tested offline (122 pytest, 37 Vitest), plus the M6 replay page. The first live run worked. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
-keep this session lean and prefer cheap models.
+State: M1 to M8 done and tested offline (129 pytest, 37 Vitest), plus the M6 replay page, the TikTok
+and ElevenLabs tools, and claude.ai connectors as team tools (found with `claude mcp list`, scoped per
+agent, writes need approval). The first live run worked. Connectors and teams are not yet tried live.
+The app never touches logins: it runs my installed Claude Code (plan for personal use, API key for
+sharing). I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so keep this
+session lean and prefer cheap models.
 
-Task: confirm the claude.ai connectors work live (task 1.13), then M9 (team builder: "I want a
-marketing team" gives a proposed team, with connectors, to review and save).
+Task: M9, the team builder. One message like "I want a marketing team" should give a proposed team
+(members, roles, model tiers, connectors and catalog tools, schedule, outputs, which actions need
+approval, and missing connectors as "connect X at claude.ai" steps) that I review, edit in the team
+editor and save. Start with a marketing demo scenario (Notion research, copywriter, Figma designer,
+Slack/Gmail coordinator) so it works in demo mode. Design new screens on the Claude Design canvas
+first (link in docs/DESIGN.md), then build.
+
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to
 feat/chacha-pa; don't merge to main or open a PR unless I ask.
