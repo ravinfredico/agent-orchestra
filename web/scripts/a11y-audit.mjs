@@ -102,6 +102,11 @@ for (const theme of ['dark', 'light']) for (const [w, h] of [[1440, 900], [390, 
   await check(page, `${tag} team room`)
   await page.goto(`${BASE}/teams/${team.id}/edit`); await page.waitForSelector('.team-form')
   await check(page, `${tag} team editor`)
+  await page.goto(`${BASE}/teams/new`); await page.waitForSelector('#team-goal')
+  await check(page, `${tag} team builder`)
+  await page.getByRole('button', { name: 'Marketing team' }).click(); await page.waitForSelector('.builder-actions')
+  await page.waitForTimeout(400)
+  await check(page, `${tag} team proposal`)
   await ctx.close()
 }
 await browser.close()

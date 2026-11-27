@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api, type CatalogEntry, type TeamInput, type TeamMember } from '../api'
 import { MenuButton } from '../components/Shell'
 import { CHEAP_PRESET } from '../presets'
+import { toolLabel } from './TeamBuilder'
 
 const TIERS = ['haiku', 'sonnet', 'opus']
 
@@ -11,11 +12,12 @@ export const EMPTY_TEAM: TeamInput = {
   hook: { enabled: false, task: '' }, options: { ...CHEAP_PRESET }, memory: '',
 }
 
-/** New team and edit team (DESIGN.md, canvas M8-Teams). Team builder from one message is M9. */
+/** New team and edit team (DESIGN.md, canvas M8-Teams). A team builder proposal arrives as router state. */
 export function TeamEdit() {
   const { teamId } = useParams()
   const nav = useNavigate()
-  const [t, setT] = useState<TeamInput>(EMPTY_TEAM)
+  const draft = (useLocation().state as { draft?: TeamInput } | null)?.draft   // from the team builder (M9)
+  const [t, setT] = useState<TeamInput>(draft ?? EMPTY_TEAM)
   const [secret, setSecret] = useState('')
   const [catalog, setCatalog] = useState<CatalogEntry[]>([])
   const [error, setError] = useState('')
@@ -27,7 +29,7 @@ export function TeamEdit() {
     if (!teamId) return
     api.team(teamId).then((x) => {
       setT({ name: x.name, goal: x.goal, members: x.members, schedule: x.schedule, timezone: x.timezone,
-        enabled: x.enabled, hook: { enabled: x.hook.enabled, task: x.hook.task }, options: x.options, memory: x.memory })
+        enabled: x.enabled, hook: { enabled: x.hook.enabled, task: x.hook.task }, options: x.options, memory: x.memory, outputs: x.outputs ?? [] })
       setSecret(x.hook.secret || '')
     }).catch((e) => setError((e as Error).message))
   }, [teamId])
@@ -70,6 +72,13 @@ export function TeamEdit() {
           <input value={t.goal} onChange={(e) => setT({ ...t, goal: e.target.value })} placeholder="Daily brief on my watchlist. Never trade." />
         </label>
 
+        <label className="field wide">
+          <span>Outputs</span>
+          <textarea rows={2} value={(t.outputs ?? []).join('\n')} onChange={(e) => setT({ ...t, outputs: e.target.value.split('\n') })}
+            placeholder={'Daily brief (brief.md)\nAlerts on big moves'} />
+          <small>What the team produces, one per line.</small>
+        </label>
+
         <fieldset className="field wide team-fieldset">
           <legend>Members</legend>
           {t.members.length === 0 && <small>No members: the orchestrator hires agents for each run.</small>}
@@ -92,6 +101,10 @@ export function TeamEdit() {
                 {tools.map((id) => (
                   <button key={id} type="button" className="chip" aria-pressed={m.tools.includes(id)}
                     onClick={() => setMember(i, { tools: m.tools.includes(id) ? m.tools.filter((x) => x !== id) : [...m.tools, id] })}>{label(id)}</button>
+                ))}
+                {(m.wants ?? []).map((id) => (
+                  <button key={id} type="button" className="chip chip-missing" aria-label={`${toolLabel(id, catalog)}, not set up yet. Remove`}
+                    onClick={() => setMember(i, { wants: (m.wants ?? []).filter((x) => x !== id) })}>{toolLabel(id, catalog)} · set up ×</button>
                 ))}
               </div>
             </div>
@@ -139,7 +152,7 @@ export function TeamEdit() {
         {error && <p className="form-error wide" role="alert">{error}</p>}
         <div className="wide team-actions">
           <button type="submit" className="btn btn-primary" disabled={busy || !t.name.trim()}>{teamId ? 'Save team' : 'Create team'}</button>
-          <button type="button" className="btn" onClick={() => nav(teamId ? `/teams/${teamId}` : '/')}>Cancel</button>
+          <button type="button" className="btn" onClick={() => nav(teamId ? `/teams/${teamId}` : draft ? '/teams/new' : '/')}>Cancel</button>
           {teamId && (confirmDelete
             ? <button type="button" className="btn btn-danger" onClick={async () => { await api.deleteTeam(teamId); nav('/') }}>Really delete</button>
             : <button type="button" className="btn" onClick={() => setConfirmDelete(true)}>Delete team</button>)}

@@ -121,7 +121,8 @@ All JSON. All routes need auth when a token is configured (section 13).
 | `GET /api/catalog` | | `[CatalogEntry]` without secrets |
 | `GET /api/playbooks` | | `[{id, title, when}]` |
 | `POST /api/runs/{id}/messages` | `{text}` | `202`. Steering: your message reaches the orchestrator at its next step. `409` if not running |
-| `GET /api/teams` | | `[Team + active_run]` |
+| `GET /api/teams` | | `[Team + active_run, approvals, setup]` (approvals and setup worked out from the catalog, see 9g) |
+| `POST /api/teams/propose` | `{goal}` | `{team, summary, questions, approvals, setup, cost_usd}`. Nothing is saved. `400` empty goal, `422` no usable team |
 | `POST /api/teams` | `Team` fields | `201 Team`. `400` with a plain reason (unknown tool, bad cron, unknown time zone) |
 | `GET/PUT/DELETE /api/teams/{id}` | `PUT`: any Team fields, `memory` replaces memory.md | `Team` / `204` (`409` while its run is going) |
 | `GET /api/teams/{id}/room` | query `limit` (200) | `{items: [RoomItem], active_run}` |
@@ -328,14 +329,15 @@ model checker, with no model call:
 
 ## 9e. Teams, triggers and steering (M8)
 `server/teams.py`. A team is a folder `teams/<id>/` next to `runs/`:
-- `team.json`: `name, goal, members [{name, role, system_prompt, tools, tier}], schedule [{cron, task}],
+- `team.json`: `name, goal, members [{name, role, system_prompt, tools, wants, tier}], outputs, schedule [{cron, task}],
   timezone, enabled, hook {enabled, task, secret}, options` (run options, Cheap preset by default).
 - `memory.md`: your notes, plus a "Past runs" list. After each team run the app adds
   `- <date> · <title> · <status>: <first 300 chars of the result>`. Past 8000 chars the oldest runs drop off.
 - `events.jsonl`: team-level events, today only `trigger_skipped`.
 
 A team run is a normal verified run with `team` and `trigger` set:
-- Its members are created (logged as `agent_created`) before the orchestrator starts.
+- Its members are created (logged as `agent_created`) before the orchestrator starts, each with only the
+  tools that are usable now: a signed-out connector is skipped, and a `wants` tool joins once it exists.
 - The first prompt starts with the team's name, goal, members and memory (`prompts.team_context`).
 - `meta.json` and `run_started` carry `team_id` and `trigger`.
 
@@ -359,6 +361,19 @@ The room (`room_items`) is folded from the team's run logs plus `events.jsonl`: 
 task of a message-started run and every `user_message`), orchestrator replies, hand-offs
 (`task_assigned`: orchestrator → agent), checker results, final results, and system lines.
 Approval requests show in the room with Approve and Deny (they call the run's approvals endpoint).
+
+## 9g. Team builder (M9)
+`orchestra/builder.py`. One message becomes a proposed team; you review, edit and save it.
+- `propose()`: one model call (`sonnet`, no tools, connectors off, JSON schema `SCHEMA`). The prompt lists
+  the catalog, your connectors included. Demo mode answers with `fake.demo_proposal()` (marketing, or
+  TikTok for video words) through the same cleaning.
+- `clean_proposal()`: 2 to 8 members, lowercase names, tiers haiku or sonnet (opus never proposed), bad
+  cron slots dropped, at most 2 questions. Tool ids are matched to the catalog ("Figma" →
+  `connector.figma`). Anything else goes to the member's `wants`. Nothing is added to the catalog.
+- `review(team, catalog)` (also on every Team from the API): `approvals` for connector and outward
+  tools, and `setup` steps: `connect` (a wanted connector: "Connect Gmail at claude.ai"), `sign_in`
+  (a connector that needs `/mcp`), `option` (Shell is off), `missing_tool` (not in the catalog).
+- Your answers to the questions go into the team's notes in `memory.md`. No second model call.
 
 ## 9f. Replay page (M6)
 - Source: `web/replay.html` and `web/src/replay/` (`Replay.tsx` player, `clock.ts` pacing and scrub,

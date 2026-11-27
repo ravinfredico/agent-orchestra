@@ -35,6 +35,7 @@ Docs:
 | `mcp_servers/` | MCP servers that ship with the app: `tiktok.py` (stats, drafts, posts). Catalog entries start them with `${PYTHON}` and `${ORCHESTRA_ROOT}` |
 | `orchestra/approvals.py` | `ApprovalBroker` + `can_use_tool` callback for outward tools |
 | `orchestra/playbooks/` | one markdown playbook per task type; `playbooks.py` loads them, `read_playbook` serves them |
+| `orchestra/builder.py` | team builder (M9): one model call turns a message into a proposed team; missing tools become setup steps |
 | `orchestra/orchestrator.py` | `create_run()` / `execute_run()` outer loop, continue and follow-up prompts |
 | `orchestra/state.py` | `RunState`: agents, board, usage, `log()` event envelope to `runs/<id>/log.jsonl` |
 | `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default); `pick_demo()` chooses the research or build scenario |
@@ -113,14 +114,14 @@ These files are meant to get better over time.
   summary, so the user can see what was learned.
 
 ## Status
-- Branch `feat/chacha-pa`. M1 (engine), M2 (server), M3 and M4 (web app), M5 (ntfy, PWA, widgets) done and tested offline.
+- Branch `feat/chacha-pa`. M1 to M8 done and tested offline. M9 team builder (9.1, 9.4 marketing demo) done offline.
 - Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
 - M7 (parallel and cheaper) done offline: model tier per task with one step-up, cheap checks,
   Cheap preset, `assign_tasks` with dependencies, usage by agent and model.
 - M8 (teams, triggers, steering, room) done offline. No daily cap (user's decision).
 - M6 replay page built; publishing waits for you to turn on GitHub Pages (Actions source).
 - claude.ai connectors in the catalog, scoped per agent (built offline; confirm live, task 1.13).
-- First live run worked (2026-11-27). Next: confirm connectors live, then M9 (team builder; marketing example first).
+- First live run worked (2026-11-27). Not yet tried live: M7, teams, connectors, a real team proposal.
 - `main` has v1 (PRs #2, #3); M7 onward is only on `feat/chacha-pa` (the working branch).
 
 ## Learnings
@@ -137,4 +138,7 @@ These files are meant to get better over time.
 - A new session may start from `main`, which has none of this work. Fetch all branches and read
   `docs/HANDOVER.md` on the working branch before doing anything.
 - Off-canvas drawers need `visibility: hidden` when closed, or Tab walks through invisible links.
+- Team members get only tools usable now (`catalog.available_ids`); `create_agent` rejects the rest, so a
+  signed-out connector once dropped a whole member.
+- Amber (`--check`) text fails contrast on light grey; use it for borders, `--text-2` for the words.
 - Run `npm run a11y` after UI changes. Wait for enter animations before axe, or it measures half-faded colors.

@@ -257,6 +257,8 @@ claude.ai, so I don't configure every service twice.
 - If the team needs a tool that isn't in the catalog yet (for example a market-data API or TikTok
   posting), the proposal says so and lists what to set up. Agents still never invent tools.
 - Teams can be edited later: add a member, change the schedule, change model tiers.
+- Built (offline, 2026-11-27): one sonnet call per proposal. Answers to its questions go into the
+  team's notes, with no second call. A member skips a tool until it is set up.
 - Examples to ship with, to show the range:
   - **TikTok team:** research, scripts, rendered videos, posting with approval, learning from stats
     (details below).

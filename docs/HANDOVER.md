@@ -9,7 +9,7 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
 | Working branch | `feat/chacha-pa`. |
 | Docs-only branch | `claude/adoring-wright-xydai5`: old, docs up to the implementation plan. |
 | Demo video | `docs/media/chacha-pa-demo.mp4` (97 s, voiceover), README GIF `docs/media/chacha-pa-demo-preview.gif`, source `demo-video/`. |
-| Design canvas | https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNUS (private to the user). Page "Screens" has 13 screens plus the `M7-Cheaper` sheet (tier chip, cheap checks, Cheap preset, parallel cards, usage by agent and model). Page "Style & components" has the Thread sheet and the Character component. |
+| Design canvas | https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNUS (private to the user). Page "Screens" has 13 screens plus the `M7-Cheaper`, `M8-Teams`, `M6-Replay` and `M9-Builder` sheets (tier chip, cheap checks, Cheap preset, parallel cards, usage by agent and model). Page "Style & components" has the Thread sheet and the Character component. |
 | Decisions | `docs/PLAN.md` |
 | Plan and progress | `docs/IMPLEMENTATION.md` (Progress table at the top) |
 
@@ -50,9 +50,15 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
 - **Video-team tools (PRD section 13, "Making the TikTok team real"):** `elevenlabs` and `tiktok`
   catalog entries, `mcp_servers/tiktok.py`, `short-video` playbook. Need `ELEVENLABS_API_KEY` (+ uv)
   and `TIKTOK_ACCESS_TOKEN` in `.env`; not tried live yet.
+- **M9 team builder (done offline):** `/teams/new` takes one message ("I want a marketing team") and
+  shows a proposal: members, tiers, tools (lock = asks first), schedule, outputs, approvals, setup steps
+  ("Connect Gmail at claude.ai", "Sign in to Slack: /mcp") and up to 2 questions. Save, or Edit before
+  saving (the M8 editor, prefilled). `orchestra/builder.py`, `POST /api/teams/propose`. Real mode: one
+  sonnet call, no tools. Demo mode: marketing team (TikTok for video words), and a marketing team run
+  (Notion research, posts, Figma visuals with approval, plan and newsletter; Slack skipped as signed out).
 - **M6 replay page:** `web/src/replay/`, built with `npm run build:replay`, published by
   `.github/workflows/replay-pages.yml` once Pages is turned on (Settings → Pages → Source: GitHub Actions).
-- **Tests:** 129 pytest (`python -m pytest tests -q`), 37 Vitest (`cd web && npm test`), type-checked
+- **Tests:** 138 pytest (`python -m pytest tests -q`), 42 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -66,7 +72,7 @@ cd web && npm install && npm run build && cd ..
 python -m server --fake
 ```
 `--fake` plays a scripted run with no model calls. It picks the scenario from the task text:
-TikTok or video tasks and teams play a 5-member TikTok team (trends and stats in parallel, scripts, renders,
+marketing teams play the 4-member marketing team; TikTok or video tasks and teams play a 5-member TikTok team (trends and stats in parallel, scripts, renders,
 posting with approval);
 build-style tasks ("build", "app", "tests"…) play a developer + tester building a todo CLI whose
 tests really pass (`orchestra/demo_files/`); anything else plays the e-wallet research report.
@@ -81,9 +87,8 @@ Open http://127.0.0.1:8000.
 3. **Connectors live check (task 1.13):** on the user's laptop, `claude mcp list` should show their
    `claude.ai ...` connectors; the Options panel should list them; a worker given one should use it,
    and a write should ask. Fix the read patterns in `orchestra/connectors.py` if a connector misbehaves.
-4. **M9 team builder:** "I want a marketing team" gives a proposed team (members, tools, tiers,
-   schedule, outputs, approvals, missing tools as setup steps) to review and save into the M8 team
-   editor. TikTok and stocks are the first examples.
+4. **M9 leftovers:** try one real proposal (`/teams/new`, about one sonnet call), the stocks demo (9.3),
+   TikTok token refresh (9.2b).
 5. **Leftovers:**
    - a manual screen reader pass (VoiceOver or NVDA) on a live run
    - draw the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
@@ -131,6 +136,8 @@ Open http://127.0.0.1:8000.
   their account.
 - **Design first:** work goes in the Claude Design canvas, then code. No hand-made HTML prototypes.
 - **Questions:** ask with AskUserQuestion, giving concrete options.
+- **Decided in M9 (defaults, change if you disagree):** proposals use one sonnet call; question answers
+  go into notes without a second call; a missing connector is saved as the member's `wants`, never as a tool.
 - **Decided in M7:** check commands run only when shell is on; opus step-up is allowed by default (Cheap caps at sonnet); canvas first for UI.
 - **Commits:** gate them on the test exit code. Piping pytest through `tail` hid a failure once.
 - **New event type:** update ARCHITECTURE section 7, the DESIGN event map, `server/summary.py`,
@@ -145,19 +152,14 @@ You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat
 (main only has v1; everything from M7 on is on feat/chacha-pa). First fetch the branch, then read
 docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: M1 to M8 done and tested offline (129 pytest, 37 Vitest), plus the M6 replay page, the TikTok
+State: M1 to M8 and the M9 team builder done and tested offline (138 pytest, 42 Vitest), plus the M6 replay page, the TikTok
 and ElevenLabs tools, and claude.ai connectors as team tools (found with `claude mcp list`, scoped per
 agent, writes need approval). The first live run worked. Connectors and teams are not yet tried live.
 The app never touches logins: it runs my installed Claude Code (plan for personal use, API key for
 sharing). I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so keep this
 session lean and prefer cheap models.
 
-Task: M9, the team builder. One message like "I want a marketing team" should give a proposed team
-(members, roles, model tiers, connectors and catalog tools, schedule, outputs, which actions need
-approval, and missing connectors as "connect X at claude.ai" steps) that I review, edit in the team
-editor and save. Start with a marketing demo scenario (Notion research, copywriter, Figma designer,
-Slack/Gmail coordinator) so it works in demo mode. Design new screens on the Claude Design canvas
-first (link in docs/DESIGN.md), then build.
+Task: <next task, e.g. try the team builder live with one cheap proposal, then the stocks demo (9.3)>.
 
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to

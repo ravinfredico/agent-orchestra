@@ -77,7 +77,9 @@ export class ApiError extends Error {
   }
 }
 
-export interface TeamMember { name: string; role: string; system_prompt?: string; tools: string[]; tier: string }
+export interface TeamMember { name: string; role: string; system_prompt?: string; tools: string[]; wants?: string[]; tier: string }
+/** Something a team needs from you before a tool works (M9). */
+export interface SetupStep { kind: 'connect' | 'sign_in' | 'missing_tool' | 'option'; tool: string; service: string; text: string }
 export interface TeamSlot { cron: string; task: string }
 export interface Team {
   id: string
@@ -90,9 +92,21 @@ export interface Team {
   hook: { enabled: boolean; task: string; secret?: string }
   options: RunOptions
   memory: string
+  outputs?: string[]
   active_run: string | null
+  approvals?: string[]
+  setup?: SetupStep[]
 }
-export type TeamInput = Omit<Team, 'id' | 'active_run' | 'hook'> & { hook: { enabled: boolean; task: string } }
+export type TeamInput = Omit<Team, 'id' | 'active_run' | 'hook' | 'approvals' | 'setup'> & { hook: { enabled: boolean; task: string } }
+/** POST /api/teams/propose: a team to review, edit and save. Nothing is saved yet. */
+export interface Proposal {
+  team: Omit<TeamInput, 'options' | 'memory'>
+  summary: string
+  questions: { question: string; options: string[] }[]
+  approvals: string[]
+  setup: SetupStep[]
+  cost_usd: number
+}
 export interface RoomItem {
   t: number
   kind: 'you' | 'agent' | 'handoff' | 'result' | 'system' | 'approval'
@@ -160,6 +174,7 @@ export const api = {
   eventsUrl: (id: string) => `/api/runs/${id}/events`,
   steer: (id: string, text: string) => request(`/api/runs/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
   teams: () => request<Team[]>('/api/teams'),
+  proposeTeam: (goal: string) => request<Proposal>('/api/teams/propose', { method: 'POST', body: JSON.stringify({ goal }) }),
   team: (id: string) => request<Team>(`/api/teams/${id}`),
   createTeam: async (t: TeamInput) => { const r = await request<Team>('/api/teams', { method: 'POST', body: JSON.stringify(t) }); teamsChanged(); return r },
   updateTeam: async (id: string, t: Partial<TeamInput>) => { const r = await request<Team>(`/api/teams/${id}`, { method: 'PUT', body: JSON.stringify(t) }); teamsChanged(); return r },

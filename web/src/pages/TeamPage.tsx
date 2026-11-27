@@ -143,6 +143,13 @@ export function TeamPage() {
             </div>
           ))}
         </section>
+        {(team?.setup ?? []).length > 0 && (
+          <section>
+            <h2 className="caps">Set up first</h2>
+            <ol className="setup-steps">{team!.setup!.map((s) => <li key={s.tool}>{s.text}.</li>)}</ol>
+            <small className="muted">Members skip these tools until they are set up.</small>
+          </section>
+        )}
         <section>
           <h2 className="caps">Triggers</h2>
           <ul className="trigger-list">
