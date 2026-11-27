@@ -110,7 +110,7 @@ Open http://127.0.0.1:8000.
 
 ## Gotchas
 - **The user is on Windows** (PowerShell). `py` is not installed there; use `python`. The app has
-  ran on Windows once (first live run, fine). Watch for path and sandbox issues in new features.
+  run on Windows once (first live run, fine). Watch for path and sandbox issues in new features.
 - **Usage burns fast** for the user. Keep sessions short, prefer Sonnet for routine work, and suggest
   haiku workers and low caps for test runs.
 - **pstack** (`.claude/settings.json`) loads from the next session on. Its hook routes multi-file work
