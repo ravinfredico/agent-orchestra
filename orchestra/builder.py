@@ -22,6 +22,12 @@ from .connectors import DISABLE_ENV
 
 BUILDER_MODEL = "sonnet"   # one call per proposal; haiku tends to miss approvals and schedules
 MAX_MEMBERS = 8
+# Tools that could move money are never proposed, whatever the model says (PRD: stocks teams never trade).
+MONEY_TOOL = re.compile(r"trad(e|es|ing)|broker|order|payment|checkout|invoice|pay(out)?$|crypto-?wallet", re.I)
+# Goals about markets get a fixed rule in every member's prompt and briefs that say so.
+FINANCE = re.compile(r"stock|saham|shares|equit|invest|portfolio|watchlist|ticker|crypto|forex|market brief", re.I)
+FINANCE_RULE = ("Never buy, sell or place orders, and never tell the user to. Anything with money stays outside the app. "
+                "Every brief or note ends with: Not financial advice.")
 
 SCHEMA = {
     "type": "object",
@@ -40,6 +46,7 @@ SCHEMA = {
         "schedule": {"type": "array", "items": {"type": "object", "properties": {
             "cron": {"type": "string"}, "task": {"type": "string"}}, "required": ["cron", "task"]}},
         "outputs": {"type": "array", "items": {"type": "string"}},
+        "alert_task": {"type": "string", "description": "Optional: what to do when new data is posted to the team's webhook"},
         "questions": {"type": "array", "items": {"type": "object", "properties": {
             "question": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}}},
             "required": ["question", "options"]}},
@@ -64,7 +71,8 @@ Rules:
 - Outputs: 2 to 5 concrete things the team produces (files, drafts, posts).
 - Questions: at most 2, only for facts you cannot guess (which channel, which stocks), each with 2 to
   4 short options.
-- Anything that moves money stays out. Stocks or finance teams never trade.
+- Anything that moves money stays out. Stocks or finance teams never trade and have no trading tools.
+- alert_task: only when the team should react to fresh data (prices, stats) sent to its webhook.
 - Each system_prompt: 2 to 4 sentences, the member's job and its quality bar.
 
 Catalog:
@@ -105,7 +113,8 @@ def clean_proposal(raw: dict, catalog) -> dict:
     if not isinstance(raw, dict):
         raise ValueError("the answer was not a team")
     known = {e.id for e in catalog.entries if e.enabled}
-    members, seen = [], set()
+    finance = bool(FINANCE.search(f"{raw.get('name', '')} {raw.get('goal', '')}"))
+    members, seen, refused = [], set(), []
     for m in (raw.get("members") or [])[:MAX_MEMBERS]:
         if not isinstance(m, dict):
             continue
@@ -116,9 +125,9 @@ def clean_proposal(raw: dict, catalog) -> dict:
         tools, wants = [], []
         for t in m.get("tools") or []:
             t = str(t).strip()
-            if t in known:
-                tools.append(t)
-            elif t:
+            if not t:
+                continue
+            if t not in known:
                 # "Gmail" and "connector.Gmail" both mean the Gmail connector; other dotted ids stay as they are
                 if t.lower().startswith("connector."):
                     cid = "connector." + _slug(t[len("connector."):])
@@ -126,12 +135,18 @@ def clean_proposal(raw: dict, catalog) -> dict:
                     cid = t
                 else:
                     cid = "connector." + _slug(t)
-                (tools if cid in known else wants).append(cid)
+                t = cid
+            if MONEY_TOOL.search(t):
+                refused.append(t)
+                continue
+            (tools if t in known else wants).append(t)
         tier = m.get("tier") if m.get("tier") in TIERS else "sonnet"
         if tier == "opus":
             tier = "sonnet"
-        members.append({"name": name, "role": str(m.get("role", ""))[:200],
-                        "system_prompt": str(m.get("system_prompt", "") or f"You are the team's {name}.")[:8000],
+        prompt = str(m.get("system_prompt", "") or f"You are the team's {name}.")[:7000]
+        if finance:
+            prompt = f"{prompt}\n\n{FINANCE_RULE}"
+        members.append({"name": name, "role": str(m.get("role", ""))[:200], "system_prompt": prompt,
                         "tools": list(dict.fromkeys(tools)), "wants": list(dict.fromkeys(wants)), "tier": tier})
     if not members:
         raise ValueError("the answer had no members")
@@ -149,12 +164,16 @@ def clean_proposal(raw: dict, catalog) -> dict:
         if isinstance(q, dict) and str(q.get("question", "")).strip():
             questions.append({"question": str(q["question"]).strip()[:200],
                               "options": [str(o)[:60] for o in (q.get("options") or [])[:4] if str(o).strip()]})
+    goal = str(raw.get("goal", "")).strip()[:1900]
+    if finance and "never trade" not in goal.lower():
+        goal = f"{goal} Never trades.".strip()
+    alert = str(raw.get("alert_task", "") or "").strip()[:4000]
     team = {"name": str(raw.get("name", "")).strip()[:60] or "New team",
-            "goal": str(raw.get("goal", "")).strip()[:2000], "members": members, "schedule": schedule,
+            "goal": goal, "members": members, "schedule": schedule,
             "outputs": [str(o)[:200] for o in (raw.get("outputs") or [])[:8] if str(o).strip()],
-            "timezone": "", "enabled": True, "hook": {"enabled": False, "task": ""}}
+            "timezone": "", "enabled": True, "hook": {"enabled": bool(alert), "task": alert}}
     return {"team": team, "summary": str(raw.get("summary", "")).strip()[:600], "questions": questions,
-            **review(team, catalog)}
+            "refused": list(dict.fromkeys(refused)), **review(team, catalog)}
 
 
 def review(team: dict, catalog) -> dict:

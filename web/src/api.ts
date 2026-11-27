@@ -105,6 +105,8 @@ export interface Proposal {
   questions: { question: string; options: string[] }[]
   approvals: string[]
   setup: SetupStep[]
+  /** tools that could move money; never given to a team */
+  refused?: string[]
   cost_usd: number
 }
 export interface RoomItem {

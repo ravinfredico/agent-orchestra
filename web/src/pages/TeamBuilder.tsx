@@ -150,9 +150,13 @@ export function TeamBuilder() {
           )}
           <section>
             <h2 className="caps">Schedule</h2>
-            {t.schedule.length === 0 ? <span className="muted">Only when you message the team.</span> : (
-              <ul className="trigger-list">{t.schedule.map((s, i) => <li key={i}><b>{cronLabel(s.cron)}</b> · <span className="muted">{s.task}</span></li>)}</ul>
+            {t.schedule.length === 0 && !t.hook.enabled ? <span className="muted">Only when you message the team.</span> : (
+              <ul className="trigger-list">
+                {t.schedule.map((s, i) => <li key={i}><b>{cronLabel(s.cron)}</b> · <span className="muted">{s.task}</span></li>)}
+                {t.hook.enabled && <li><b>New data</b> · <span className="muted">{t.hook.task}</span></li>}
+              </ul>
             )}
+            {t.hook.enabled && <small className="muted">New data comes in on the team's webhook. Its URL appears after you save.</small>}
           </section>
           {(t.outputs ?? []).length > 0 && (
             <section><h2 className="caps">Outputs</h2><ul className="trigger-list">{t.outputs!.map((o) => <li key={o}>{o}</li>)}</ul></section>
@@ -161,6 +165,9 @@ export function TeamBuilder() {
             <h2 className="caps">Asks you first</h2>
             {p.approvals.length === 0 ? <span className="muted">Nothing: this team only reads and writes files.</span>
               : <ul className="trigger-list">{p.approvals.map((a) => <li key={a}>{a}</li>)}</ul>}
+            {(p.refused ?? []).length > 0 && (
+              <small className="muted">Left out: {p.refused!.map((id) => toolLabel(id, catalog)).join(', ')}. Anything that moves money stays outside the app.</small>
+            )}
           </section>
           {p.questions.map((q, i) => (
             <fieldset key={i} className="builder-question">

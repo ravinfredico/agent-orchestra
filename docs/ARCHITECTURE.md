@@ -374,6 +374,12 @@ Approval requests show in the room with Approve and Deny (they call the run's ap
   tools, and `setup` steps: `connect` (a wanted connector: "Connect Gmail at claude.ai"), `sign_in`
   (a connector that needs `/mcp`), `option` (Shell is off), `missing_tool` (not in the catalog).
 - Your answers to the questions go into the team's notes in `memory.md`. No second model call.
+- Money guard: any tool id matching `MONEY_TOOL` (trade, broker, order, payment, checkout...) is dropped and
+  listed in `refused`, whatever the model said. No catalog entry matches it (tested).
+- Finance goals (`FINANCE`: stocks, watchlist, portfolio...) get "Never trades." in the goal and
+  `FINANCE_RULE` in every member's prompt: never buy, sell or advise trades; briefs end with "Not
+  financial advice."
+- `alert_task` (optional) turns on the team's webhook with that task, for alerts on fresh data.
 
 ## 9f. Replay page (M6)
 - Source: `web/replay.html` and `web/src/replay/` (`Replay.tsx` player, `clock.ts` pacing and scrub,

@@ -114,7 +114,7 @@ These files are meant to get better over time.
   summary, so the user can see what was learned.
 
 ## Status
-- Branch `feat/chacha-pa`. M1 to M8 done and tested offline. M9 team builder (9.1, 9.4 marketing demo) done offline.
+- Branch `feat/chacha-pa`. M1 to M8 done and tested offline. M9 team builder (9.1, 9.3 stocks and 9.4 marketing demos) done offline.
 - Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
 - M7 (parallel and cheaper) done offline: model tier per task with one step-up, cheap checks,
   Cheap preset, `assign_tasks` with dependencies, usage by agent and model.

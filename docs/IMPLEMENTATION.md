@@ -21,7 +21,7 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | M6 Portfolio replay | 6.1 done 2026-11-27 (`web/src/replay/`, Vitest, axe). 6.2: workflow ready; you turn on Pages once (Settings → Pages → Source: GitHub Actions), then it deploys on pushes to `main`. Plays the demo run. Canvas sheet `M6-Replay`. |
 | M7 Parallel and cheaper | Done offline 2026-11-27: 7.1 to 7.5 (`tests/test_m7.py`, Vitest). Designed on the canvas sheet `M7-Cheaper`. Not yet tried against a real model. |
 | M8 Teams and schedules | Done offline 2026-11-27: 8.1 to 8.3 plus steering (`tests/test_m8.py`, Vitest, a11y). 8.4 skipped: no daily cap (your decision). Canvas sheet `M8-Teams`. |
-| M9 Team builder | 9.1 and 9.4 done offline 2026-11-27 (`tests/test_m9.py`, `web/src/components/builder.test.tsx`, a11y). Canvas sheet `M9-Builder`. Open: 9.2b token refresh, 9.3 stocks demo, a live proposal. |
+| M9 Team builder | 9.1 and 9.4 done offline 2026-11-27 (`tests/test_m9.py`, `web/src/components/builder.test.tsx`, a11y). Canvas sheet `M9-Builder`. 9.3 stocks demo done too. Open: 9.2b token refresh, a live proposal. |
 
 ## M1: Engine events and capabilities
 Goal: the engine emits the full event stream, can be cancelled, uses the tool catalog, asks for
@@ -131,7 +131,7 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 | 9.2a | TikTok and ElevenLabs tools | Done offline 2026-11-27: `mcp_servers/tiktok.py` (stats, inbox drafts, direct posts, status), `elevenlabs` and `tiktok` catalog entries, `short-video` playbook, demo TikTok scenario. Live test needs your keys. | `tests/test_media_tools.py` (fake TikTok API), `test_tiktok_team_demo_in_the_room` |
 | 9.2b | TikTok token refresh | Refresh the access token with the refresh token before it expires (about 24 h). | fake token endpoint |
 | 9.4 | Example: marketing team (done offline) | Strategist (Notion), copywriter, designer (Figma, approval before edits), coordinator (Slack and Gmail, approval). Demo scenario. | demo scenario; every connector write asks |
-| 9.3 | Example: stocks team | Watchlist, daily brief, research on request, alerts. No trading tools. "Not financial advice" in briefs. | demo scenario; no trading tool in the catalog |
+| 9.3 | Example: stocks team (done offline) | Watchlist, daily brief, research on request, alerts. No trading tools. "Not financial advice" in briefs. | demo scenario; no trading tool in the catalog |
 
 ## Later
 Steering mid-run, Docker per agent, OpenRouter models, repo diff, hosting setup (always-on machine,

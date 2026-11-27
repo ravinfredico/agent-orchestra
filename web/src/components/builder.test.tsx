@@ -25,6 +25,7 @@ const PROPOSAL: Proposal = {
   questions: [{ question: 'Which Slack channel gets the plan?', options: ['#marketing', '#general'] }],
   approvals: ['designer asks before it sends, posts or changes anything in Figma'],
   setup: [{ kind: 'connect', tool: 'connector.gmail', service: 'Gmail', text: 'Connect Gmail at claude.ai, Settings, Connectors' }],
+  refused: ['broker.orders'],
   cost_usd: 0,
 }
 const CATALOG = [
@@ -77,6 +78,7 @@ describe('team builder', () => {
     expect(await screen.findByText('Here is a team of 2.')).toBeInTheDocument()
     expect(screen.getByText('Connect Gmail at claude.ai, Settings, Connectors.')).toBeInTheDocument()
     expect(screen.getByText(/designer asks before/)).toBeInTheDocument()
+    expect(screen.getByText(/Left out: broker.orders/)).toBeInTheDocument()
     expect(screen.getByText('Gmail')).toBeInTheDocument()
     expect(calls.some((c) => c.url === '/api/teams' && c.method === 'POST')).toBe(false)   // nothing saved yet
     await userEvent.click(screen.getByRole('button', { name: '#general' }))

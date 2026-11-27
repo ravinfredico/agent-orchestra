@@ -259,6 +259,8 @@ claude.ai, so I don't configure every service twice.
 - Teams can be edited later: add a member, change the schedule, change model tiers.
 - Built (offline, 2026-11-27): one sonnet call per proposal. Answers to its questions go into the
   team's notes, with no second call. A member skips a tool until it is set up.
+- Stocks demo built (offline): scout, analyst and writer; a data API shows as a setup step; trading
+  and payment tools are always refused; every member's prompt says to never advise trades.
 - Examples to ship with, to show the range:
   - **TikTok team:** research, scripts, rendered videos, posting with approval, learning from stats
     (details below).

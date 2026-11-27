@@ -43,7 +43,7 @@ class FakeRunner:
         for key, t in self.tasks.items():
             if key in prompt:
                 return t
-        return FakeTask()
+        return self.tasks.setdefault("", FakeTask())   # unscripted work: one shared default, so tries count
 
     async def __call__(self, *, prompt, output_schema=None, cwd=None, on_tool_use=None, can_use_tool=None, **kw):
         t = self._find(prompt)
@@ -52,8 +52,8 @@ class FakeRunner:
             await asyncio.sleep(self.delay * 1.5)
             i = t.attempts - 1
             ok = t.verdicts[min(i, len(t.verdicts) - 1)]
-            reason = t.reasons[i] if i < len(t.reasons) else ("All criteria met." if ok else "Criteria not met.")
-            short = t.shorts[i] if i < len(t.shorts) else ("all criteria met" if ok else "criteria not met")
+            reason = t.reasons[i] if 0 <= i < len(t.reasons) else ("All criteria met." if ok else "Criteria not met.")
+            short = t.shorts[i] if 0 <= i < len(t.shorts) else ("all criteria met" if ok else "criteria not met")
             return AgentResult(text="", structured={"passed": ok, "reason": reason, "short": short},
                                turns=2, cost_usd=self.checker_cost)
         self.calls["worker"] += 1
@@ -430,13 +430,37 @@ TIKTOK_PROPOSAL = {
     "questions": [{"question": "Which niche?", "options": ["Student life", "Food", "Tech"]}],
 }
 
+STOCKS_PROPOSAL = {
+    "name": "Stocks desk",
+    "goal": "A daily brief on my watchlist, research notes when I ask, and alerts on big moves. Never trades.",
+    "summary": "Here is a team of 3 for your watchlist: a scout for news, an analyst for prices and earnings dates, "
+               "and a writer for the brief. It has no trading tools and never will.",
+    "members": [
+        {"name": "scout", "role": "Finds news on each ticker", "tier": "haiku", "tools": ["web", "files.write"],
+         "system_prompt": "You are the team's scout. Find the last 24 hours of news for each watchlist ticker from reliable sources. Save news.md with a source URL per item."},
+        {"name": "analyst", "role": "Price moves and earnings dates", "tier": "haiku", "tools": ["web", "market-data.prices", "files.write"],
+         "system_prompt": "You are the team's analyst. Record yesterday's close, the day's move in percent and the next earnings date for each ticker. Save prices.md as a table with sources."},
+        {"name": "writer", "role": "Writes the daily brief and research notes", "tier": "sonnet", "tools": ["files.read", "files.write"],
+         "system_prompt": "You are the team's writer. Turn news.md and prices.md into a brief under 300 words: what moved, why, and what to watch. Plain words, no hype."},
+    ],
+    "schedule": [{"cron": "30 7 * * 1-5", "task": "Write today's brief for the watchlist"}],
+    "outputs": ["Daily brief (brief-<date>.md)", "news.md and prices.md with sources", "Research notes on request", "Alerts on big moves"],
+    "alert_task": "New prices arrived. If any watchlist ticker moved more than 3%, write a short alert with the likely reason.",
+    "questions": [{"question": "Which stocks are on your watchlist?", "options": ["BBCA, BBRI, TLKM", "AAPL, MSFT, NVDA"]}],
+}
+
+_STOCKS_KEYWORDS = re.compile(r"stock|saham|watchlist|ticker|invest|portfolio", re.I)
 _MARKETING_KEYWORDS = re.compile(r"marketing|newsletter|campaign|brand|social media", re.I)
 
 
 def demo_proposal(goal: str) -> dict:
-    """Demo mode team builder: the model's answer for a marketing (default) or TikTok team."""
+    """Demo mode team builder: the model's answer for a TikTok, stocks or marketing (default) team."""
     import copy
-    return copy.deepcopy(TIKTOK_PROPOSAL if _TIKTOK_KEYWORDS.search(goal or "") else MARKETING_PROPOSAL)
+    if _TIKTOK_KEYWORDS.search(goal or ""):
+        return copy.deepcopy(TIKTOK_PROPOSAL)
+    if _STOCKS_KEYWORDS.search(goal or ""):
+        return copy.deepcopy(STOCKS_PROPOSAL)
+    return copy.deepcopy(MARKETING_PROPOSAL)
 
 
 def demo_marketing_runner(delay: float = 0.6) -> FakeRunner:
@@ -500,16 +524,74 @@ async def demo_marketing_script(tools):
         yield line
 
 
+_TICKERS = ["BBCA", "BBRI", "TLKM"]
+
+
+def demo_stocks_runner(delay: float = 0.6) -> FakeRunner:
+    return FakeRunner({
+        "[st-news]": FakeTask(
+            shorts=["7 items, all sourced"], reasons=["news.md has 7 items across BBCA, BBRI and TLKM, each with a source URL."],
+            tools=[("WebSearch", {"query": "BBRI news today"}), ("WebFetch", {"url": "https://www.idx.co.id/en/news"})],
+            files=[("news.md", "# News, last 24 h\n\n- BBRI: Q3 loan growth 9% y/y (https://example.com/bbri)\n"
+                               "- TLKM: data center unit IPO plan (https://example.com/tlkm)\n- BBCA: no major news")], cost=0.03),
+        "[st-prices]": FakeTask(
+            shorts=["3 tickers, closes and dates"], reasons=["prices.md has close, move and next earnings date for all 3 tickers."],
+            tools=[("WebFetch", {"url": "https://www.idx.co.id/en/market-data"})],
+            files=[("prices.md", "# Prices\n\n| Ticker | Close | Move | Earnings |\n|---|---|---|---|\n"
+                                 "| BBCA | 9,875 | +0.5% | 2027-01-22 |\n| BBRI | 4,610 | +3.6% | 2027-01-29 |\n"
+                                 "| TLKM | 3,020 | -1.3% | 2027-02-05 |")], cost=0.03),
+        "[st-brief]": FakeTask(
+            verdicts=[False, True], shorts=["tells you to buy BBRI", "under 300 words, no advice"],
+            reasons=["The brief says \"a good time to buy BBRI\". The team never recommends trades; describe the move instead.",
+                     "Brief is 214 words, covers all 3 tickers with sources, recommends nothing and ends with the disclaimer."],
+            tools=[("Read", {"file_path": "news.md"}), ("Read", {"file_path": "prices.md"})],
+            files=[("brief-2026-11-30.md", "# Brief, Mon 30 Nov\n\n**BBRI +3.6%** after Q3 loan growth of 9%.\n\n"
+                                           "**TLKM -1.3%** on the data center IPO plan.\n\n**BBCA** flat, no news.\n\n"
+                                           "Watch: BBRI earnings on 29 Jan.\n\nNot financial advice.")], cost=0.09),
+    }, delay=delay)
+
+
+async def demo_stocks_script(tools):
+    yield "Morning. The scout and the analyst work at the same time, then the writer drafts the brief. Nobody trades."
+    for m in STOCKS_PROPOSAL["members"]:
+        if m["name"] not in tools.s.agents:
+            avail = tools.catalog.available_ids(tools.s.config)
+            await tools.create_agent({**m, "tools": [t for t in m["tools"] if t in avail], "tier_reason": "team member"})
+    await tools.assign_tasks({"tasks": [
+        {"agent": "scout", "task_id": "news-1", "title": "Find today's news", "owns": ["news.md"],
+         "task": f"[st-news] Find the last 24 hours of news for {', '.join(_TICKERS)}. Save news.md with a source per item.",
+         "done_when": "news.md covers every ticker, each item with a source URL",
+         "checks": [{"type": "file_exists", "path": "news.md"}]},
+        {"agent": "analyst", "task_id": "prices-1", "title": "Prices and earnings dates", "owns": ["prices.md"],
+         "task": f"[st-prices] Record close, move and next earnings date for {', '.join(_TICKERS)} in prices.md.",
+         "done_when": "prices.md has close, move and earnings date for every ticker",
+         "checks": [{"type": "contains", "path": "prices.md", "text": "Earnings"}]},
+    ]})
+    msgs = tools.s.take_messages()
+    if msgs:
+        yield f"Got it: \"{msgs[-1]}\". The writer will cover it in the brief."
+    await tools.assign_task({"agent": "writer", "task_id": "brief-1", "title": "Write the brief",
+                             "task": "[st-brief] Write today's brief from news.md and prices.md, under 300 words.",
+                             "done_when": "Under 300 words, every ticker covered with sources, no buy or sell advice, ends with 'Not financial advice.'",
+                             "checks": [{"type": "contains", "path": "brief-2026-11-30.md", "text": "Not financial advice"}]})
+    async for line in _finish(tools, "Today's brief is ready: BBRI rose 3.6% after 9% loan growth, TLKM slipped 1.3% on its data center "
+                                     "IPO plan, BBCA was flat. BBRI reports on 29 Jan.\n\nFiles: news.md, prices.md, "
+                                     "brief-2026-11-30.md. Not financial advice."):
+        yield line
+
+
 _TIKTOK_KEYWORDS = re.compile(r"tiktok|video|reel|konten", re.I)
 
 
 def pick_demo(task: str, team: dict | None = None):
-    """Demo mode: TikTok for video tasks or teams, marketing for marketing teams, build for build-style tasks, otherwise research."""
+    """Demo mode: TikTok for video tasks or teams, marketing and stocks for those teams, build for build-style tasks, otherwise research."""
     about = f"{task or ''} {(team or {}).get('name', '')} {(team or {}).get('goal', '')}"
     if _TIKTOK_KEYWORDS.search(about):
         return demo_tiktok_runner, demo_tiktok_script
     if _MARKETING_KEYWORDS.search(about):
         return demo_marketing_runner, demo_marketing_script
+    if _STOCKS_KEYWORDS.search(about):
+        return demo_stocks_runner, demo_stocks_script
     if _BUILD_KEYWORDS.search(task or ""):
         return demo_build_runner, demo_build_script
     return demo_runner, demo_script

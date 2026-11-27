@@ -136,3 +136,61 @@ def test_marketing_team_demo_run_asks_before_figma(client):
     assert set(agents) >= {"strategist", "copywriter", "designer", "coordinator"}
     coord_tools = agents["coordinator"]["tools"]
     assert "connector.slack" not in coord_tools and "connector.gmail" not in coord_tools
+
+
+# ---- 9.3 stocks team: never trades, briefs say "Not financial advice" ------------------------
+
+def test_stocks_proposal_has_no_trading_and_a_fixed_rule():
+    p = builder.clean_proposal(fake.demo_proposal("A team for stocks on my watchlist"), CAT)
+    team = p["team"]
+    assert team["name"] == "Stocks desk" and "Never trades" in team["goal"]
+    assert all(builder.FINANCE_RULE in m["system_prompt"] for m in team["members"])
+    analyst = next(m for m in team["members"] if m["name"] == "analyst")
+    assert analyst["wants"] == ["market-data.prices"]                      # missing data API: a setup step
+    assert {s["kind"] for s in p["setup"]} == {"missing_tool"}
+    assert team["hook"]["enabled"] and "3%" in team["hook"]["task"]          # alerts come in on the webhook
+    assert p["approvals"] == [] and p["refused"] == []
+
+
+def test_money_tools_are_refused_even_if_the_model_asks():
+    raw = {"name": "Trader", "goal": "Watch my portfolio", "members": [{"name": "bot", "role": "r", "tier": "haiku",
+           "tools": ["web", "broker.orders", "connector.Trading 212", "payments", "files.write"]}]}
+    p = builder.clean_proposal(raw, CAT)
+    m = p["team"]["members"][0]
+    assert m["tools"] == ["web", "files.write"] and m["wants"] == []
+    assert p["refused"] == ["broker.orders", "connector.trading-212", "connector.payments"]
+    assert builder.FINANCE_RULE in m["system_prompt"]
+
+
+def test_non_finance_teams_get_no_finance_rule():
+    p = builder.clean_proposal(fake.demo_proposal("marketing"), CAT)
+    assert not any(builder.FINANCE_RULE in m["system_prompt"] for m in p["team"]["members"])
+
+
+def test_no_trading_tool_in_any_catalog():
+    from orchestra.catalog import load_catalog
+    for cat in (load_catalog(), CAT):
+        assert not [e.id for e in cat.entries if builder.MONEY_TOOL.search(e.id)]
+
+
+def test_stocks_team_demo_brief_never_advises(client):
+    p = client.post("/api/teams/propose", json={"goal": "I want a team for stocks"}).json()
+    tid = client.post("/api/teams", json=p["team"]).json()["id"]
+    rid = client.post(f"/api/teams/{tid}/messages", json={"text": "Write today's brief"}).json()["run_id"]
+    d = wait(lambda: (x := client.get(f"/api/runs/{rid}").json())["status"] == "finished" and x)
+    assert d["final"].endswith("Not financial advice.")
+    from orchestra.state import read_events
+    events = read_events(client.app.state.teams.manager.run_dir(rid))
+    failed = [e for e in events if e["type"] == "attempt_failed"]
+    assert failed and "buy BBRI" in failed[0]["reason"]                     # the checker caught the advice
+    brief = client.get(f"/api/runs/{rid}/files/brief-2026-11-30.md").text
+    assert "Not financial advice" in brief and "buy" not in brief.lower()
+    room = client.get(f"/api/teams/{tid}/room").json()["items"]
+    assert {i["to"] for i in room if i["kind"] == "handoff"} == {"scout", "analyst", "writer"}
+
+
+def test_fake_runner_checks_unscripted_work_without_crashing(tmp_path):
+    r = fake.FakeRunner({"[known]": fake.FakeTask()})
+    run(r(prompt="[other] x", cwd=tmp_path))
+    res = run(r(prompt="[other] x", output_schema={"type": "object"}))
+    assert res.structured["passed"] is True

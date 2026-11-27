@@ -54,8 +54,12 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   shows a proposal: members, tiers, tools (lock = asks first), schedule, outputs, approvals, setup steps
   ("Connect Gmail at claude.ai", "Sign in to Slack: /mcp") and up to 2 questions. Save, or Edit before
   saving (the M8 editor, prefilled). `orchestra/builder.py`, `POST /api/teams/propose`. Real mode: one
-  sonnet call, no tools. Demo mode: marketing team (TikTok for video words), and a marketing team run
+  sonnet call, no tools. Demo mode: marketing team (TikTok for video words, stocks for watchlist words), and a marketing team run
   (Notion research, posts, Figma visuals with approval, plan and newsletter; Slack skipped as signed out).
+- **Stocks team (9.3, done offline):** scout (news), analyst (prices, earnings dates; a market-data API is
+  a setup step), writer (brief). Alerts through the webhook. The builder always refuses trading and
+  payment tools and adds a never-trade rule to finance teams; the demo checker rejects a brief that says
+  "buy" and the brief ends "Not financial advice."
 - **M6 replay page:** `web/src/replay/`, built with `npm run build:replay`, published by
   `.github/workflows/replay-pages.yml` once Pages is turned on (Settings → Pages → Source: GitHub Actions).
 - **Tests:** 138 pytest (`python -m pytest tests -q`), 42 Vitest (`cd web && npm test`), type-checked
@@ -72,7 +76,7 @@ cd web && npm install && npm run build && cd ..
 python -m server --fake
 ```
 `--fake` plays a scripted run with no model calls. It picks the scenario from the task text:
-marketing teams play the 4-member marketing team; TikTok or video tasks and teams play a 5-member TikTok team (trends and stats in parallel, scripts, renders,
+marketing teams play the 4-member marketing team; stocks or watchlist teams play the 3-member stocks desk; TikTok or video tasks and teams play a 5-member TikTok team (trends and stats in parallel, scripts, renders,
 posting with approval);
 build-style tasks ("build", "app", "tests"…) play a developer + tester building a todo CLI whose
 tests really pass (`orchestra/demo_files/`); anything else plays the e-wallet research report.
@@ -87,8 +91,8 @@ Open http://127.0.0.1:8000.
 3. **Connectors live check (task 1.13):** on the user's laptop, `claude mcp list` should show their
    `claude.ai ...` connectors; the Options panel should list them; a worker given one should use it,
    and a write should ask. Fix the read patterns in `orchestra/connectors.py` if a connector misbehaves.
-4. **M9 leftovers:** try one real proposal (`/teams/new`, about one sonnet call), the stocks demo (9.3),
-   TikTok token refresh (9.2b).
+4. **M9 leftovers:** try one real proposal (`/teams/new`, about one sonnet call), TikTok token
+   refresh (9.2b), and a real market-data catalog entry once you pick a data source.
 5. **Leftovers:**
    - a manual screen reader pass (VoiceOver or NVDA) on a live run
    - draw the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
@@ -159,7 +163,7 @@ The app never touches logins: it runs my installed Claude Code (plan for persona
 sharing). I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so keep this
 session lean and prefer cheap models.
 
-Task: <next task, e.g. try the team builder live with one cheap proposal, then the stocks demo (9.3)>.
+Task: <next task, e.g. try the team builder live with one cheap proposal>.
 
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to
