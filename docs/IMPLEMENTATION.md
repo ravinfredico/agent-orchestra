@@ -19,6 +19,7 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | Playbooks | Done: 5 playbooks, `read_playbook`, `playbook_chosen`, Options select (`tests/test_playbooks.py`). |
 | M5 Phone extras | Done offline: 5.1 ntfy, 5.4 PWA, 5.2 iPhone widget (logic tested in `web/src/test/widget.test.ts`), 5.3 Android guide. Open: trying both widgets on real phones. |
 | M6 | Not started. |
+| M7 to M9 (after v1) | Planned 2026-11-27: parallel and cheaper, teams and schedules, team builder. PRD section 13. |
 
 ## M1: Engine events and capabilities
 Goal: the engine emits the full event stream, can be cancelled, uses the tool catalog, asks for
@@ -101,6 +102,30 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 |---|---|---|---|
 | 6.1 | Replay page | `replay/` is a static build that plays a recorded `log.jsonl` with the same reducer and components, with play, pause and speed controls. No server. | Vitest on the player clock, build with no API calls |
 | 6.2 | Publish | Deployed to GitHub Pages from a recorded real run, with secrets and paths scrubbed. | manual |
+
+## M7: Parallel and cheaper (after v1, PRD section 13)
+| # | Task | Done when | Tests |
+|---|---|---|---|
+| 7.1 | Dependencies and parallel tasks | `assign_task` takes `depends_on` and `owns` (files). Ready tasks run together up to `max_parallel` (default 3). Stop cancels all. | fake runner: 3 independent tasks overlap in time; a dependent one waits; two tasks can't own the same file |
+| 7.2 | Model tier per task | `create_agent`/`assign_task` take `tier` (haiku, sonnet, opus) with a reason. A failed task retries one tier up, once. New event fields shown on the task card. | tier passed to the runner; step-up on failure; event and fixture updated |
+| 7.3 | Cheap checks first | A `done_when` with a `check:` command runs it before the model checker; a failing command skips the model call. | command pass/fail paths; model checker not called when the command fails |
+| 7.4 | Usage per agent and model | `usage` events carry agent, task and model. Run page shows a breakdown. | totals add up; UI renders the breakdown |
+| 7.5 | Cheap preset and hidden limits in Options | One-click Cheap preset; tries per task, steps per try and max assignments in Options. | options posted correctly |
+
+## M8: Teams and schedules (after v1)
+| # | Task | Done when | Tests |
+|---|---|---|---|
+| 8.1 | Team model | `teams/<id>/team.json` (members, tiers, tools, schedule, budget) and `memory.md`. CRUD API. | create, edit, delete; memory read into each run's first prompt |
+| 8.2 | Team room | Your messages and agent-to-agent hand-off messages in one chat view, from the event log. | room shows both kinds; you can post mid-run (needs steering) |
+| 8.3 | Triggers | Schedule (cron-like, in your time zone), room message, and data webhook each start a linked run. Sleeps in between. | fake clock fires on time; no run without a trigger |
+| 8.4 | Team budget | Usage per day per team; a trigger over budget is skipped with a push. (If you decide on a cap.) | skip path and push |
+
+## M9: Team builder (after v1)
+| # | Task | Done when | Tests |
+|---|---|---|---|
+| 9.1 | Propose a team | One message ("a team for stocks") gives a proposal: members, tools, tiers, schedule, outputs, approvals, missing tools as setup steps. Questions for gaps. Save on your OK. | fake orchestrator: proposal shape; missing tools listed, never invented |
+| 9.2 | Example: TikTok team | Research, scripts, Remotion videos, posting with approval, stats review. | demo scenario; posting always asks |
+| 9.3 | Example: stocks team | Watchlist, daily brief, research on request, alerts. No trading tools. "Not financial advice" in briefs. | demo scenario; no trading tool in the catalog |
 
 ## Later
 Steering mid-run, Docker per agent, OpenRouter models, repo diff, hosting setup (always-on machine,

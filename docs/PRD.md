@@ -183,6 +183,9 @@ status endpoint are all designed for it.
 | M5 Phone extras | ntfy, status widget scripts, PWA install. |
 | M6 Portfolio | Static replay page. |
 | Later | Steering, Docker per agent, OpenRouter, repo diff, hosting setup. |
+| M7 Parallel and cheaper | Independent tasks run at the same time. Each task gets the cheapest model that can do it. Usage meter per agent. See section 13. |
+| M8 Teams and schedules | A saved team with its own chat room and memory, triggered by schedules, your messages and new data. See section 13. |
+| M9 Team builder | Ask for any team ("a team for stocks", "a TikTok team") and ChaCha PA designs and saves it. TikTok and stocks are the first examples. See section 13. |
 
 Details per task: [IMPLEMENTATION.md](IMPLEMENTATION.md).
 
@@ -199,3 +202,107 @@ Details per task: [IMPLEMENTATION.md](IMPLEMENTATION.md).
 ## 12. Open questions
 - Where to host: your own always-on machine or a VPS. Decide before the hosting milestone.
 - Which MCP servers and connectors to put in the first catalog besides the browser.
+
+## 13. After v1: parallel agents, always-on teams, and lower cost
+Added 2026-11-27. Not part of v1. Builds on everything above.
+
+### Goals
+1. **Parallel:** independent tasks run at the same time, so a run finishes sooner.
+2. **Teams for anything:** you describe a team in plain words ("a team for stocks", "a TikTok
+   team") and ChaCha PA designs it: members, tools, schedule, memory and outputs. The team keeps
+   existing between runs, with its own chat room.
+3. **Cheaper:** every task uses the cheapest model that can do it well, so your plan limits last longer.
+
+### User stories
+
+**Parallel agents.** As you, I want independent tasks to run side by side, so I wait less.
+- The orchestrator marks which tasks depend on others. Tasks with no unfinished dependencies start
+  together, up to a limit (default 3 at once).
+- Two agents never write the same file at the same time. Each task names the files it owns.
+- The run screen shows several "working" lines at once. Stop cancels all of them.
+
+**Pick the right model per task.** As you, I want each task to use the cheapest model that can do it.
+- The orchestrator picks a tier for each agent and task: haiku for search, reading, summaries,
+  simple edits and checks; sonnet for writing, planning and code; opus only when a task has failed on
+  sonnet. The pick and the reason are shown on the task card.
+- If a task fails on its tier, the retry moves up one tier, once.
+- You can override the tier for a team or a run.
+
+**Ask for any team.** As you, I want to say "I want a team for stocks" and get one.
+- You describe the goal in one message. The orchestrator proposes a team: members and their roles,
+  the tools each needs from the catalog, a schedule, what it produces, and which actions need your
+  approval. It asks you about anything unclear (for example which stocks, or how often).
+- You review the proposal, change it if you like, and save it. Nothing runs until you save.
+- If the team needs a tool that isn't in the catalog yet (for example a market-data API or TikTok
+  posting), the proposal says so and lists what to set up. Agents still never invent tools.
+- Teams can be edited later: add a member, change the schedule, change model tiers.
+- Examples to ship with, to show the range:
+  - **TikTok team:** research, scripts, rendered videos, posting with approval, learning from stats
+    (details below).
+  - **Stocks team:** a watchlist you set, a daily brief (news, price moves, earnings dates), deeper
+    research notes on request, alerts when something big happens. It never trades. Any action
+    with money stays outside the app, and briefs say they are not financial advice.
+
+**A team room.** As you, I want a saved team I can chat with like a group chat.
+- A team has a name, members (agents with roles, tools and model tiers), a memory, and a room.
+- The room shows your messages, the agents' replies, and the agents talking to each other while they
+  work (pitches, critiques, hand-offs). You can jump in at any point.
+- The team remembers past work and your feedback ("no more cooking videos") in a memory file it
+  reads before each job, so it doesn't redo research.
+
+**Always on, without burning usage.** As you, I want the team to keep working without me.
+- The team is always available, but only spends usage when something triggers it:
+  - a schedule slot (for example 09:00 and 18:00 every day)
+  - a message from you in the room
+  - new data (for example fresh post stats)
+- Between triggers it sleeps and costs nothing.
+- Each trigger runs as a normal verified run, linked to the team, so history, files and stops work
+  as today.
+- It only runs while the machine hosting ChaCha PA is on (your laptop now, a host later).
+
+**Example: AI TikTok team.** As you, I want a team that makes and posts TikTok videos and learns what works.
+- **Research and scripts:** trends, ideas, hooks, scripts, captions, hashtags, saved as files.
+- **Finished videos:** short vertical videos rendered with Remotion plus a voiceover, like the demo video.
+- **Post to TikTok:** uploads or schedules posts. Every post waits for your approval (outward action).
+- **Performance review:** reads views, likes and watch time of past posts and writes what to do more or less of.
+
+### Requirements
+| # | Requirement |
+|---|---|
+| F15 | Parallel task execution with dependencies, a concurrency limit, and file ownership per task. |
+| F16 | Model tier per agent and per task, chosen by the orchestrator, with one automatic step up on failure. |
+| F17 | Usage per agent, per task and per model, shown on the run and team pages. |
+| F18 | Cheap checks first: when a "done when" can be checked by a command (file exists, tests pass), run it without a model. Use the model checker only for what a command can't judge. |
+| F19 | Teams: saved members, memory file, room (chat) with your messages and agent-to-agent messages. |
+| F20 | Triggers: schedules (cron-like), room messages, and data webhooks. Each trigger starts a linked run. |
+| F21 | Team budget: usage per day and per trigger. A trigger that would go over is skipped and you get a push. (Recommended; not yet decided, see open questions.) |
+| F22 | Team builder: from one message, propose a team (members, tools, tiers, schedule, outputs, approvals), ask about gaps, save on your OK. |
+| F23 | Missing tools are listed in the proposal as setup steps, never invented. |
+| F24 | Example team connectors: TikTok posting (with approval) and stats; market data and news for the stocks team. |
+
+### Ways to keep it cheap
+- Right model per task (F16). This is the biggest saving.
+- Cheap checks before model checks (F18).
+- Team memory, so research isn't repeated every run.
+- Pass file paths to agents, not whole file contents, and keep worker steps low for simple tasks.
+- Batch work: one scheduled run makes several videos, instead of one run each.
+- Sleep between triggers. Never loop on a timer with nothing to do.
+
+### Risks
+| Risk | Impact | Mitigation |
+|---|---|---|
+| "Always on" on a Claude plan uses up the 5-hour and weekly limits | Runs stop mid-way, other Claude use blocked | Triggers only, cheap models, team budget. Consider an API key for teams. |
+| Anthropic's terms for automated, continuous use of a plan login | Account risk | Check the terms before always-on use on a plan. The Agent SDK docs point to API keys for products. |
+| TikTok API access needs a registered developer app, and posting may need TikTok's review (unreviewed apps may only post privately) | Posting not possible at first | Start with drafts you post yourself. Apply for access early. Check TikTok's current rules. |
+| Parallel agents edit the same file | Lost work | File ownership per task; the orchestrator is told to split files. |
+| Agents talking to each other burn tokens | Higher usage | Keep agent-to-agent messages short and only at hand-offs; show them from the event log. |
+| Posting content you didn't review | Reputation | Every post needs approval, always. |
+| A stocks team's output is taken as financial advice, or tries to trade | Money loss | No trading tools in the catalog. Briefs say they are not financial advice. |
+| Teams need paid data APIs (market data, TikTok) | Extra cost and setup | The team builder lists what each team needs before you save it. |
+
+### Open questions
+- Hard daily usage cap for teams, or only model routing? (You chose routing; a cap is recommended as a safety net.)
+- Which machine runs the always-on team: your laptop (must stay on) or a host?
+- Plan login or an API key for teams?
+- TikTok account type and API access (developer app, posting review).
+- Stocks team: which markets (for example IDX, US), and which data source (free with delays, or paid).

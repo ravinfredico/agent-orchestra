@@ -1,13 +1,14 @@
 # Handover: ChaCha PA
 
-Last updated: 2026-11-24. Read this first in a new session, then `AGENTS.md`.
+Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
 
 ## Where things are
 | What | Where |
 |---|---|
-| Working branch | `feat/chacha-pa` (pushed). All code lives here. |
-| Docs-only branch | `claude/adoring-wright-xydai5`: docs up to the implementation plan. `feat/chacha-pa` branches from it. |
-| `main` | Original CLI only. Nothing merged yet. No PR opened (the user hasn't asked for one). |
+| `main` | Has everything (PRs #2 and #3 merged). Same code as `feat/chacha-pa`. Work on a branch and let the user merge. |
+| Working branch | `feat/chacha-pa`. |
+| Docs-only branch | `claude/adoring-wright-xydai5`: old, docs up to the implementation plan. |
+| Demo video | `docs/media/chacha-pa-demo.mp4` (97 s, voiceover), README GIF `docs/media/chacha-pa-demo-preview.gif`, source `demo-video/`. |
 | Design canvas | https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNUS (private to the user). Page "Screens" has 13 screens. Page "Style & components" has the Thread sheet and the Character component. |
 | Decisions | `docs/PLAN.md` |
 | Plan and progress | `docs/IMPLEMENTATION.md` (Progress table at the top) |
@@ -70,14 +71,27 @@ Open http://127.0.0.1:8000.
    reach, so in practice this waits for hosting.
 5. **M6:** static replay page for the portfolio. (A Remotion demo video already exists:
    `docs/media/chacha-pa-demo.mp4`, source in `demo-video/`. Re-render it after big UI changes.)
-6. **Later:**
-   - steering (message the orchestrator mid-run)
+6. **After v1 (planned 2026-11-27, PRD section 13, IMPLEMENTATION M7 to M9):**
+   - **M7 parallel and cheaper:** parallel tasks with dependencies, a model tier per task (cheapest
+     that fits, step up on failure), cheap command checks before the model checker, usage per
+     agent, a Cheap preset. Start here: it also fixes the user's main complaint (usage burns fast).
+   - **M8 teams and schedules:** saved teams with a room (user chat + agent-to-agent talk), memory,
+     triggers (schedules, messages, data). Always available, but only spends usage on triggers.
+   - **M9 team builder:** "I want a team for stocks" gives a proposed team to review and save.
+     TikTok and stocks are the first examples.
+7. **Later:**
+   - steering (message the orchestrator mid-run; M8's room needs it)
    - Docker sandbox per agent
    - OpenRouter models (needs its own API key)
    - repo diff view
    - hosting (decide own machine vs VPS first)
 
 ## Decided (don't re-ask)
+- After v1: parallel agents; the orchestrator picks the cheapest model tier per task; teams for any
+  goal from one message; teams are always on but only spend usage on triggers; TikTok team does
+  ideas, scripts, rendered videos, posting (with approval) and stats review; stocks team never trades.
+- Open: daily usage cap for teams (recommended, not decided), plan login vs API key for teams,
+  which machine hosts always-on teams, TikTok API access, stocks markets and data source.
 - Product name is **ChaCha PA**. Design direction is Thread with agents as characters, minimal like
   Grok-style chat apps.
 - Runs use the **Claude Pro plan login**, not API billing. On a VPS, use an API key (Anthropic's terms).
@@ -95,6 +109,10 @@ Open http://127.0.0.1:8000.
 - Borrowed from Lauren Tan: orchestrator playbooks, and pstack for development.
 
 ## Gotchas
+- **The user is on Windows** (PowerShell). `py` is not installed there; use `python`. The app has
+  never run on Windows: watch for path and sandbox issues on the first live run.
+- **Usage burns fast** for the user. Keep sessions short, prefer Sonnet for routine work, and suggest
+  haiku workers and low caps for test runs.
 - **pstack** (`.claude/settings.json`) loads from the next session on. Its hook routes multi-file work
   to `pstack:poteto-mode`. AGENTS.md wins on conflicts.
 - **Figma:** the connected Figma account is **not the user's**. Don't publish to Figma until they confirm
@@ -107,3 +125,19 @@ Open http://127.0.0.1:8000.
 - **CSS:** prefix state classes (`pip-done`). A generic `.empty` class once broke the task cards.
 - **UI changes:** check them in a browser with Playwright at 1440 and 390 px before calling them done.
 - **`web/dist`** is not committed. Build it before `python -m server` serves the app.
+
+## Handover prompt (paste into a new session)
+```
+You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat/chacha-pa
+(main has the same code). First read docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
+
+State: v1 milestones M1 to M5 are done and tested offline (71 pytest, 20 Vitest). It has never run
+against a real model. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
+keep this session lean and prefer cheap models.
+
+Task: start M7 (docs/IMPLEMENTATION.md), in order: 7.2 model tier per task, 7.3 cheap checks first,
+7.5 Cheap preset and hidden limits in Options, then 7.1 parallel tasks, then 7.4 usage breakdown.
+Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
+doc changes at the end. Ask me (with options) before anything only I can decide. Push to
+feat/chacha-pa; don't merge to main or open a PR unless I ask.
+```

@@ -109,7 +109,8 @@ These files are meant to get better over time.
 - Branch `feat/chacha-pa`. M1 (engine), M2 (server), M3 and M4 (web app), M5 (ntfy, PWA, widgets) done and tested offline.
 - Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
 - Not yet run against a real model. Next: the first live run (IMPLEMENTATION.md, end of M1), then the
-  claude.ai connectors check (task 1.13), then M6 (replay page).
+  claude.ai connectors check (task 1.13), then M7 (parallel + cheaper), M6, M8 (teams), M9 (team builder).
+- `main` has everything (PRs #2, #3); `feat/chacha-pa` is the working branch.
 
 ## Learnings
 - Design work goes into a design tool (Claude Design canvas, then Figma) before any HTML. No

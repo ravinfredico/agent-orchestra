@@ -44,6 +44,10 @@ Design canvas (private to you): https://claude.ai/artifact/1VhNwtUMKpMpNrVvbyhNU
 | Isolation | v1: the SDK's built-in shell sandbox with a network allowlist, plus one folder per agent. Later: a Docker container per agent, sharing a `/workspace` volume for handoffs. |
 | Outward actions | Tools that act on the outside world (send email, post, book) pause the run and show an Approve / Deny card, plus a push notification. Read-only tools run freely. |
 | Model providers | Claude only in v1, on your Pro plan. OpenRouter later, through a gateway. It needs its own API key and is billed by OpenRouter. |
+| Parallel agents (after v1) | Independent tasks run at the same time, default 3, with file ownership per task. |
+| Model choice (after v1) | The orchestrator picks the cheapest tier that fits each task (haiku, sonnet, opus on repeated failure). Shown on each task card. |
+| Teams (after v1) | Ask for any team in plain words; the orchestrator proposes members, tools, schedule and outputs; you save it. Each team has a room (your chat plus agent-to-agent talk) and a memory. TikTok and stocks are the first examples. |
+| Always on (after v1) | Teams are always available but only spend usage on triggers: schedules, your messages, new data. Sleep in between. A daily cap is recommended, not decided. |
 | Open source (later) | Repo stays private for now. If opened, each user connects their own Claude: their own plan login (for their personal use) or their own API key. Public docs lead with the API key, per the Agent SDK terms below. |
 | After v1 | Message the orchestrator mid-run, then Docker sandbox per agent, OpenRouter models, repo diff, hosting setup. |
 | Portfolio | Static replay page (GitHub Pages) that plays back a recorded run. |
