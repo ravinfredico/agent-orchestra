@@ -41,6 +41,7 @@ Docs:
 | `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py`; `src/presets.ts` holds the Options presets |
 | `tools.catalog.json` | tools the orchestrator may give agents |
 | `demo-video/` | Remotion project for the demo video (`docs/media/chacha-pa-demo.mp4`); footage is demo-mode recordings |
+| `replay/` | static replay page for the portfolio (README); source in `web/src/replay/`, Pages workflow in `.github/workflows/` |
 | `widgets/` | phone home-screen widgets: `scriptable.js` (iPhone), `android-kwgt.md` (Android guide) |
 | `scripts/make_fixtures.py` | regenerates the web test fixtures from the Python demo scenario |
 
@@ -64,6 +65,7 @@ python -m server --fake                        # demo mode: scripted runs, no mo
 cd web && npm test && npx tsc -b               # web tests + typecheck
 cd web && npm run dev                          # dev server on :5173, proxies /api to :8000
 cd web && npm run a11y                         # axe + keyboard audit; needs python -m server --fake running
+cd web && npm run build:replay                 # static replay page into replay/dist (npm run a11y:replay checks it)
 python scripts/make_fixtures.py                # after changing events: refresh web fixtures
 ```
 
@@ -112,7 +114,8 @@ These files are meant to get better over time.
 - M7 (parallel and cheaper) done offline: model tier per task with one step-up, cheap checks,
   Cheap preset, `assign_tasks` with dependencies, usage by agent and model.
 - M8 (teams, triggers, steering, room) done offline. No daily cap (user's decision).
-- First live run worked (2026-11-27). Next: M6 (replay page), then the connectors check (task 1.13), then M9.
+- M6 replay page built; publishing waits for you to turn on GitHub Pages (Actions source).
+- First live run worked (2026-11-27). Next: the connectors check (task 1.13), then M9 (team builder).
 - `main` has everything (PRs #2, #3); `feat/chacha-pa` is the working branch.
 
 ## Learnings

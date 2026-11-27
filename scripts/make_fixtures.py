@@ -15,6 +15,7 @@ from orchestra.orchestrator import create_run, execute_run
 from orchestra.state import read_events
 
 OUT = Path(__file__).resolve().parent.parent / "web" / "src" / "test" / "fixtures"
+REPLAY = Path(__file__).resolve().parent.parent / "web" / "src" / "replay"
 
 
 def scenario(name, config, approve=True):
@@ -29,6 +30,8 @@ def scenario(name, config, approve=True):
                             client_factory=fake.fake_client_factory(fake.demo_script, {"state": s})))
     events = read_events(s.run_dir)
     (OUT / f"{name}.json").write_text(json.dumps(events, indent=1))
+    if name == "demo":  # the portfolio replay page plays the demo run (web/src/replay)
+        (REPLAY / "run.json").write_text(json.dumps(events, indent=1))
     print(name, len(events), "events", s.status)
 
 

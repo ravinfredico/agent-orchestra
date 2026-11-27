@@ -13,7 +13,7 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
 | Decisions | `docs/PLAN.md` |
 | Plan and progress | `docs/IMPLEMENTATION.md` (Progress table at the top) |
 
-## What's built (all tested offline, never run against a real model)
+## What's built (tested offline; the first live run on Windows worked, M7 and M8 not yet tried live)
 - **Engine (`orchestra/`):**
   - Event log with `seq`, plus listeners.
   - Task titles and short checker reasons.
@@ -44,7 +44,9 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   front, memory in the first prompt plus a line per finished run, triggers (room message, schedule,
   secret webhook), steering (message a running orchestrator, also from the run page), team room,
   team editor, Teams in the sidebar.
-- **Tests:** 116 pytest (`python -m pytest tests -q`), 32 Vitest (`cd web && npm test`), type-checked
+- **M6 replay page:** `web/src/replay/`, built with `npm run build:replay`, published by
+  `.github/workflows/replay-pages.yml` once Pages is turned on (Settings → Pages → Source: GitHub Actions).
+- **Tests:** 116 pytest (`python -m pytest tests -q`), 37 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -64,36 +66,24 @@ Drop `--fake` to use the real Claude plan login.
 Open http://127.0.0.1:8000.
 
 ## Next steps, in order
-1. **First live run on the user's laptop** (`docs/IMPLEMENTATION.md`, "First manual end-to-end
-   test"). This can't be done in a cloud session: it needs their Claude login, and `ANTHROPIC_API_KEY`
-   must stay unset. Expect engine bugs. Fix each one with a test.
-2. **Connectors check (task 1.13):** can an SDK session started with the user's Claude login reach
+1. **Turn on GitHub Pages** (user, once): Settings → Pages → Source: "GitHub Actions". The replay
+   page then deploys on pushes to `main` that touch `web/` (or run "Replay page" in the Actions tab).
+2. **Try M7 and M8 live:** a Cheap run (does the orchestrator use tiers, checks, `assign_tasks`?),
+   then a small team with one schedule slot and a mid-run message. Fix misses in the playbooks.
+3. **Connectors check (task 1.13):** can an SDK session started with the user's Claude login reach
    their claude.ai Gmail and Calendar connectors? Until then, both are MCP entries that need
    `GMAIL_MCP_URL/TOKEN` and `GCAL_MCP_URL/TOKEN` in `.env` (see `.env.example`).
-3. **M4 leftovers:**
-   - a manual screen reader pass (VoiceOver or NVDA) on a live run. The automated part is done:
-     `cd web && npm run a11y` is clean in both themes at 1440 and 390 px
-   - add the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
-     connector picker to the canvas (ask before editing it)
-4. **M5:** done offline. ntfy push (set `NTFY_URL` and `NTFY_TOPIC` in `.env`), PWA install
-   (manifest + icons in `web/public/`), iPhone widget (`widgets/scriptable.js`) and Android guide
-   (`widgets/android-kwgt.md`). Left: try the widgets on real phones. They need a URL the phone can
-   reach, so in practice this waits for hosting.
-5. **M6:** static replay page for the portfolio. (A Remotion demo video already exists:
-   `docs/media/chacha-pa-demo.mp4`, source in `demo-video/`. Re-render it after big UI changes.)
-6. **After v1 (planned 2026-11-27, PRD section 13, IMPLEMENTATION M7 to M9):**
-   - **M7 parallel and cheaper:** done offline (see "What's built"). Check on the first live run
-     that the orchestrator really uses `assign_tasks`, tiers and checks; fix misses in the playbooks.
-   - **M8 teams and schedules:** saved teams with a room (user chat + agent-to-agent talk), memory,
-     triggers (schedules, messages, data). Always available, but only spends usage on triggers.
-   - **M9 team builder:** "I want a team for stocks" gives a proposed team to review and save.
-     TikTok and stocks are the first examples.
-7. **Later:**
-   - steering (message the orchestrator mid-run; M8's room needs it)
-   - Docker sandbox per agent
-   - OpenRouter models (needs its own API key)
-   - repo diff view
-   - hosting (decide own machine vs VPS first)
+4. **M9 team builder:** "I want a team for stocks" gives a proposed team (members, tools, tiers,
+   schedule, outputs, approvals, missing tools as setup steps) to review and save into the M8 team
+   editor. TikTok and stocks are the first examples.
+5. **Leftovers:**
+   - a manual screen reader pass (VoiceOver or NVDA) on a live run
+   - draw the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
+     connector picker on the canvas (ask before editing it)
+   - try the phone widgets on real phones (needs hosting)
+   - re-render the demo video (`demo-video/`) after big UI changes
+6. **Later:** Docker sandbox per agent, OpenRouter models (needs its own API key), repo diff view,
+   hosting (decide own machine vs VPS first; always-on teams need a machine that stays on).
 
 ## Decided (don't re-ask)
 - After v1: parallel agents; the orchestrator picks the cheapest model tier per task; teams for any
@@ -120,7 +110,7 @@ Open http://127.0.0.1:8000.
 
 ## Gotchas
 - **The user is on Windows** (PowerShell). `py` is not installed there; use `python`. The app has
-  never run on Windows: watch for path and sandbox issues on the first live run.
+  ran on Windows once (first live run, fine). Watch for path and sandbox issues in new features.
 - **Usage burns fast** for the user. Keep sessions short, prefer Sonnet for routine work, and suggest
   haiku workers and low caps for test runs.
 - **pstack** (`.claude/settings.json`) loads from the next session on. Its hook routes multi-file work
@@ -142,12 +132,11 @@ Open http://127.0.0.1:8000.
 You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat/chacha-pa
 (main has the same code). First read docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: v1 milestones M1 to M5, M7 and M8 are done and tested offline (116 pytest, 32 Vitest). The first live run worked. It has never run
-against a real model. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
+State: v1 milestones M1 to M5, M7 and M8 are done and tested offline (116 pytest, 37 Vitest), plus the M6 replay page. The first live run worked. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
 keep this session lean and prefer cheap models.
 
-Task: the first live run on my laptop with the Cheap preset (docs/IMPLEMENTATION.md, "First manual
-end-to-end test"), then M8 (teams and schedules).
+Task: the claude.ai connectors check (task 1.13), then M9 (team builder: "I want a team for stocks"
+gives a proposed team to review and save).
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to
 feat/chacha-pa; don't merge to main or open a PR unless I ask.

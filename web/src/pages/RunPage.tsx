@@ -11,7 +11,7 @@ import { useRunEvents } from '../state/hooks'
 import { agentAccessory, agentColor, agentMood, isLive, needsApproval, ORCHESTRATOR_COLOR, orchestratorMood } from '../state/reducer'
 import type { RunView, ThreadItem } from '../state/types'
 
-function Item({ item, run, last }: { item: ThreadItem; run: RunView; last: boolean }) {
+export function Item({ item, run, last }: { item: ThreadItem; run: RunView; last: boolean }) {
   switch (item.kind) {
     case 'task_message':
       return <div className="msg-user enter">{item.text}</div>

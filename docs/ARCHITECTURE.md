@@ -57,7 +57,7 @@ server/
   notify.py                 ntfy (M5)
 orchestra/fake.py           scripted runner + client: offline tests and `python -m server --fake`
 web/                        NEW: React app (Vite). Builds to web/dist
-replay/                     NEW: static replay page for the portfolio
+replay/                     static replay page: README; build output in replay/dist (web/src/replay is the source)
 widgets/                    NEW: scriptable.js (iPhone), android-kwgt.md
 tools.catalog.json          NEW: the tool catalog
 tests/                      pytest; web/src/**/*.test.tsx for Vitest
@@ -338,6 +338,17 @@ accepted starts the team's next run. Long `assign_tasks` batches delay delivery 
 The room (`room_items`) is folded from the team's run logs plus `events.jsonl`: your messages (the
 task of a message-started run and every `user_message`), orchestrator replies, hand-offs
 (`task_assigned`: orchestrator → agent), checker results, final results, and system lines.
+
+## 9f. Replay page (M6)
+- Source: `web/replay.html` and `web/src/replay/` (`Replay.tsx` player, `clock.ts` pacing and scrub,
+  `run.json` the recorded run, written by `scripts/make_fixtures.py` from the demo scenario).
+- It folds the log with the app's reducer and renders the app's thread, task cards and rail, inside a
+  `MemoryRouter` so no link leaves the page. No fetch, no SSE, no server.
+- Pacing ignores real gaps: each event holds for a fixed time by type (`holdAfter`), at 1×, 2× or 4×.
+  A position slider jumps to any event. The end shows "Replay finished" with the final result.
+- `scrub()` nulls `workspace`, `repo`, `branch`, and replaces machine paths and token-looking strings.
+- Build: `npm run build:replay` → `replay/dist/` (relative base, so it works under `/<repo>/`).
+- Publish: `.github/workflows/replay-pages.yml` (tests, build, deploy to Pages) on `main` or by hand.
 
 ## 10. Approvals for outward tools
 - Servers with outward tools are left out of `allowed_tools`, so the CLI asks the SDK's `can_use_tool`

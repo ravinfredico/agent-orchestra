@@ -18,7 +18,7 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | M4 App complete | Done, except the manual screen reader pass in 4.6 and 4.7 (canvas additions). 4.6 automated part done: `npm run a11y` is clean. |
 | Playbooks | Done: 5 playbooks, `read_playbook`, `playbook_chosen`, Options select (`tests/test_playbooks.py`). |
 | M5 Phone extras | Done offline: 5.1 ntfy, 5.4 PWA, 5.2 iPhone widget (logic tested in `web/src/test/widget.test.ts`), 5.3 Android guide. Open: trying both widgets on real phones. |
-| M6 | Not started. |
+| M6 Portfolio replay | 6.1 done 2026-11-27 (`web/src/replay/`, Vitest, axe). 6.2: workflow ready; you turn on Pages once (Settings → Pages → Source: GitHub Actions), then it deploys on pushes to `main`. Plays the demo run. Canvas sheet `M6-Replay`. |
 | M7 Parallel and cheaper | Done offline 2026-11-27: 7.1 to 7.5 (`tests/test_m7.py`, Vitest). Designed on the canvas sheet `M7-Cheaper`. Not yet tried against a real model. |
 | M8 Teams and schedules | Done offline 2026-11-27: 8.1 to 8.3 plus steering (`tests/test_m8.py`, Vitest, a11y). 8.4 skipped: no daily cap (your decision). Canvas sheet `M8-Teams`. |
 | M9 (after v1) | Planned 2026-11-27: team builder. PRD section 13. |
@@ -103,7 +103,7 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 | # | Task | Done when | Tests |
 |---|---|---|---|
 | 6.1 | Replay page | `replay/` is a static build that plays a recorded `log.jsonl` with the same reducer and components, with play, pause and speed controls. No server. | Vitest on the player clock, build with no API calls |
-| 6.2 | Publish | Deployed to GitHub Pages from a recorded real run, with secrets and paths scrubbed. | manual |
+| 6.2 | Publish | Deployed to GitHub Pages by `.github/workflows/replay-pages.yml`. Plays the demo run (your choice); a real run can be swapped in (`replay/README.md`), with paths and token-looking strings scrubbed. | manual |
 
 ## M7: Parallel and cheaper (after v1, PRD section 13)
 | # | Task | Done when | Tests |
