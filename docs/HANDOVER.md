@@ -62,7 +62,7 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   "buy" and the brief ends "Not financial advice."
 - **M6 replay page:** `web/src/replay/`, built with `npm run build:replay`, published by
   `.github/workflows/replay-pages.yml` once Pages is turned on (Settings → Pages → Source: GitHub Actions).
-- **Tests:** 138 pytest (`python -m pytest tests -q`), 42 Vitest (`cd web && npm test`), type-checked
+- **Tests:** 144 pytest (`python -m pytest tests -q`), 42 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -156,7 +156,7 @@ You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat
 (main only has v1; everything from M7 on is on feat/chacha-pa). First fetch the branch, then read
 docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: M1 to M8 and the M9 team builder done and tested offline (138 pytest, 42 Vitest), plus the M6 replay page, the TikTok
+State: M1 to M8 and the M9 team builder done and tested offline (144 pytest, 42 Vitest), plus the M6 replay page, the TikTok
 and ElevenLabs tools, and claude.ai connectors as team tools (found with `claude mcp list`, scoped per
 agent, writes need approval). The first live run worked. Connectors and teams are not yet tried live.
 The app never touches logins: it runs my installed Claude Code (plan for personal use, API key for
