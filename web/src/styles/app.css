@@ -413,3 +413,41 @@ pre.code { margin: 0; padding: 16px; border-radius: 12px; background: var(--surf
 }
 /* the skip link focuses <main>; it is a landing spot, not a control, so no ring */
 .main:focus { outline: none; }
+
+/* ---- M8: teams, room, editor (canvas M8-Teams) ---- */
+.sb-meta { margin-left: auto; font-size: 12px; color: var(--text-2); }
+.room { gap: 14px; }
+.room-empty { text-align: center; font-size: 14px; margin-top: 40px; }
+.room-you { align-self: flex-end; }
+.room-system { align-self: center; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+.room-system::before, .room-system::after { content: ''; width: 24px; height: 1px; background: var(--border); }
+.room-line { display: flex; gap: 10px; align-items: flex-start; }
+.room-line > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.room-from { font-size: 12.5px; color: var(--text-2); }
+.room-text { font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.room-fail .room-text { color: var(--fail); }
+.team-goal { margin: 0; font-size: 14px; line-height: 1.5; }
+.team-row .tier-chip { margin-left: auto; }
+.trigger-list { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.team-memory { margin: 0; font-size: 13.5px; color: var(--text-2); line-height: 1.5; white-space: pre-wrap; }
+.team-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.team-edit { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; padding-bottom: 48px; }
+.team-edit .run-header { align-self: stretch; }
+.team-form { margin-top: 24px; animation: none; }
+.team-fieldset { border: 0; padding: 0; margin: 0; gap: 10px; }
+.team-fieldset legend { font-size: 13px; color: var(--text-2); padding: 0; margin-bottom: 6px; }
+.member-row { display: grid; grid-template-columns: 140px 1fr 110px 44px; gap: 8px; align-items: end; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.member-tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.slot-row { display: grid; grid-template-columns: 160px 1fr 44px; gap: 8px; align-items: end; }
+.add-row { align-self: flex-start; border-style: dashed; }
+.field textarea { padding: 12px 14px; border-radius: var(--r-input); border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13.5px; resize: vertical; }
+.follow.steer { margin-bottom: 8px; }
+@media (max-width: 760px) {
+  .member-row { grid-template-columns: 1fr 44px; }
+  .member-row > .field:nth-child(2), .member-row > .field:nth-child(3) { grid-column: 1 / -1; }
+  .member-row > .field:nth-child(1) { grid-column: 1; }
+  .member-row > button { grid-column: 2; grid-row: 1; }
+  .slot-row { grid-template-columns: 1fr 44px; }
+  .slot-row > .field:nth-child(2) { grid-column: 1 / -1; }
+  .slot-row > button { grid-column: 2; grid-row: 1; }
+}

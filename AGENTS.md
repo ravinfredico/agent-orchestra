@@ -36,7 +36,7 @@ Docs:
 | `orchestra/state.py` | `RunState`: agents, board, usage, `log()` event envelope to `runs/<id>/log.jsonl` |
 | `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default); `pick_demo()` chooses the research or build scenario |
 | `orchestra/gitsafe.py` | `--repo` safety: clean tree, branch `orchestra/<ts>`, `REPOS_ROOT` allowlist |
-| `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth, ntfy pushes (`notify.py`) |
+| `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth, ntfy pushes (`notify.py`), teams + triggers + room (`teams.py`) |
 | `orchestra/envfile.py` | loads `.env` at startup (shell wins, never `ANTHROPIC_API_KEY`) |
 | `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py`; `src/presets.ts` holds the Options presets |
 | `tools.catalog.json` | tools the orchestrator may give agents |
@@ -89,7 +89,7 @@ python scripts/make_fixtures.py                # after changing events: refresh 
 - Add tests for new logic. Engine and server tests stay offline: fake the runner, never call a model.
 - Never expose the server publicly without auth. Bind to 127.0.0.1. Hosting goes through Cloudflare
   Tunnel + Access + `APP_TOKEN`.
-- Never commit `runs/`, `.env`, tokens or API keys. Catalog secrets are `${VAR}` references only.
+- Never commit `runs/`, `teams/`, `.env`, tokens or API keys. Catalog secrets are `${VAR}` references only.
 - Outward actions (send, post, book) always need user approval.
 - Shell stays off by default and runs sandboxed when on.
 - Don't set `ANTHROPIC_API_KEY` in code or tests. Plan mode depends on it being unset.
@@ -111,8 +111,8 @@ These files are meant to get better over time.
 - Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
 - M7 (parallel and cheaper) done offline: model tier per task with one step-up, cheap checks,
   Cheap preset, `assign_tasks` with dependencies, usage by agent and model.
-- Not yet run against a real model. Next: the first live run (IMPLEMENTATION.md, end of M1, try the
-  Cheap preset), then the claude.ai connectors check (task 1.13), then M6, M8 (teams), M9 (team builder).
+- M8 (teams, triggers, steering, room) done offline. No daily cap (user's decision).
+- First live run worked (2026-11-27). Next: M6 (replay page), then the connectors check (task 1.13), then M9.
 - `main` has everything (PRs #2, #3); `feat/chacha-pa` is the working branch.
 
 ## Learnings

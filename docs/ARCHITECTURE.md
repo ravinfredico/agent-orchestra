@@ -120,6 +120,13 @@ All JSON. All routes need auth when a token is configured (section 13).
 | `DELETE /api/runs/{id}` | | `204`. Refused with `409` while running. |
 | `GET /api/catalog` | | `[CatalogEntry]` without secrets |
 | `GET /api/playbooks` | | `[{id, title, when}]` |
+| `POST /api/runs/{id}/messages` | `{text}` | `202`. Steering: your message reaches the orchestrator at its next step. `409` if not running |
+| `GET /api/teams` | | `[Team + active_run]` |
+| `POST /api/teams` | `Team` fields | `201 Team`. `400` with a plain reason (unknown tool, bad cron, unknown time zone) |
+| `GET/PUT/DELETE /api/teams/{id}` | `PUT`: any Team fields, `memory` replaces memory.md | `Team` / `204` (`409` while its run is going) |
+| `GET /api/teams/{id}/room` | query `limit` (200) | `{items: [RoomItem], active_run}` |
+| `POST /api/teams/{id}/messages` | `{text}` | `202 {run_id, steered}`: starts a run, or steers the running one |
+| `POST /api/hooks/{team_id}/{secret}` | any body (64 KB max) | `202 {run_id}`. No login: the secret in the URL is the key. `404` if wrong or the hook is off |
 | `GET /api/status` | | widget shape, below |
 | `GET /api/health` | | `{ok, auth_mode, version, catalog: [ids]}` |
 
@@ -172,7 +179,8 @@ Every line in `log.jsonl` and every SSE message is one event:
 
 | Type | Fields | Notes |
 |---|---|---|
-| `run_started` | `task, title, options, workspace, repo, branch, parent_id, auth_mode` | first event |
+| `run_started` | `task, title, options, workspace, repo, branch, parent_id, auth_mode, team_id, team_name, trigger` | first event. `trigger`: `{kind: manual \| message \| schedule \| webhook, ...}` (M8) |
+| `user_message` | `text` | you wrote during the run (steering, M8). The orchestrator gets it with its next tool result |
 | `playbook_chosen` | `id, title` | orchestrator read a playbook (section 9b) |
 | `orchestrator_said` | `text` | orchestrator's text blocks |
 | `nudge` | `round, pending` | engine pushed the orchestrator to continue; shown only in the raw log |
@@ -297,6 +305,39 @@ model checker, with no model call:
 - `checks_only: true` passes the task on passing checks, with no model checker.
 - Paths and globs can't leave the workspace. Commands run in the workspace, not in the SDK sandbox,
   which is why they need shell on.
+
+## 9e. Teams, triggers and steering (M8)
+`server/teams.py`. A team is a folder `teams/<id>/` next to `runs/`:
+- `team.json`: `name, goal, members [{name, role, system_prompt, tools, tier}], schedule [{cron, task}],
+  timezone, enabled, hook {enabled, task, secret}, options` (run options, Cheap preset by default).
+- `memory.md`: your notes, plus a "Past runs" list. After each team run the app adds
+  `- <date> · <title> · <status>: <first 300 chars of the result>`. Past 8000 chars the oldest runs drop off.
+- `events.jsonl`: team-level events, today only `trigger_skipped`.
+
+A team run is a normal verified run with `team` and `trigger` set:
+- Its members are created (logged as `agent_created`) before the orchestrator starts.
+- The first prompt starts with the team's name, goal, members and memory (`prompts.team_context`).
+- `meta.json` and `run_started` carry `team_id` and `trigger`.
+
+Triggers (the only way a team spends usage; one run per team at a time):
+| Trigger | Starts | If the team is busy |
+|---|---|---|
+| Room message | a run with your message as the task | the message steers the running run |
+| Schedule slot | cron `minute hour day month weekday` in the team's time zone (empty: this machine's). The server checks every 20 s and fires each slot once per minute | skipped, logged as `trigger_skipped`, shown in the room |
+| Webhook | a run with the hook's task plus the posted data | the data steers the running run |
+
+- Pause (`enabled: false`) stops schedule slots. Messages and the webhook still work.
+- Slots missed while the server was off are not caught up.
+- No daily cap (your decision, 2026-11-27). Teams use the Cheap preset unless you change it.
+
+Steering (`RunState.steer`): your message is logged as `user_message` and queued. Every orchestra
+tool result carries queued messages to the orchestrator. `finish` is refused while any are unread,
+so it can't end the run without seeing what you said. A message that arrives after `finish` was
+accepted starts the team's next run. Long `assign_tasks` batches delay delivery until they return.
+
+The room (`room_items`) is folded from the team's run logs plus `events.jsonl`: your messages (the
+task of a message-started run and every `user_message`), orchestrator replies, hand-offs
+(`task_assigned`: orchestrator → agent), checker results, final results, and system lines.
 
 ## 10. Approvals for outward tools
 - Servers with outward tools are left out of `allowed_tools`, so the CLI asks the SDK's `can_use_tool`

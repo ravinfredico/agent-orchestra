@@ -44,6 +44,9 @@ Desktop                                         Phone
 | P2 | Phone live run | `P2-Live` | Team strip of faces, thread, run bar with meter and Stop. |
 | P3 | Phone files | `P3-Files` | Bottom sheet with file chips and the rendered file. |
 | P4 | Phone history | `P4-History` | Runs list with search and New run. |
+| T1 | Team room | `M8-Teams` | Sidebar Teams section, room (your bubbles right; orchestrator, hand-offs "orchestrator → agent" and checker results left; system lines centred), message box, team panel (goal, members with tier chips, triggers in words, memory, Edit, Pause). Below 1280 px the panel is a drawer opened from the header. |
+| T2 | Team editor | `M8-Teams` | Name, time zone, goal, members (name, role, model, tool chips), schedule slots (cron + task), webhook toggle with task and URL, memory, Save, Cancel, Delete (asks twice). |
+| — | Message during a run | `M8-Teams` | A message box above the run bar while live: "Message the orchestrator. It reads this at its next step." Your message joins the thread at once as a user bubble. |
 
 Built in the app but not yet drawn on the canvas: the **approval card**, the **interrupted** outcome,
 the **stop confirmation**, the **playbook line** and **Playbook select** (Auto or one playbook, with its
@@ -299,6 +302,7 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | run_started | Your message, run bar "Running" |
 | playbook_chosen | Playbook line: book icon + "Using the <title> playbook" |
 | orchestrator_said | Orchestrator message |
+| user_message | Your bubble in the thread (and in the team room); announced "You said: …" (M8) |
 | nudge | Nothing visible (raw log only) |
 | agent_created | Joined line, rail team row, run bar face |
 | task_assigned | New task card (queued; "Queued · waits for <title>" when it has unfinished dependencies). Tier chip and reason on the card (M7, canvas `M7-Cheaper`) |

@@ -20,7 +20,8 @@ Rule for every task: `python -m pytest tests -q` passes before the commit, and t
 | M5 Phone extras | Done offline: 5.1 ntfy, 5.4 PWA, 5.2 iPhone widget (logic tested in `web/src/test/widget.test.ts`), 5.3 Android guide. Open: trying both widgets on real phones. |
 | M6 | Not started. |
 | M7 Parallel and cheaper | Done offline 2026-11-27: 7.1 to 7.5 (`tests/test_m7.py`, Vitest). Designed on the canvas sheet `M7-Cheaper`. Not yet tried against a real model. |
-| M8, M9 (after v1) | Planned 2026-11-27: teams and schedules, team builder. PRD section 13. |
+| M8 Teams and schedules | Done offline 2026-11-27: 8.1 to 8.3 plus steering (`tests/test_m8.py`, Vitest, a11y). 8.4 skipped: no daily cap (your decision). Canvas sheet `M8-Teams`. |
+| M9 (after v1) | Planned 2026-11-27: team builder. PRD section 13. |
 
 ## M1: Engine events and capabilities
 Goal: the engine emits the full event stream, can be cancelled, uses the tool catalog, asks for
@@ -119,7 +120,7 @@ Goal: start a run and watch it live, matching screens 1 to 6 and 9 of the canvas
 | 8.1 | Team model | `teams/<id>/team.json` (members, tiers, tools, schedule, budget) and `memory.md`. CRUD API. | create, edit, delete; memory read into each run's first prompt |
 | 8.2 | Team room | Your messages and agent-to-agent hand-off messages in one chat view, from the event log. | room shows both kinds; you can post mid-run (needs steering) |
 | 8.3 | Triggers | Schedule (cron-like, in your time zone), room message, and data webhook each start a linked run. Sleeps in between. | fake clock fires on time; no run without a trigger |
-| 8.4 | Team budget | Usage per day per team; a trigger over budget is skipped with a push. (If you decide on a cap.) | skip path and push |
+| 8.4 | Team budget | Skipped: you chose no daily cap (2026-11-27). | — |
 
 ## M9: Team builder (after v1)
 | # | Task | Done when | Tests |

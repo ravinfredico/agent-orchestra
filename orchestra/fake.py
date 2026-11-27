@@ -197,8 +197,9 @@ async def demo_script(tools):
                                  "task": "[report-editor] Rewrite report.md. Grep research/ for every https:// URL and list them under Sources. Then email the user.",
                                  "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources"})
     yield "Every task passed verification. Finishing."
-    await tools.finish({"result": "Wrote report.md comparing GoPay, OVO, DANA, ShopeePay and LinkAja on fees and features, "
-                                  "with a recommendation and 17 sources.\n\nFiles: report.md, analysis/comparison.md, research/ (5 files)."})
+    async for line in _finish(tools, "Wrote report.md comparing GoPay, OVO, DANA, ShopeePay and LinkAja on fees and features, "
+                                     "with a recommendation and 17 sources.\n\nFiles: report.md, analysis/comparison.md, research/ (5 files)."):
+        yield line
 
 
 # ---- build scenario: a small app with tests (picked for build-style tasks) -----------
@@ -290,9 +291,18 @@ async def demo_build_script(tools):
                                          "Don't change test_todo.py. Add a README.md.",
                                  "done_when": "`pytest -q` exits 0 with at least 8 tests; README.md lists every command"})
     yield "Every task passed verification. Finishing."
-    await tools.finish({"result": "Built a todo CLI in todo.py (add, list, done, remove, saved in todos.json) with 11 passing "
-                                  "pytest tests. The tests caught a bug with bad todo numbers, which the developer fixed.\n\n"
-                                  "Files: todo.py, test_todo.py, README.md. Try it: python todo.py add \"buy milk\""})
+    async for line in _finish(tools, "Built a todo CLI in todo.py (add, list, done, remove, saved in todos.json) with 11 passing "
+                                     "pytest tests. The tests caught a bug with bad todo numbers, which the developer fixed.\n\n"
+                                     "Files: todo.py, test_todo.py, README.md. Try it: python todo.py add \"buy milk\""):
+        yield line
+
+
+async def _finish(tools, result: str):
+    """finish, and if it was refused because you sent a message mid-run, acknowledge it and finish again."""
+    res = await tools.finish({"result": result})
+    if res.get("is_error") and "Message from the user" in res["content"][0]["text"]:
+        yield "Got your message. Noted for this result and the team's next run."
+        await tools.finish({"result": result})
 
 
 def pick_demo(task: str):

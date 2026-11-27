@@ -76,8 +76,36 @@ export class ApiError extends Error {
   }
 }
 
+export interface TeamMember { name: string; role: string; system_prompt?: string; tools: string[]; tier: string }
+export interface TeamSlot { cron: string; task: string }
+export interface Team {
+  id: string
+  name: string
+  goal: string
+  members: TeamMember[]
+  schedule: TeamSlot[]
+  timezone: string
+  enabled: boolean
+  hook: { enabled: boolean; task: string; secret?: string }
+  options: RunOptions
+  memory: string
+  active_run: string | null
+}
+export type TeamInput = Omit<Team, 'id' | 'active_run' | 'hook'> & { hook: { enabled: boolean; task: string } }
+export interface RoomItem {
+  t: number
+  kind: 'you' | 'agent' | 'handoff' | 'result' | 'system'
+  text: string
+  from?: string
+  to?: string
+  run_id?: string
+  passed?: boolean
+  final?: boolean
+}
+
 export const AUTH_EVENT = 'chacha:auth-required'
 export const RUNS_CHANGED = 'chacha:runs-changed'
+export const TEAMS_CHANGED = 'chacha:teams-changed'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -97,6 +125,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 const changed = () => window.dispatchEvent(new Event(RUNS_CHANGED))
+const teamsChanged = () => { window.dispatchEvent(new Event(TEAMS_CHANGED)); changed() }
 
 export const api = {
   health: () => request<Health>('/api/health'),
@@ -127,4 +156,16 @@ export const api = {
   fileUrl: (id: string, path: string) => `/api/runs/${id}/files/${path.split('/').map(encodeURIComponent).join('/')}`,
   zipUrl: (id: string) => `/api/runs/${id}/zip`,
   eventsUrl: (id: string) => `/api/runs/${id}/events`,
+  steer: (id: string, text: string) => request(`/api/runs/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
+  teams: () => request<Team[]>('/api/teams'),
+  team: (id: string) => request<Team>(`/api/teams/${id}`),
+  createTeam: async (t: TeamInput) => { const r = await request<Team>('/api/teams', { method: 'POST', body: JSON.stringify(t) }); teamsChanged(); return r },
+  updateTeam: async (id: string, t: Partial<TeamInput>) => { const r = await request<Team>(`/api/teams/${id}`, { method: 'PUT', body: JSON.stringify(t) }); teamsChanged(); return r },
+  deleteTeam: (id: string) => request(`/api/teams/${id}`, { method: 'DELETE' }).then(teamsChanged),
+  room: (id: string) => request<{ items: RoomItem[]; active_run: string | null }>(`/api/teams/${id}/room`),
+  messageTeam: async (id: string, text: string) => {
+    const r = await request<{ run_id: string; steered: boolean }>(`/api/teams/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) })
+    teamsChanged()
+    return r
+  },
 }

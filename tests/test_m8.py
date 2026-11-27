@@ -301,3 +301,19 @@ def test_room_items_fold(tmp_path):
     items = room_items([{"t": 0, "type": "trigger_skipped", "what": "the 09:00 run", "why": "busy"}], [s.run_dir])
     assert [i["kind"] for i in items] == ["system", "you", "agent", "handoff", "you", "result", "agent"]
     assert items[3]["to"] == "writer" and items[5]["text"] == "Draft passed: all good" and items[6]["final"]
+
+
+def test_demo_run_survives_a_mid_run_message(tmp_path):
+    state = create_run(fake.DEMO_TASK, Config(), tmp_path)
+
+    def on(e):
+        if e["type"] == "task_passed" and e["task_id"] == "research-1":
+            state.steer("Add a short summary at the top")
+        if e["type"] == "approval_requested":
+            asyncio.get_event_loop().call_soon(state.approvals.resolve, e["approval_id"], True)
+    state.add_listener(on)
+    run(execute_run(state, runner=fake.demo_runner(0), catalog=fake.demo_catalog(), interactive=True,
+                    client_factory=fake.fake_client_factory(fake.demo_script, {"state": state})))
+    assert state.status == "finished"
+    said = [e["text"] for e in read_events(state.run_dir) if e["type"] == "orchestrator_said"]
+    assert any("Got your message" in t for t in said)

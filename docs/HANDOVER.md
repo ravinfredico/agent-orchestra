@@ -40,7 +40,11 @@ Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
   - Options: Default and Cheap presets, highest model, tries, steps, max tasks, tasks at once
   - `assign_tasks`: parallel batches with `depends_on` and `owns`, one task per agent at a time
   - usage by agent and by model in the rail
-- **Tests:** 100 pytest (`python -m pytest tests -q`), 27 Vitest (`cd web && npm test`), type-checked
+- **M8 (after v1), done offline:** saved teams (`server/teams.py`, `teams/<id>/`), members created up
+  front, memory in the first prompt plus a line per finished run, triggers (room message, schedule,
+  secret webhook), steering (message a running orchestrator, also from the run page), team room,
+  team editor, Teams in the sidebar.
+- **Tests:** 116 pytest (`python -m pytest tests -q`), 32 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -95,7 +99,8 @@ Open http://127.0.0.1:8000.
 - After v1: parallel agents; the orchestrator picks the cheapest model tier per task; teams for any
   goal from one message; teams are always on but only spend usage on triggers; TikTok team does
   ideas, scripts, rendered videos, posting (with approval) and stats review; stocks team never trades.
-- Open: daily usage cap for teams (recommended, not decided), plan login vs API key for teams,
+- Teams: no daily cap; room messages steer a running team; schedules use the team's time zone.
+- Open: plan login vs API key for teams,
   which machine hosts always-on teams, TikTok API access, stocks markets and data source.
 - Product name is **ChaCha PA**. Design direction is Thread with agents as characters, minimal like
   Grok-style chat apps.
@@ -137,7 +142,7 @@ Open http://127.0.0.1:8000.
 You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat/chacha-pa
 (main has the same code). First read docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: v1 milestones M1 to M5 and M7 are done and tested offline (100 pytest, 27 Vitest). It has never run
+State: v1 milestones M1 to M5, M7 and M8 are done and tested offline (116 pytest, 32 Vitest). The first live run worked. It has never run
 against a real model. I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so
 keep this session lean and prefer cheap models.
 

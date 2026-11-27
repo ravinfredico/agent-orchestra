@@ -9,7 +9,7 @@ import {
 } from '../state/reducer'
 import type { Approval, RunView } from '../state/types'
 import { Character } from './Character'
-import { FileIc, StopSq } from './Icons'
+import { ArrowUp, FileIc, StopSq } from './Icons'
 
 // ---- approval card (DESIGN.md 3.5) ---------------------------------------------------------
 
@@ -192,8 +192,20 @@ export function RunBar({ run, onStop }: { run: RunView; onStop: () => void }) {
   }
 
   const label = needsApproval(run) ? 'Needs your approval' : run.replanning ? 'Replanning' : 'Running'
+  const steer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!follow.trim() || busy) return
+    setBusy(true)
+    try { await api.steer(run.id, follow.trim()); setFollow('') } catch { /* the run just ended */ } finally { setBusy(false) }
+  }
   return (
     <div className="runbar-wrap">
+      <form className="follow steer" onSubmit={steer}>
+        <label className="visually-hidden" htmlFor="steer">Message the orchestrator</label>
+        <input id="steer" value={follow} onChange={(e) => setFollow(e.target.value)} autoComplete="off"
+          placeholder="Message the orchestrator. It reads this at its next step." />
+        <button type="submit" className="send-btn" disabled={!follow.trim() || busy} aria-label="Send message"><ArrowUp /></button>
+      </form>
       <div className="runbar">
         <div className="meter meter-mini" role="presentation"><i style={{ transform: `scaleX(${pct / 100})` }} /></div>
         <span className="faces" aria-hidden>

@@ -275,7 +275,7 @@ Added 2026-11-27. Not part of v1. Builds on everything above.
 | F18 | Cheap checks first: when a "done when" can be checked by a command (file exists, tests pass), run it without a model. Use the model checker only for what a command can't judge. |
 | F19 | Teams: saved members, memory file, room (chat) with your messages and agent-to-agent messages. |
 | F20 | Triggers: schedules (cron-like), room messages, and data webhooks. Each trigger starts a linked run. |
-| F21 | Team budget: usage per day and per trigger. A trigger that would go over is skipped and you get a push. (Recommended; not yet decided, see open questions.) |
+| F21 | ~~Team budget~~: dropped 2026-11-27, no daily cap. |
 | F22 | Team builder: from one message, propose a team (members, tools, tiers, schedule, outputs, approvals), ask about gaps, save on your OK. |
 | F23 | Missing tools are listed in the proposal as setup steps, never invented. |
 | F24 | Example team connectors: TikTok posting (with approval) and stats; market data and news for the stocks team. |
@@ -301,7 +301,7 @@ Added 2026-11-27. Not part of v1. Builds on everything above.
 | Teams need paid data APIs (market data, TikTok) | Extra cost and setup | The team builder lists what each team needs before you save it. |
 
 ### Open questions
-- Hard daily usage cap for teams, or only model routing? (You chose routing; a cap is recommended as a safety net.)
+- ~~Hard daily usage cap for teams?~~ Decided 2026-11-27: no cap. Model routing and the Cheap preset only.
 - Which machine runs the always-on team: your laptop (must stay on) or a host?
 - Plan login or an API key for teams?
 - TikTok account type and API access (developer app, posting review).

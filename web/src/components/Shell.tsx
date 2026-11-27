@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom'
 import { dayGroup, STATUS_DOT } from '../format'
-import { useHealth, useRuns, useTheme } from '../state/hooks'
+import { useHealth, useRuns, useTeams, useTheme } from '../state/hooks'
 import { ORCHESTRATOR_COLOR } from '../state/reducer'
 import { Character } from './Character'
 import { Menu, Moon, Plus, Sun } from './Icons'
@@ -19,7 +19,8 @@ function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }
   const { runs } = useRuns({ limit: 30 })
   const health = useHealth()
   const [theme, toggle] = useTheme()
-  const { runId } = useParams()
+  const teams = useTeams()
+  const { runId, teamId } = useParams()
   const loc = useLocation()
   const today = runs.filter((r) => dayGroup(r.created_at) === 'Today').slice(0, 8)
   const earlier = runs.filter((r) => dayGroup(r.created_at) !== 'Today').slice(0, 5)
@@ -45,6 +46,15 @@ function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }
         <Plus s={16} />New run
       </NavLink>
       <div className="sb-list">
+        <span className="sb-label">Teams</span>
+        {teams.map((t) => (
+          <Link key={t.id} to={`/teams/${t.id}`} onClick={onNavigate} className="sb-item" aria-current={teamId === t.id ? 'page' : undefined}>
+            <span className={`dot ${t.active_run ? 'dot-text live' : 'dot-border'}`} aria-hidden />
+            <span>{t.name}</span>
+            <span className="sb-meta">{t.active_run ? 'working' : t.enabled ? '' : 'paused'}</span>
+          </Link>
+        ))}
+        <NavLink to="/teams/new" className="sb-all" onClick={onNavigate}>+ New team</NavLink>
         <span className="sb-label">Today</span>
         {today.length === 0 && <span className="sb-label" style={{ paddingTop: 0 }}>No runs yet</span>}
         {today.map((r) => item(r))}
