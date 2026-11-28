@@ -1,6 +1,6 @@
 # Handover: ChaCha PA
 
-Last updated: 2026-11-27. Read this first in a new session, then `AGENTS.md`.
+Last updated: 2026-11-28. Read this first in a new session, then `AGENTS.md`.
 
 ## Where things are
 | What | Where |
@@ -91,15 +91,21 @@ Open http://127.0.0.1:8000.
 3. **Connectors live check (task 1.13):** on the user's laptop, `claude mcp list` should show their
    `claude.ai ...` connectors; the Options panel should list them; a worker given one should use it,
    and a write should ask. Fix the read patterns in `orchestra/connectors.py` if a connector misbehaves.
-4. **M9 leftovers:** try one real proposal (`/teams/new`, about one sonnet call), TikTok token
+4. **Demo-mode builder gap (small, do first):** in `--fake`, the team builder only knows 3 scripted
+   teams (TikTok, stocks, marketing) and gives the **marketing** team for anything else, e.g. "a
+   business advisory team". Options offered to the user (not yet chosen): (a) for unmatched goals,
+   show "Demo mode has 3 example teams. Run without --fake to design any team"; (b) add a 4th scripted
+   team, business advisory (researcher, analyst, advisor, writer) with a demo run that writes a memo.
+   Recommended: (a) now, (b) if they want a showcase. Ask before building. Real mode designs any team.
+5. **M9 leftovers:** try one real proposal (`/teams/new`, about one sonnet call), TikTok token
    refresh (9.2b), and a real market-data catalog entry once you pick a data source.
-5. **Leftovers:**
+6. **Leftovers:**
    - a manual screen reader pass (VoiceOver or NVDA) on a live run
    - draw the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
      connector picker on the canvas (ask before editing it)
    - try the phone widgets on real phones (needs hosting)
    - re-render the demo video (`demo-video/`) after big UI changes
-6. **Later:** Docker sandbox per agent, OpenRouter models (needs its own API key), repo diff view,
+7. **Later:** Docker sandbox per agent, OpenRouter models (needs its own API key), repo diff view,
    hosting (decide own machine vs VPS first; always-on teams need a machine that stays on).
 
 ## Decided (don't re-ask)
@@ -163,7 +169,8 @@ The app never touches logins: it runs my installed Claude Code (plan for persona
 sharing). I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so keep this
 session lean and prefer cheap models.
 
-Task: <next task, e.g. try the team builder live with one cheap proposal>.
+Task: fix the demo-mode team builder gap (HANDOVER next step 4: ask me option a or b first), then
+write me a short live-test checklist with low caps for M7, teams, connectors and one real proposal.
 
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to
