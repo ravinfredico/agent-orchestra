@@ -124,7 +124,7 @@ These files are meant to get better over time.
 - M8 (teams, triggers, steering, room) done offline. No daily cap (user's decision).
 - M6 replay page built; publishing waits for you to turn on GitHub Pages (Actions source).
 - claude.ai connectors in the catalog, scoped per agent (built offline; confirm live, task 1.13).
-- First live run worked (2026-11-27). Not yet tried live: M7, teams, connectors, a real team proposal.
+- First live run worked (2026-11-27). Not yet tried live: M7, teams, connectors, a real team proposal. What is left: `docs/HANDOVER.md`, "What's missing".
 - `main` has v1 (PRs #2, #3); M7 onward is only on `feat/chacha-pa` (the working branch).
 
 ## Learnings

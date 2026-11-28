@@ -83,30 +83,46 @@ tests really pass (`orchestra/demo_files/`); anything else plays the e-wallet re
 Drop `--fake` to use the real Claude plan login.
 Open http://127.0.0.1:8000.
 
-## Next steps, in order
-1. **Turn on GitHub Pages** (user, once): Settings → Pages → Source: "GitHub Actions". The replay
-   page then deploys on pushes to `main` that touch `web/` (or run "Replay page" in the Actions tab).
-2. **Try M7 and M8 live:** a Cheap run (does the orchestrator use tiers, checks, `assign_tasks`?),
-   then a small team with one schedule slot and a mid-run message. Fix misses in the playbooks.
-3. **Connectors live check (task 1.13):** on the user's laptop, `claude mcp list` should show their
-   `claude.ai ...` connectors; the Options panel should list them; a worker given one should use it,
-   and a write should ask. Fix the read patterns in `orchestra/connectors.py` if a connector misbehaves.
-4. **Demo-mode builder gap (small, do first):** in `--fake`, the team builder only knows 3 scripted
+## What's missing (as of 2026-11-28)
+Every PRD requirement is built and tested offline. What's left, by who can do it:
+
+### A. Build in a cloud session (no usage, offline tests)
+1. **Demo-mode builder gap (do first, ask a or b):** in `--fake` the team builder knows 3 scripted
    teams (TikTok, stocks, marketing) and gives the **marketing** team for anything else, e.g. "a
-   business advisory team". Options offered to the user (not yet chosen): (a) for unmatched goals,
-   show "Demo mode has 3 example teams. Run without --fake to design any team"; (b) add a 4th scripted
-   team, business advisory (researcher, analyst, advisor, writer) with a demo run that writes a memo.
-   Recommended: (a) now, (b) if they want a showcase. Ask before building. Real mode designs any team.
-5. **M9 leftovers:** try one real proposal (`/teams/new`, about one sonnet call), TikTok token
-   refresh (9.2b), and a real market-data catalog entry once you pick a data source.
-6. **Leftovers:**
-   - a manual screen reader pass (VoiceOver or NVDA) on a live run
-   - draw the approval card, interrupted outcome, stop confirm, playbook line, Playbook select and
-     connector picker on the canvas (ask before editing it)
-   - try the phone widgets on real phones (needs hosting)
-   - re-render the demo video (`demo-video/`) after big UI changes
-7. **Later:** Docker sandbox per agent, OpenRouter models (needs its own API key), repo diff view,
-   hosting (decide own machine vs VPS first; always-on teams need a machine that stays on).
+   business advisory team". (a) For unmatched goals show "Demo mode has 3 example teams. Run without
+   --fake to design any team." (b) Add a 4th scripted team, business advisory (researcher, analyst,
+   advisor, writer), with a demo run that writes a memo. Recommended: (a) now, (b) for a showcase.
+   Real mode already designs any team.
+2. **TikTok token refresh (9.2b):** refresh the access token with the refresh token before it expires
+   (about 24 h). Test with a fake token endpoint (`tests/test_media_tools.py` style).
+3. **Live-test checklist:** a short doc (`docs/LIVE-TESTS.md`) the user runs on Windows with low caps:
+   a Cheap run, a small team (one slot, a mid-run message), connectors, one real team proposal. Each
+   step: the command or click, what to see, what to send back if it fails.
+4. **Canvas drawings (ask before editing the canvas):** the approval card, interrupted outcome, stop
+   confirm, playbook line, Playbook select and connector picker are built but not drawn.
+5. **Re-render the demo video** (`demo-video/`) to show teams and the team builder. Needs Remotion; ask
+   whether it's wanted now.
+
+### B. Live checks on the user's laptop (uses Claude usage)
+6. **M7 live:** does the orchestrator use tiers, cheap checks and `assign_tasks`? Fix misses in playbooks.
+7. **M8 live:** a team with one schedule slot and a mid-run message.
+8. **Connectors (task 1.13):** `claude mcp list` shows `claude.ai ...` connectors; Options lists them; a
+   worker uses one; a write asks. Fix read patterns in `orchestra/connectors.py` if one misbehaves.
+9. **One real team proposal** at `/teams/new` (about one sonnet call).
+10. **TikTok and ElevenLabs tools:** need `TIKTOK_ACCESS_TOKEN`, `ELEVENLABS_API_KEY` and uv.
+11. **Screen reader pass** (NVDA on Windows) on a live run.
+
+### C. User decisions and one-time setup
+12. **Turn on GitHub Pages** (Settings → Pages → Source: "GitHub Actions") for the replay page.
+13. **Hosting:** own always-on machine or a VPS. Always-on teams and phone widgets need it.
+14. **Stocks data:** which markets and which data source; then one catalog entry replaces the
+    analyst's setup step.
+15. **TikTok API access:** register the app and apply for the audit early (posts stay private until then).
+16. **Plan login vs API key for teams** (README "Sign-in and terms").
+
+### D. Later (not committed)
+Docker sandbox per agent, OpenRouter models (own API key), repo diff view, hosting setup
+(Cloudflare Tunnel + Access), phone widgets on real phones (after hosting).
 
 ## Decided (don't re-ask)
 - Sign-in: the app never touches logins; it runs the user's installed Claude Code. Self-hosted, open
@@ -169,8 +185,8 @@ The app never touches logins: it runs my installed Claude Code (plan for persona
 sharing). I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so keep this
 session lean and prefer cheap models.
 
-Task: fix the demo-mode team builder gap (HANDOVER next step 4: ask me option a or b first), then
-write me a short live-test checklist with low caps for M7, teams, connectors and one real proposal.
+Task: work through HANDOVER "What's missing", group A, in order: 1 (ask me option a or b
+first), 2, 3. Ask before 4 and 5. Group B needs my laptop, so give me the checklist from 3 instead.
 
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to
