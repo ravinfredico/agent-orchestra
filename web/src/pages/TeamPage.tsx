@@ -5,6 +5,7 @@ import { Character } from '../components/Character'
 import { ArrowUp, Team as TeamIc } from '../components/Icons'
 import { MenuButton } from '../components/Shell'
 import { useRoom } from '../state/hooks'
+import { isVideoTeam, TeamTabs } from './TeamStudio'
 import { agentAccessory, agentColor, CHECKER_COLOR, ORCHESTRATOR_COLOR } from '../state/reducer'
 
 /** Plain-words version of the common cron shapes; anything else is shown as written. */
@@ -102,6 +103,7 @@ export function TeamPage() {
         <header className="run-header">
           <MenuButton />
           <h1>{team?.name ?? 'Loading…'}</h1>
+          {teamId && <TeamTabs teamId={teamId} current="room" show={isVideoTeam(team)} />}
           <span className="state">
             <span className={`dot ${activeRun ? 'dot-text live' : 'dot-border'}`} aria-hidden />
             {status}{activeRun && <> · <Link to={`/runs/${activeRun}`}>open run</Link></>}

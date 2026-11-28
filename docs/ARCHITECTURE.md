@@ -125,6 +125,9 @@ All JSON. All routes need auth when a token is configured (section 13).
 | `POST /api/teams/propose` | `{goal}` | `{team, summary, questions, approvals, setup, cost_usd}`. Nothing is saved. `400` empty goal, `422` no usable team |
 | `POST /api/teams` | `Team` fields | `201 Team`. `400` with a plain reason (unknown tool, bad cron, unknown time zone) |
 | `GET/PUT/DELETE /api/teams/{id}` | `PUT`: any Team fields, `memory` replaces memory.md | `Team` / `204` (`409` while its run is going) |
+| `GET /api/teams/{id}/studio` | | `{items: [{id, run_id, name, title, caption, hashtags, video, script, created, posted_at}]}` newest first (M10) |
+| `POST /api/teams/{id}/studio/{run_id}/{name}/posted` | `{posted}` | the item; `404` unknown video |
+| `GET /api/teams/{id}/studio/{run_id}/{name}.mp4` | | the video (no 2 MB limit), `404` if not rendered |
 | `GET /api/teams/{id}/room` | query `limit` (200) | `{items: [RoomItem], active_run}` |
 | `POST /api/teams/{id}/messages` | `{text}` | `202 {run_id, steered}`: starts a run, or steers the running one |
 | `POST /api/hooks/{team_id}/{secret}` | any body (64 KB max) | `202 {run_id}`. No login: the secret in the URL is the key. `404` if wrong or the hook is off |
@@ -380,6 +383,12 @@ Approval requests show in the room with Approve and Deny (they call the run's ap
   `FINANCE_RULE` in every member's prompt: never buy, sell or advise trades; briefs end with "Not
   financial advice."
 - `alert_task` (optional) turns on the team's webhook with that task, for alerts on fresh data.
+
+## 9h. Video studio (M10)
+`server/studio.py`. A team saves each video as `videos/<name>.mp4` + `videos/<name>.md` in a run's
+workspace (`# Title`, a `Caption:` line, hashtags). The studio scans the team's runs (newest 200),
+pairs the files by name, and marks posted items from `teams/<id>/studio.json`. Nothing is uploaded:
+the user posts by hand. The `short-video` playbook tells teams this format.
 
 ## 9f. Replay page (M6)
 - Source: `web/replay.html` and `web/src/replay/` (`Replay.tsx` player, `clock.ts` pacing and scrub,

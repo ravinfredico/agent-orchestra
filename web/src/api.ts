@@ -98,6 +98,11 @@ export interface Team {
   setup?: SetupStep[]
 }
 export type TeamInput = Omit<Team, 'id' | 'active_run' | 'hook' | 'approvals' | 'setup'> & { hook: { enabled: boolean; task: string } }
+/** A video the team saved for you to post by hand (M10). */
+export interface StudioItem {
+  id: string; run_id: string; name: string; title: string; caption: string; hashtags: string[]
+  video: string | null; script: string | null; created: number; posted_at: number | null
+}
 /** POST /api/teams/propose: a team to review, edit and save. Nothing is saved yet. */
 export interface Proposal {
   team: Omit<TeamInput, 'options' | 'memory'>
@@ -176,6 +181,9 @@ export const api = {
   eventsUrl: (id: string) => `/api/runs/${id}/events`,
   steer: (id: string, text: string) => request(`/api/runs/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
   teams: () => request<Team[]>('/api/teams'),
+  studio: (id: string) => request<{ items: StudioItem[] }>(`/api/teams/${id}/studio`),
+  markPosted: (id: string, runId: string, name: string, posted: boolean) =>
+    request<StudioItem>(`/api/teams/${id}/studio/${runId}/${encodeURIComponent(name)}/posted`, { method: 'POST', body: JSON.stringify({ posted }) }),
   proposeTeam: (goal: string) => request<Proposal>('/api/teams/propose', { method: 'POST', body: JSON.stringify({ goal }) }),
   team: (id: string) => request<Team>(`/api/teams/${id}`),
   createTeam: async (t: TeamInput) => { const r = await request<Team>('/api/teams', { method: 'POST', body: JSON.stringify(t) }); teamsChanged(); return r },

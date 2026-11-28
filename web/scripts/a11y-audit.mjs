@@ -107,6 +107,10 @@ for (const theme of ['dark', 'light']) for (const [w, h] of [[1440, 900], [390, 
   await page.getByRole('button', { name: 'Marketing team' }).click(); await page.waitForSelector('.builder-actions')
   await page.waitForTimeout(400)
   await check(page, `${tag} team proposal`)
+  const tt = await (await fetch(`${BASE}/api/teams`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `A11y videos ${theme} ${w}`, goal: 'TikTok videos', members: [] }) })).json()
+  await page.goto(`${BASE}/teams/${tt.id}/studio`); await page.waitForSelector('.studio-empty')
+  await check(page, `${tag} studio (empty)`)
   await ctx.close()
 }
 await browser.close()

@@ -15,6 +15,7 @@ import { RunPage } from './pages/RunPage'
 import { TeamBuilder } from './pages/TeamBuilder'
 import { TeamEdit } from './pages/TeamEdit'
 import { TeamPage } from './pages/TeamPage'
+import { TeamStudio } from './pages/TeamStudio'
 import { ORCHESTRATOR_COLOR } from './state/reducer'
 
 function Login({ onDone }: { onDone: () => void }) {
@@ -59,6 +60,7 @@ function App() {
           <Route path="/teams/new/edit" element={<TeamEdit />} />
           <Route path="/teams/:teamId" element={<TeamPage />} />
           <Route path="/teams/:teamId/edit" element={<TeamEdit />} />
+          <Route path="/teams/:teamId/studio" element={<TeamStudio />} />
         </Route>
         <Route path="/runs/:runId/files/*" element={<Files />} />
       </Routes>

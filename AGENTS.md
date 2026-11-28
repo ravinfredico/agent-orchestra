@@ -40,7 +40,7 @@ Docs:
 | `orchestra/state.py` | `RunState`: agents, board, usage, `log()` event envelope to `runs/<id>/log.jsonl` |
 | `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default); `pick_demo()` picks the research, build, TikTok, marketing or stocks scenario; `demo_proposal()` answers the team builder |
 | `orchestra/gitsafe.py` | `--repo` safety: clean tree, branch `orchestra/<ts>`, `REPOS_ROOT` allowlist |
-| `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth, ntfy pushes (`notify.py`), teams + triggers + room (`teams.py`) |
+| `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth, ntfy pushes (`notify.py`), teams + triggers + room (`teams.py`), video studio (`studio.py`) |
 | `orchestra/envfile.py` | loads `.env` at startup (shell wins, never `ANTHROPIC_API_KEY`) |
 | `web/` | React + Vite + TypeScript app. `src/state/reducer.ts` mirrors `server/summary.py`; `src/presets.ts` holds the Options presets |
 | `tools.catalog.json` | tools the orchestrator may give agents |
@@ -117,14 +117,15 @@ These files are meant to get better over time.
   summary, so the user can see what was learned.
 
 ## Status
-- Branch `feat/chacha-pa`. M1 to M8 done and tested offline. M9 team builder (9.1, 9.3 stocks and 9.4 marketing demos) done offline.
+- Branch `feat/chacha-pa`. M1 to M8 done and tested offline. M9 team builder and M10 video studio done offline.
 - Orchestrator playbooks added (pstack-style). pstack is enabled for development (see CLAUDE.md).
 - M7 (parallel and cheaper) done offline: model tier per task with one step-up, cheap checks,
   Cheap preset, `assign_tasks` with dependencies, usage by agent and model.
 - M8 (teams, triggers, steering, room) done offline. No daily cap (user's decision).
 - M6 replay page built; publishing waits for you to turn on GitHub Pages (Actions source).
 - claude.ai connectors in the catalog, scoped per agent (built offline; confirm live, task 1.13).
-- First live run worked (2026-11-27). Not yet tried live: M7, teams, connectors, a real team proposal. What is left: `docs/HANDOVER.md`, "What's missing".
+- Live checks passed 2026-11-28 (Cheap run, team proposal, team run with steering). Not yet live: connectors.
+- Decided 2026-11-28: VPS hosting, teams on the plan login, TikTok posted by hand from the studio. What is left: `docs/HANDOVER.md`, "What's missing".
 - `main` has v1 (PRs #2, #3); M7 onward is only on `feat/chacha-pa` (the working branch).
 
 ## Learnings

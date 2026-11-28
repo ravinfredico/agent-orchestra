@@ -15,6 +15,8 @@ Everything shared lives in AGENTS.md above. This file only adds what is specific
   `project/canvas.json`, placed in free space. Publish both in one Artifact call with `root`.
 - **Cloud sessions:** the container starts without dependencies. Run `pip install -r requirements.txt`
   and `cd web && npm install` before the first test run.
+- **Live runs from the cloud:** the container's `claude` CLI is signed in, so real runs work there
+  (`python -m server --port 8001`, own `--runs-dir`). Use the Cheap preset and `max_cost` 1.
 - **Billing:** never set `ANTHROPIC_API_KEY`. Runs use the user's Claude plan login.
 - **Questions:** use AskUserQuestion with concrete options for anything only the user can decide.
 

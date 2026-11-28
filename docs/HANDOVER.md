@@ -60,9 +60,14 @@ Last updated: 2026-11-28. Read this first in a new session, then `AGENTS.md`.
   a setup step), writer (brief). Alerts through the webhook. The builder always refuses trading and
   payment tools and adds a never-trade rule to finance teams; the demo checker rejects a brief that says
   "buy" and the brief ends "Not financial advice."
+- **M10 video studio (done offline):** `/teams/<id>/studio` lists the videos a team saved
+  (`videos/<name>.mp4` + `videos/<name>.md` with title, `Caption:` line, hashtags): play, Copy caption
+  (caption plus hashtags), Download, Open script, Mark posted / Undo. "Script only" when no mp4. Room
+  and Studio tabs show for video teams. `server/studio.py`. The TikTok team and the `short-video`
+  playbook save to the studio and never post.
 - **M6 replay page:** `web/src/replay/`, built with `npm run build:replay`, published by
   `.github/workflows/replay-pages.yml` once Pages is turned on (Settings → Pages → Source: GitHub Actions).
-- **Tests:** 144 pytest (`python -m pytest tests -q`), 42 Vitest (`cd web && npm test`), type-checked
+- **Tests:** 148 pytest (`python -m pytest tests -q`), 46 Vitest (`cd web && npm test`), type-checked
   (`npx tsc -b`), and an axe + keyboard audit (`cd web && npm run a11y`).
 
 ## How to run
@@ -83,46 +88,44 @@ tests really pass (`orchestra/demo_files/`); anything else plays the e-wallet re
 Drop `--fake` to use the real Claude plan login.
 Open http://127.0.0.1:8000.
 
+## Live checks (2026-11-28, from a cloud session, Cheap caps, about $0.15 in total)
+The `claude` CLI in the cloud container is signed in, so live runs work there (`python -m server
+--port 8001`, real mode). What happened:
+| Check | Result |
+|---|---|
+| Cheap run (two files, then an index) | Passed, $0.04. Haiku tier with a reason, `assign_tasks` with `depends_on`, cheap checks. Fixed: `checks_only` with only `file_exists` is now ignored (content wasn't judged); the prompt now says parallel tasks need different agents (it used one agent, so nothing ran at once). |
+| Real team proposal ("business advisory team for my coffee shop") | Passed, 11 s, $0.02. 3 members, a Monday slot, 2 questions, a correct "turn on Shell" setup step. |
+| Team run + mid-run message | Passed, $0.09. The message steered the run (`steered: true`), the saved notes were used, memory got a line. |
+| Connectors | Not checkable here: this container has no claude.ai connectors (`claude mcp list` shows only `plugin:` servers). Still needs the user's laptop or VPS. |
+Small leftover seen: the room shows the final answer twice (the orchestrator's last message and the
+`finished` result).
+
 ## What's missing (as of 2026-11-28)
-Every PRD requirement is built and tested offline. What's left, by who can do it:
+### A. Can be built in a cloud session
+1. **Hosting on a VPS (next milestone):** setup guide and scripts for a VPS: service file, Cloudflare
+   Tunnel + Access, `APP_TOKEN`, Claude Code installed and signed in. See the terms note under Decided.
+2. **Room shows the final answer twice:** drop the orchestrator's last message when it repeats the
+   `finished` result (`server/teams.py` `room_items`, and the run thread if it does the same).
+3. **Video rendering for real:** the TikTok team needs Shell on and Remotion in the sandbox to make
+   mp4s; without it the studio shows "script only". Try one render live with low caps.
+4. **Re-render the demo video** (`demo-video/`) with teams, the builder and the studio (ask first).
 
-### A. Build in a cloud session (no usage, offline tests)
-1. **Demo-mode builder gap (do first, ask a or b):** in `--fake` the team builder knows 3 scripted
-   teams (TikTok, stocks, marketing) and gives the **marketing** team for anything else, e.g. "a
-   business advisory team". (a) For unmatched goals show "Demo mode has 3 example teams. Run without
-   --fake to design any team." (b) Add a 4th scripted team, business advisory (researcher, analyst,
-   advisor, writer), with a demo run that writes a memo. Recommended: (a) now, (b) for a showcase.
-   Real mode already designs any team.
-2. **TikTok token refresh (9.2b):** refresh the access token with the refresh token before it expires
-   (about 24 h). Test with a fake token endpoint (`tests/test_media_tools.py` style).
-3. **Live-test checklist:** a short doc (`docs/LIVE-TESTS.md`) the user runs on Windows with low caps:
-   a Cheap run, a small team (one slot, a mid-run message), connectors, one real team proposal. Each
-   step: the command or click, what to see, what to send back if it fails.
-4. **Canvas drawings (ask before editing the canvas):** the approval card, interrupted outcome, stop
-   confirm, playbook line, Playbook select and connector picker are built but not drawn.
-5. **Re-render the demo video** (`demo-video/`) to show teams and the team builder. Needs Remotion; ask
-   whether it's wanted now.
+### B. Needs the user's machine or the VPS
+5. **Connectors live check (task 1.13):** `claude mcp list` shows `claude.ai ...` connectors; Options
+   lists them; a worker uses one; a write asks.
+6. **ElevenLabs voiceovers:** `ELEVENLABS_API_KEY` and uv.
+7. **Screen reader pass** (NVDA on Windows) on a live run.
+8. **Phone widgets on real phones** (after hosting).
 
-### B. Live checks on the user's laptop (uses Claude usage)
-6. **M7 live:** does the orchestrator use tiers, cheap checks and `assign_tasks`? Fix misses in playbooks.
-7. **M8 live:** a team with one schedule slot and a mid-run message.
-8. **Connectors (task 1.13):** `claude mcp list` shows `claude.ai ...` connectors; Options lists them; a
-   worker uses one; a write asks. Fix read patterns in `orchestra/connectors.py` if one misbehaves.
-9. **One real team proposal** at `/teams/new` (about one sonnet call).
-10. **TikTok and ElevenLabs tools:** need `TIKTOK_ACCESS_TOKEN`, `ELEVENLABS_API_KEY` and uv.
-11. **Screen reader pass** (NVDA on Windows) on a live run.
+### C. User, one time
+9. **Turn on GitHub Pages** (Settings → Pages → Source: "GitHub Actions") for the replay page.
 
-### C. User decisions and one-time setup
-12. **Turn on GitHub Pages** (Settings → Pages → Source: "GitHub Actions") for the replay page.
-13. **Hosting:** own always-on machine or a VPS. Always-on teams and phone widgets need it.
-14. **Stocks data:** which markets and which data source; then one catalog entry replaces the
-    analyst's setup step.
-15. **TikTok API access:** register the app and apply for the audit early (posts stay private until then).
-16. **Plan login vs API key for teams** (README "Sign-in and terms").
+### Dropped (user, 2026-11-28)
+- Demo-mode builder gap: the user doesn't need demo mode. It stays only for tests and offline checks.
+- TikTok token refresh (9.2b) and TikTok posting: no token; the user posts by hand from the studio.
 
-### D. Later (not committed)
-Docker sandbox per agent, OpenRouter models (own API key), repo diff view, hosting setup
-(Cloudflare Tunnel + Access), phone widgets on real phones (after hosting).
+### Later (not committed)
+Docker sandbox per agent, OpenRouter models (own API key), repo diff view.
 
 ## Decided (don't re-ask)
 - Sign-in: the app never touches logins; it runs the user's installed Claude Code. Self-hosted, open
@@ -130,16 +133,19 @@ Docker sandbox per agent, OpenRouter models (own API key), repo diff view, hosti
   (README "Sign-in and terms"). Never add login code.
 - After v1: parallel agents; the orchestrator picks the cheapest model tier per task; teams for any
   goal from one message; teams are always on but only spend usage on triggers; TikTok team does
-  ideas, scripts, rendered videos, posting (with approval) and stats review; stocks team never trades.
+  ideas, scripts and rendered videos saved to the studio (you post by hand); stocks team never trades.
 - Teams are built around the user's claude.ai connectors (TikTok is just one example).
 - Teams: no daily cap; room messages steer a running team; schedules use the team's time zone.
-- Open: plan login vs API key for teams,
-  which machine hosts always-on teams, TikTok API access, stocks markets and data source.
+- Decided 2026-11-28: host on a **VPS**; teams keep the **plan login**; TikTok is posted **by hand**
+  from the studio (no TikTok API, no token); stocks teams take the market from the prompt (US or
+  Indonesia), with web search as the data source.
+- **Terms note (flag it again before hosting):** Anthropic's docs point to an API key for a server
+  (PRD section 11 risk). The user chose plan login on the VPS; recheck Anthropic's current terms
+  before the hosting milestone and switch to `ANTHROPIC_API_KEY` if needed (no code change).
 - Product name is **ChaCha PA**. Design direction is Thread with agents as characters, minimal like
   Grok-style chat apps.
-- Runs use the **Claude Pro plan login**, not API billing. On a VPS, use an API key (Anthropic's terms).
-- Hosting: Cloudflare Tunnel + Access. *Where* to host is still open, but not needed until the hosting
-  milestone.
+- Runs use the **Claude Pro plan login**, not API billing (also on the VPS, see the terms note above).
+- Hosting: a VPS behind Cloudflare Tunnel + Access.
 - Several runs at once. Stop cancels immediately. A server restart marks runs interrupted.
 - Notifications: ntfy push + home-screen widget on both iPhone and Android.
 - Live detail: events + one activity line per worker. A usage meter that jumps is fine.
@@ -178,15 +184,16 @@ You're continuing ChaCha PA in ravinfredico/agent-orchestra. Work on branch feat
 (main only has v1; everything from M7 on is on feat/chacha-pa). First fetch the branch, then read
 docs/HANDOVER.md, then AGENTS.md, then PRD section 13.
 
-State: M1 to M8 and the M9 team builder done and tested offline (144 pytest, 42 Vitest), plus the M6 replay page, the TikTok
+State: M1 to M8 and the M9 team builder done and tested offline (148 pytest, 46 Vitest), plus the M6 replay page, the TikTok
 and ElevenLabs tools, and claude.ai connectors as team tools (found with `claude mcp list`, scoped per
-agent, writes need approval). The first live run worked. Connectors and teams are not yet tried live.
+agent, writes need approval). Live checks passed on 2026-11-28 (Cheap run, team proposal, team run with steering); connectors still untried live.
 The app never touches logins: it runs my installed Claude Code (plan for personal use, API key for
 sharing). I'm on Windows (use `python`, not `py`), and my Claude usage burns fast, so keep this
 session lean and prefer cheap models.
 
-Task: work through HANDOVER "What's missing", group A, in order: 1 (ask me option a or b
-first), 2, 3. Ask before 4 and 5. Group B needs my laptop, so give me the checklist from 3 instead.
+Task: start the VPS hosting milestone (HANDOVER "What's missing" A1): first ask me which VPS
+provider and OS, and remind me of the plan-login terms note. Then fix A2 (room shows the final answer
+twice). Live runs work from the cloud session: keep caps low.
 
 Follow AGENTS.md: tests for new logic, run pytest before every commit, update the docs, and list
 doc changes at the end. Ask me (with options) before anything only I can decide. Push to

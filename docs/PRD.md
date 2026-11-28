@@ -204,7 +204,7 @@ Details per task: [IMPLEMENTATION.md](IMPLEMENTATION.md).
 | The first live run is not tested yet | Unknown engine bugs | M1 ends with a real run before any UI work. |
 
 ## 12. Open questions
-- Where to host: your own always-on machine or a VPS. Decide before the hosting milestone.
+- Where to host: decided 2026-11-28, a VPS. Teams keep the plan login (see the risk in section 11).
 - Which MCP servers and connectors to put in the first catalog besides the browser.
 
 ## 13. After v1: parallel agents, always-on teams, and lower cost
@@ -340,6 +340,7 @@ from ElevenLabs. Each would be one catalog entry; the team builder (F23) lists m
 | F29 | Claude connectors: discover the signed-in account's claude.ai connectors and add them to the catalog with their status (connected, needs sign-in, failed). |
 | F30 | Per-agent connector scoping: an agent sees only its own connectors; reads run freely, everything else needs approval; tools it wasn't given are always denied. |
 | F31 | The team builder (F22) picks connectors for members and lists missing ones as "connect X at claude.ai" setup steps (F23). |
+| F32 | Video studio: videos a team makes are saved with their caption and hashtags; you watch, copy, download and mark them posted. You post by hand; nothing is uploaded (decided 2026-11-28, no TikTok token). |
 
 ### Ways to keep it cheap
 - Right model per task (F16). This is the biggest saving.
