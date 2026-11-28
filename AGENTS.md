@@ -38,7 +38,7 @@ Docs:
 | `orchestra/builder.py` | team builder (M9): one model call turns a message into a proposed team; missing tools become setup steps |
 | `orchestra/orchestrator.py` | `create_run()` / `execute_run()` outer loop, continue and follow-up prompts |
 | `orchestra/state.py` | `RunState`: agents, board, usage, `log()` event envelope to `runs/<id>/log.jsonl` |
-| `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default); `pick_demo()` chooses the research or build scenario |
+| `orchestra/fake.py` | scripted runner + client for offline tests and demo mode (never used by default); `pick_demo()` picks the research, build, TikTok, marketing or stocks scenario; `demo_proposal()` answers the team builder |
 | `orchestra/gitsafe.py` | `--repo` safety: clean tree, branch `orchestra/<ts>`, `REPOS_ROOT` allowlist |
 | `server/` | FastAPI app (`app.py`), `RunManager` (`runs.py`), log folding (`summary.py`), SQLite index, auth, ntfy pushes (`notify.py`), teams + triggers + room (`teams.py`) |
 | `orchestra/envfile.py` | loads `.env` at startup (shell wins, never `ANTHROPIC_API_KEY`) |
@@ -89,6 +89,9 @@ python scripts/make_fixtures.py                # after changing events: refresh 
   names like `.empty` for states.
 - `runs/<id>/log.jsonl` is the source of truth. Everything else can be rebuilt from it.
 - Docs are plain English: short sentences, no jargon or filler, lists and tables where they help.
+- Team builder: tools outside the catalog go to a member's `wants` (shown as setup steps), never into
+  `tools`. Tools that could move money (`builder.MONEY_TOOL`) are always refused. Finance teams get
+  `builder.FINANCE_RULE` in every member's prompt.
 
 ## Rules
 - Keep `python -m pytest tests -q` passing. Run it before every commit.
@@ -141,4 +144,8 @@ These files are meant to get better over time.
 - Team members get only tools usable now (`catalog.available_ids`); `create_agent` rejects the rest, so a
   signed-out connector once dropped a whole member.
 - Amber (`--check`) text fails contrast on light grey; use it for borders, `--text-2` for the words.
+- A new demo scenario keyword can capture existing test teams and tasks; run the full pytest suite after
+  adding one, not just the new tests.
+- In server tests, read run events with `read_events(run_dir)`: `/api/runs/{id}/events` is an SSE
+  stream, and the team room shows only final task outcomes, not failed tries.
 - Run `npm run a11y` after UI changes. Wait for enter animations before axe, or it measures half-faded colors.
