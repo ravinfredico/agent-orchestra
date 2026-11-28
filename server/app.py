@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 import mimetypes
+import time
 import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,7 +17,7 @@ from orchestra import builder, fake
 from orchestra.playbooks import load_playbooks
 from orchestra.state import TERMINAL_EVENTS, auth_mode, read_events
 
-from . import auth
+from . import auth, studio
 from .runs import RunError, RunManager
 from .teams import TeamError, TeamRunner, TeamStore, room_items
 
@@ -239,6 +240,32 @@ def create_app(manager: RunManager | None = None, runs_dir: Path = Path("runs"),
 
     def team_out(t: dict) -> dict:
         return {**t, "active_run": teams.active_run(t["id"]), **builder.review(t, mgr.catalog)}
+
+    # ---- video studio (M10): videos a team made, posted by you by hand --------------------
+
+    def studio_items(team_id: str) -> list[dict]:
+        store.get(team_id)
+        return studio.items(teams.run_dirs(team_id, limit=200), mgr.workspace, studio.load_posted(store.root / team_id))
+
+    @app.get("/api/teams/{team_id}/studio", dependencies=guard)
+    async def team_studio(team_id: str):
+        return {"items": studio_items(team_id)}
+
+    @app.post("/api/teams/{team_id}/studio/{run_id}/{name}/posted", dependencies=guard)
+    async def studio_posted(team_id: str, run_id: str, name: str, body: dict = Body(...)):
+        item_id = f"{run_id}/{name}"
+        if not any(i["id"] == item_id for i in studio_items(team_id)):
+            raise HTTPException(404, "Video not found")
+        studio.set_posted(store.root / team_id, item_id, time.time() if body.get("posted", True) else None)
+        return next(i for i in studio_items(team_id) if i["id"] == item_id)
+
+    @app.get("/api/teams/{team_id}/studio/{run_id}/{name}.mp4", dependencies=guard)
+    async def studio_video(team_id: str, run_id: str, name: str):
+        item = next((i for i in studio_items(team_id) if i["id"] == f"{run_id}/{name}" and i["video"]), None)
+        if not item:
+            raise HTTPException(404, "Video not found")
+        return FileResponse(safe_path(run_id, item["video"]), media_type="video/mp4",
+                            filename=f"{name}.mp4", content_disposition_type="inline")
 
     @app.post("/api/teams/propose", dependencies=guard)
     async def propose_team(body: dict = Body(...)):

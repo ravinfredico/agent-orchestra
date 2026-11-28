@@ -319,21 +319,36 @@ def test_demo_run_survives_a_mid_run_message(tmp_path):
     assert any("Got your message" in t for t in said)
 
 
-def test_tiktok_team_demo_in_the_room(tmp_path, monkeypatch):
+def test_tiktok_team_demo_fills_the_studio(tmp_path, monkeypatch):
+    """No TikTok token: the team saves videos to the studio and you post by hand (M10)."""
     monkeypatch.delenv("APP_TOKEN", raising=False)
     mgr = RunManager(tmp_path / "runs", fake_mode=True, fake_delay=0.0)
     with TestClient(create_app(mgr, web_dist=tmp_path / "x", schedule=False)) as c:
         tid = c.post("/api/teams", json={"name": "TikTok studio", "goal": "Student life videos",
                                          "members": fake.TIKTOK_MEMBERS}).json()["id"]
+        assert c.get(f"/api/teams/{tid}/studio").json() == {"items": []}
         rid = c.post(f"/api/teams/{tid}/messages", json={"text": "Make 3 videos for this week"}).json()["run_id"]
         c.post(f"/api/teams/{tid}/messages", json={"text": "No cooking videos please"})
-        ap = wait(lambda: next((i for i in c.get(f"/api/teams/{tid}/room").json()["items"] if i["kind"] == "approval"), None))
-        assert ap["from"] == "poster" and ap["run_id"] == rid
-        assert c.post(f"/api/runs/{rid}/approvals/{ap['approval_id']}", json={"decision": "approve"}).status_code == 200
         d = wait(lambda: (x := c.get(f"/api/runs/{rid}").json())["status"] == "finished" and x)
-        assert "No cooking" in d["final"]
+        assert "No cooking" in d["final"] and "studio" in d["final"]
         room = c.get(f"/api/teams/{tid}/room").json()["items"]
-        assert any(i["kind"] == "system" and i["text"] == "Approved: schedule posts" and i["approval_id"] == ap["approval_id"]
-                   for i in room)
+        assert not any(i["kind"] == "approval" for i in room)                               # nothing is posted for you
         assert any(i["kind"] == "agent" and "cooking" in i["text"] for i in room)           # the reply to your message
-        assert {i["to"] for i in room if i["kind"] == "handoff"} >= {"trendscout", "analyst", "scriptwriter", "editor", "poster"}
+        assert {i["to"] for i in room if i["kind"] == "handoff"} == {"trendscout", "scriptwriter", "editor"}
+
+        items = c.get(f"/api/teams/{tid}/studio").json()["items"]
+        assert len(items) == 3 and all(i["video"] is None and i["script"] for i in items)   # script only in demo
+        kos = next(i for i in items if i["name"] == "01-kos-tour")
+        assert kos["caption"].startswith("What Rp1.5 million") and "#anakkos" in kos["hashtags"]
+        assert c.get(f"/api/teams/{tid}/studio/{rid}/01-kos-tour.mp4").status_code == 404
+
+        # a rendered video: served whole, even past the 2 MB file-viewer limit
+        (mgr.workspace(rid) / "videos" / "01-kos-tour.mp4").write_bytes(b"\0" * (3 * 1024 * 1024))
+        r = c.get(f"/api/teams/{tid}/studio/{rid}/01-kos-tour.mp4")
+        assert r.status_code == 200 and r.headers["content-type"] == "video/mp4" and len(r.content) == 3 * 1024 * 1024
+
+        done = c.post(f"/api/teams/{tid}/studio/{rid}/01-kos-tour/posted", json={"posted": True}).json()
+        assert done["posted_at"] and done["video"] == "videos/01-kos-tour.mp4"
+        undone = c.post(f"/api/teams/{tid}/studio/{rid}/01-kos-tour/posted", json={"posted": False}).json()
+        assert undone["posted_at"] is None
+        assert c.post(f"/api/teams/{tid}/studio/{rid}/nope/posted", json={}).status_code == 404

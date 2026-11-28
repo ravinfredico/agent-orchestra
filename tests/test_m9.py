@@ -194,3 +194,31 @@ def test_fake_runner_checks_unscripted_work_without_crashing(tmp_path):
     run(r(prompt="[other] x", cwd=tmp_path))
     res = run(r(prompt="[other] x", output_schema={"type": "object"}))
     assert res.structured["passed"] is True
+
+
+# ---- M10 video studio: parsing the cards the team writes -----------------------------------
+
+def test_studio_card_parsing():
+    from server.studio import parse_card
+    c = parse_card("# Kos tour\n\nHook (0-2 s): look\n\nCaption: Would you live here? #fyp\n\n#anakkos #depok", "01-kos")
+    assert c == {"title": "Kos tour", "caption": "Would you live here?", "hashtags": ["#fyp", "#anakkos", "#depok"]}
+    assert parse_card("", "02-krl-rush")["title"] == "02 krl rush"
+    assert parse_card("Just a caption line\n#a #b", "x")["caption"] == "Just a caption line"
+
+
+def test_studio_items_pair_files_and_skip_odd_names(tmp_path):
+    from server import studio
+    ws = tmp_path / "r1" / "workspace" / "videos"
+    ws.mkdir(parents=True)
+    (ws / "a.md").write_text("# A\nCaption: hi")
+    (ws / "a.mp4").write_bytes(b"x")
+    (ws / "b.mp4").write_bytes(b"x")                  # video without a card
+    (ws / ".hidden.md").write_text("# no")
+    items = studio.items([tmp_path / "r1"], lambda rid: tmp_path / rid / "workspace", {"r1/a": 1.0})
+    by = {i["name"]: i for i in items}
+    assert set(by) == {"a", "b"}
+    assert by["a"]["video"] == "videos/a.mp4" and by["a"]["posted_at"] == 1.0
+    assert by["b"]["script"] is None and by["b"]["title"] == "b"
+    marks = studio.set_posted(tmp_path, "r1/b", 2.0)
+    assert studio.load_posted(tmp_path) == marks == {"r1/b": 2.0}
+    assert studio.set_posted(tmp_path, "r1/b", None) == {}

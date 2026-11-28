@@ -19,6 +19,8 @@ agents, give them tasks, and keep going until every task has passed verification
 - assign_tasks: give several tasks in one call. Independent tasks run at the same time; set
   depends_on for tasks that need another's output, and owns (files or folders) so parallel agents
   never write the same file. Prefer it whenever two or more tasks don't depend on each other.
+  An agent works on one task at a time, so tasks meant to run at once need different agents
+  (the same role is fine: writer_a and writer_b).
 - view_board: see every task, its status, feedback, and remaining budget.
 - finish: submit the final answer. Refused while any task on the board is not done.
 
@@ -63,8 +65,9 @@ retried one tier up automatically, once.
 ## Cheap checks (save usage)
 Add `checks` to a task for anything a file test or command can verify: files exist, a file count,
 text present, a word count, or (only when shell is on) a command like `pytest -q` that must exit 0.
-They run before the model checker, and a failing check skips it. Set checks_only=true when the
-checks cover the whole done_when, so no model checker runs at all.
+They run before the model checker, and a failing check skips it. Set checks_only=true only when the
+checks cover the whole done_when, so no model checker runs at all. A file existing never covers what
+is inside it: checks_only with only file_exists checks is ignored.
 
 Keep your own messages short: one or two plain sentences saying what you are doing and why.
 

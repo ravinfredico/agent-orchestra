@@ -187,6 +187,8 @@ class OrchestraTools:
             return None, bad
         if checks_only and not task_checks:
             return None, "checks_only needs at least one check"
+        if checks_only and all(c.get("type") == "file_exists" for c in task_checks):
+            checks_only = False   # a file existing says nothing about what's in it: the model checker still runs
         for d in depends_on:
             if d == task_id:
                 return None, f"Task '{task_id}' can't depend on itself"

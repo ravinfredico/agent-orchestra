@@ -388,3 +388,22 @@ def test_old_usage_events_still_fold(tmp_path):
     s = RunState("x", Config(), tmp_path)
     s.log("usage", cost_usd=0.5, delta_usd=0.5, model_calls=1, turns=1, assignments=0)
     assert fold(s.run_dir)["usage"]["by_agent"]["unknown"]["cost_usd"] == 0.5
+
+
+def test_checks_only_with_only_file_exists_still_asks_the_model(tmp_path):
+    # found in the first live Cheap run: "fruits.md exists" was the only check, so nothing judged the content
+    from orchestra.runner import AgentResult
+    s, t, calls = make(tmp_path, [AgentResult(text="", structured={"passed": True, "reason": "ok", "short": "ok"})],
+                       worker=write_report)
+    run(t.create_agent(AGENT))
+    res = run(t.assign_task({**TASK, "checks_only": True, "checks": [{"type": "file_exists", "path": "report.md"}]}))
+    assert "PASSED" in text(res)
+    assert any(c["checker"] for c in calls)
+    assert events(s, "task_assigned")[0]["checks_only"] is False
+
+
+def test_prompt_says_parallel_tasks_need_different_agents():
+    from orchestra.config import Budget
+    from orchestra.prompts import orchestrator_prompt
+    p = orchestrator_prompt("", Budget(), "")
+    assert "one task at a time" in p and "only file_exists checks is ignored" in p
