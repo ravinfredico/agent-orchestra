@@ -94,6 +94,19 @@ for (const theme of ['dark', 'light']) for (const [w, h] of [[1440, 900], [390, 
   if (!(await page.evaluate(() => document.activeElement?.classList.contains('btn-stop')))) problems.push(`${tag} stop dialog: focus did not return to Stop`)
   await page.click('.btn-stop'); await page.click('[role=dialog] .btn-danger'); await page.waitForSelector('.outcome', { timeout: 30000 })
   await check(page, `${tag} stopped run`)
+
+  const team = await (await fetch(`${BASE}/api/teams`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `A11y team ${theme} ${w}`, goal: 'Audit', members: [{ name: 'scout', role: 'Finds things', tools: ['web'], tier: 'haiku' }],
+      schedule: [{ cron: '0 9 * * 1-5', task: 'Brief' }] }) })).json()
+  await page.goto(`${BASE}/teams/${team.id}`); await page.waitForSelector('#room-msg')
+  await check(page, `${tag} team room`)
+  await page.goto(`${BASE}/teams/${team.id}/edit`); await page.waitForSelector('.team-form')
+  await check(page, `${tag} team editor`)
+  await page.goto(`${BASE}/teams/new`); await page.waitForSelector('#team-goal')
+  await check(page, `${tag} team builder`)
+  await page.getByRole('button', { name: 'Marketing team' }).click(); await page.waitForSelector('.builder-actions')
+  await page.waitForTimeout(400)
+  await check(page, `${tag} team proposal`)
   await ctx.close()
 }
 await browser.close()

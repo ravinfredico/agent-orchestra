@@ -2,9 +2,14 @@
 
 Give it any task. An orchestrator agent plans it, **creates its own specialist agents** (writing their
 system prompts and choosing their tools), assigns them work, and **keeps looping until every piece is
-independently verified**. Built on the Claude Agent SDK, so it runs on your Claude plan.
+independently verified**. Built on the Claude Agent SDK.
 
 **ChaCha PA** is the web app around it: type a task, watch the team work live, on laptop or phone.
+Save teams that work on a schedule, chat with them, and let them use your tools (your Claude
+connectors like Figma, Gmail, Notion and Slack).
+
+ChaCha PA never asks for, reads or stores your login. It runs the Claude Code installed on your
+computer, which uses whatever sign-in you set up there. See [Sign-in and terms](#sign-in-and-terms).
 
 [![ChaCha PA demo: agents planning, retrying, asking for approval and passing tests](docs/media/chacha-pa-demo-preview.gif)](docs/media/chacha-pa-demo.mp4)
 
@@ -45,21 +50,20 @@ Requires Python 3.10+.
 pip install -r requirements.txt
 ```
 
-**Use your Claude plan (no API key):** the SDK ships with the Claude Code CLI. Sign in once:
+Then sign in to Claude Code your way (ChaCha PA uses whatever Claude Code uses):
+
+| Mode | How | Who it's for |
+|---|---|---|
+| **API key** (recommended if you share, host or automate) | Set `ANTHROPIC_API_KEY` in your shell or `.env`. Billed per use on your Anthropic account. | Everyone. This is the mode Anthropic recommends for apps built on the Agent SDK. |
+| **Claude plan** (personal use) | Run `claude`, then `/login`, and make sure `ANTHROPIC_API_KEY` is **not** set. Uses your plan's limits. | You, on your own computer, for yourself. |
 
 ```bash
-# if you already use Claude Code and are logged in, you're done
-claude            # then run /login and pick your Claude account
-```
-
-Important: make sure `ANTHROPIC_API_KEY` is **not** set in your shell. If it is, the SDK uses it and
-bills API credits instead of your plan.
-
-```bash
-echo $ANTHROPIC_API_KEY        # should print nothing
-unset ANTHROPIC_API_KEY        # macOS/Linux
+echo $ANTHROPIC_API_KEY        # empty means Claude plan mode; set means API key mode
+unset ANTHROPIC_API_KEY        # macOS/Linux, to switch to plan mode
 # Windows PowerShell:  Remove-Item Env:ANTHROPIC_API_KEY
 ```
+
+The app shows the active mode in the sidebar ("Claude plan" or "API key").
 
 ## Run
 
@@ -117,12 +121,18 @@ python -m server              # open http://127.0.0.1:8000
 python -m server --fake       # demo mode: a scripted run, no model calls, nothing billed
 ```
 
-- Runs use your Claude plan login, same as the CLI. The sidebar shows "Claude plan" or "API key".
-- Several runs can go at once. Closing the browser doesn't stop them.
-- Tools come from `tools.catalog.json`: files, web, a real browser (Playwright MCP), shell (opt-in,
-  sandboxed), Gmail and Google Calendar (set their URLs and tokens in `.env`, see `.env.example`),
-  and any Claude Code plugin you put in `plugins/`. Pick which ones a run may use under Options.
-- Anything that sends or changes something outside (email, calendar) pauses for your Approve / Deny.
+- Runs use the same sign-in as Claude Code on your computer. The sidebar shows "Claude plan" or "API key".
+- Several runs can go at once, and independent tasks inside a run go in parallel. Closing the browser doesn't stop them.
+- Each task uses the cheapest model that fits (haiku, sonnet, opus) and steps up once if it fails.
+  The Cheap preset in Options keeps usage low.
+- **Teams:** save a team (members, tools, memory), give it a schedule or a webhook, and chat with it
+  in its room, even while it works.
+- **Tools** come from `tools.catalog.json`: files, web, a real browser (Playwright MCP), shell (opt-in,
+  sandboxed), ElevenLabs and TikTok (keys in `.env`), any Claude Code plugin in `plugins/`, and,
+  when Claude Code is signed in with a Claude plan, **your claude.ai connectors** (Figma, Gmail,
+  Notion, Slack…), found automatically. With an API key, add services as MCP entries in the catalog instead.
+- Anything that sends or changes something outside pauses for your Approve / Deny. Each agent only
+  gets the tools and connectors its job needs.
 - The server only listens on 127.0.0.1. To reach it from elsewhere, set `APP_TOKEN` and put it behind
   Cloudflare Tunnel + Access (see `docs/ARCHITECTURE.md`).
 
@@ -148,7 +158,8 @@ Also built in:
 - Everything runs inside `runs/<timestamp>/workspace`.
 
 Note on cost: on a Claude plan the "cost" is the SDK's estimate in API dollars. You aren't charged
-that amount, but it uses your plan's 5-hour and weekly limits, so it is still a good meter.
+that amount, but it uses your plan's limits, so it is still a good meter. With an API key it is close
+to what you are billed.
 A typical run with 3 to 4 agents is roughly 20 to 40 model calls.
 
 ## Project layout
@@ -171,9 +182,30 @@ tests/test_tools.py        offline tests (fake runner, no model calls)
 python -m pytest tests -q
 ```
 
+## Sign-in and terms
+
+ChaCha PA has no login code. It never asks for, reads, stores or sends your Claude credentials. It
+starts the Claude Code that is installed on your computer, and Claude Code signs in however you set it up.
+
+Anthropic's Agent SDK docs say that, unless Anthropic has approved it, third-party developers may not
+offer claude.ai login or plan rate limits for their products. So:
+
+| You want to | Use |
+|---|---|
+| Run it for yourself on your own computer | Your Claude plan or an API key. Either works. |
+| Share it, host it for others, or run always-on teams heavily | Your own **API key** (`ANTHROPIC_API_KEY`). |
+| Offer it to others on their Claude plans | Ask Anthropic for approval first. |
+
+- Self-hosted only: the project is not offered as a hosted service. Everyone runs their own copy
+  with their own sign-in and their own keys.
+- claude.ai connectors only load when Claude Code is signed in with a claude.ai account. In API key
+  mode, add the services you need as MCP entries in `tools.catalog.json` (keys in `.env`).
+- Rules change. Check [Anthropic's Agent SDK docs](https://code.claude.com/docs/en/agent-sdk/overview)
+  and your plan's terms before relying on plan login for automation.
+
 ## Ideas to extend
 
-- Parallel `assign_task` with per-agent subfolders
-- Persist good agent definitions and reuse them across runs
-- Human approval step before `finish`
-- Swap to an API key for production use (set `ANTHROPIC_API_KEY`, nothing else changes)
+- Team builder: "I want a marketing team" proposes members, connectors and a schedule to save (M9)
+- Pick up MCP servers you added to your own Claude Code, so API key users don't set tools up twice
+- Docker sandbox per agent
+- OpenRouter and other model providers

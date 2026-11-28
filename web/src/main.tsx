@@ -12,6 +12,9 @@ import { Files } from './pages/Files'
 import { History } from './pages/History'
 import { NewRun } from './pages/NewRun'
 import { RunPage } from './pages/RunPage'
+import { TeamBuilder } from './pages/TeamBuilder'
+import { TeamEdit } from './pages/TeamEdit'
+import { TeamPage } from './pages/TeamPage'
 import { ORCHESTRATOR_COLOR } from './state/reducer'
 
 function Login({ onDone }: { onDone: () => void }) {
@@ -52,6 +55,10 @@ function App() {
           <Route index element={<NewRun />} />
           <Route path="/runs/:runId" element={<RunPage />} />
           <Route path="/history" element={<History />} />
+          <Route path="/teams/new" element={<TeamBuilder />} />
+          <Route path="/teams/new/edit" element={<TeamEdit />} />
+          <Route path="/teams/:teamId" element={<TeamPage />} />
+          <Route path="/teams/:teamId/edit" element={<TeamEdit />} />
         </Route>
         <Route path="/runs/:runId/files/*" element={<Files />} />
       </Routes>

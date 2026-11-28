@@ -10,7 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from orchestra import fake
-from orchestra.catalog import Catalog, load_catalog
+from orchestra.catalog import Catalog, load_catalog, with_connectors
+from orchestra.connectors import discover as discover_connectors
 from orchestra.config import Config
 from orchestra.gitsafe import RepoError, check_allowed, prepare_repo
 from orchestra.orchestrator import continue_task, create_run, execute_run, follow_up_task
@@ -46,10 +47,21 @@ class RunManager:
         self.fake_delay = fake_delay
         self.runner = runner
         self.client_factory = client_factory
-        self.catalog = catalog or (fake.demo_catalog() if self.fake_mode else load_catalog())
+        self._catalog = catalog
+        self.discover = discover_connectors   # your claude.ai connectors; swapped out in tests
         self.notify = notify
         self.repos_root = repos_root if repos_root is not None else os.environ.get("REPOS_ROOT")
         self.active: dict[str, RunHandle] = {}
+        self.on_end = None   # async callback(state) after a run ends; set by the team runner
+
+    @property
+    def catalog(self) -> Catalog:
+        """The tool catalog plus your claude.ai connectors (cached 5 min; demo ones in demo mode)."""
+        if self._catalog is not None:
+            return self._catalog
+        if self.fake_mode:
+            return fake.demo_catalog(connectors=True)
+        return with_connectors(load_catalog(), self.discover())
 
     # ---- lifecycle ------------------------------------------------------------
 
@@ -69,7 +81,8 @@ class RunManager:
         self.index.rebuild(self.runs_dir)
         return n
 
-    async def start(self, task: str, options: dict | None = None, parent: dict | None = None) -> str:
+    async def start(self, task: str, options: dict | None = None, parent: dict | None = None, *,
+                    team: dict | None = None, trigger: dict | None = None) -> str:
         task = (task or "").strip()
         options = dict(options or {})
         parent_id, seed, mode = None, None, None
@@ -113,7 +126,8 @@ class RunManager:
             seed = None
 
         state = create_run(task, config, self.runs_dir, workspace, repo=repo, branch=branch,
-                           parent_id=parent_id, seed_from=seed, listeners=[])
+                           parent_id=parent_id, seed_from=seed, listeners=[], team=team,
+                           trigger=trigger or {"kind": "manual"})
         handle = RunHandle(state=state)
         self.active[state.run_id] = handle
         state.add_listener(lambda e, h=handle: self._on_event(h, e))
@@ -124,7 +138,7 @@ class RunManager:
     async def _execute(self, handle: RunHandle) -> None:
         state = handle.state
         if self.fake_mode:
-            make_runner, script = fake.pick_demo(state.task)
+            make_runner, script = fake.pick_demo(state.task, state.team)
             runner = self.runner or make_runner(self.fake_delay)
             factory = self.client_factory or fake.fake_client_factory(script, {"state": state})
         else:
@@ -142,6 +156,11 @@ class RunManager:
             self.active.pop(state.run_id, None)
             for q in list(handle.queues):
                 q.put_nowait(None)
+            if self.on_end and state.team:
+                try:
+                    await self.on_end(state)
+                except Exception:
+                    pass
 
     def _on_event(self, handle: RunHandle, e: dict) -> None:
         for q in list(handle.queues):
@@ -174,6 +193,15 @@ class RunManager:
             await asyncio.wait_for(asyncio.shield(h.task), timeout=5)
         except (asyncio.TimeoutError, asyncio.CancelledError):
             pass
+
+    def steer(self, run_id: str, text: str) -> None:
+        """Pass your message to a running orchestrator (it sees it with its next tool result)."""
+        h = self.active.get(run_id)
+        if not h or h.state.status not in ("created", "running"):
+            raise RunError(409, "Run is not running")
+        if not (text or "").strip():
+            raise RunError(400, "Message is empty")
+        h.state.steer(text)
 
     def resolve_approval(self, run_id: str, approval_id: str, approve: bool) -> None:
         h = self.active.get(run_id)

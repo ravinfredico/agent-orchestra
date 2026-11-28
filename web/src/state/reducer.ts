@@ -15,7 +15,7 @@ export function agentAccessory(index: number) {
 export function emptyRun(id = ''): RunView {
   return {
     id, task: '', title: '', status: 'created', options: {}, authMode: '', repo: null, branch: null,
-    parentId: null, startedAt: null, endedAt: null, lastEventAt: null, costUsd: 0, modelCalls: 0,
+    parentId: null, teamId: null, teamName: null, startedAt: null, endedAt: null, lastEventAt: null, costUsd: 0, modelCalls: 0, usageByAgent: {}, usageByModel: {},
     assignments: 0, agents: {}, agentOrder: [], tasks: {}, approvals: {}, files: {}, thread: [],
     final: '', giveUp: false, budgetReason: '', error: null, replanning: false, playbook: null, lastSeq: 0, announcements: [],
   }
@@ -40,9 +40,14 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       Object.assign(r, {
         id: e.run_id, task: e.task ?? '', title: e.title ?? '', status: 'running', options: e.options ?? {},
         authMode: e.auth_mode ?? '', repo: e.repo ?? null, branch: e.branch ?? null, parentId: e.parent_id ?? null,
+        teamId: e.team_id ?? null, teamName: e.team_name ?? null,
         startedAt: e.t,
       })
       r.thread.push({ kind: 'task_message', seq: e.seq, text: e.task ?? '' })
+      break
+    case 'user_message':
+      r.thread.push({ kind: 'user_message', seq: e.seq, text: e.text ?? '' })
+      announce(r, e, `You said: ${e.text ?? ''}`)
       break
     case 'playbook_chosen':
       r.playbook = { id: e.id, title: e.title }
@@ -53,7 +58,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       break
     case 'agent_created': {
       r.agents[e.name] = {
-        name: e.name, role: e.role ?? '', tools: e.tools ?? [], model: e.model ?? '',
+        name: e.name, role: e.role ?? '', tools: e.tools ?? [], model: e.model ?? '', tierReason: e.tier_reason ?? '',
         colorIndex: e.color_index ?? r.agentOrder.length, activity: '', currentTask: null, passed: 0, failed: 0,
       }
       r.agentOrder = [...r.agentOrder, e.name]
@@ -69,6 +74,8 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       r.tasks[e.task_id] = {
         taskId: e.task_id, title: e.title || e.task_id, agent: e.agent, task: e.task ?? '', doneWhen: e.done_when ?? '',
         replaces: e.replaces ?? '', replacedBy: '', status: 'pending', attempts: 0, short: '', history: [],
+        tier: e.tier ?? '', tierReason: e.tier_reason ?? '', checks: e.checks ?? [], checksOnly: !!e.checks_only,
+        dependsOn: e.depends_on ?? [], notStarted: '',
       }
       r.thread.push({ kind: 'task', seq: e.seq, taskId: e.task_id })
       r.replanning = false
@@ -77,6 +84,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       const t = task(e.task_id)
       if (t) {
         t.attempts = e.attempt
+        if (e.tier) t.tier = e.tier
         t.status = e.attempt > 1 ? 'retrying' : 'running'
         const a = agent(t.agent)
         if (a) { a.currentTask = t.taskId; a.activity = '' }
@@ -107,7 +115,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (t) {
         t.status = 'sent_back'
         t.short = e.short ?? ''
-        t.history = [...t.history, { attempt: e.attempt, passed: false, reason: e.reason ?? '', short: e.short ?? '' }]
+        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: false, reason: e.reason ?? '', short: e.short ?? '', checkedBy: e.checked_by ?? 'model', checks: e.checks ?? [] }]
         announce(r, e, `${t.title}: try ${e.attempt} sent back. ${e.short || e.reason || ''}`)
       }
       break
@@ -117,7 +125,7 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (t) {
         t.status = 'done'
         t.short = e.short ?? ''
-        t.history = [...t.history, { attempt: e.attempt, passed: true, reason: e.reason ?? '', short: e.short ?? '' }]
+        t.history = [...t.history, { attempt: e.attempt, tier: t.tier, passed: true, reason: e.reason ?? '', short: e.short ?? '', checkedBy: e.checked_by ?? 'model', checks: e.checks ?? [] }]
         const a = agent(t.agent)
         if (a) { a.currentTask = null; a.activity = ''; a.passed += 1 }
         announce(r, e, `${t.title} passed`)
@@ -128,9 +136,14 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       const t = task(e.task_id)
       if (t) {
         t.status = 'failed'
+        r.replanning = true
+        if (!e.attempts && e.reason) {  // never started: its agent did nothing wrong
+          t.notStarted = e.reason
+          announce(r, e, `${t.title} not started`)
+          break
+        }
         const a = agent(t.agent)
         if (a) { a.currentTask = null; a.activity = ''; a.failed += 1 }
-        r.replanning = true
         announce(r, e, `${t.title} failed after ${e.attempts} tries`)
       }
       break
@@ -157,10 +170,22 @@ export function reduce(prev: RunView, e: RunEvent): RunView {
       if (ap) r.approvals[e.approval_id] = { ...ap, decision: e.decision }
       break
     }
-    case 'usage':
+    case 'usage': {
       r.costUsd = e.cost_usd ?? r.costUsd
       r.modelCalls = e.model_calls ?? r.modelCalls
+      const delta = e.delta_usd ?? 0
+      const who = e.agent || 'unknown'
+      const model = e.model || 'unknown'
+      const a = r.usageByAgent[who] ?? { costUsd: 0, calls: 0, role: e.role ?? '', models: [], tasks: [] }
+      r.usageByAgent = { ...r.usageByAgent, [who]: {
+        ...a, costUsd: a.costUsd + delta, calls: a.calls + 1,
+        models: a.models.includes(model) ? a.models : [...a.models, model],
+        tasks: !e.task_id || a.tasks.includes(e.task_id) ? a.tasks : [...a.tasks, e.task_id],
+      } }
+      const m = r.usageByModel[model] ?? { costUsd: 0, calls: 0 }
+      r.usageByModel = { ...r.usageByModel, [model]: { costUsd: m.costUsd + delta, calls: m.calls + 1 } }
       break
+    }
     case 'budget_exhausted':
       r.budgetReason = e.reason ?? ''
       break
@@ -229,8 +254,11 @@ export function cardLook(t: TaskCardState, r?: RunView, maxAttempts = 3): CardLo
   }
   const stopped = r && !isLive(r)
   switch (t.status) {
-    case 'pending':
-      return { mood: 'sleepy', line: stopped ? 'Not started' : 'Queued', dot: 'border', pips }
+    case 'pending': {
+      const waits = (t.dependsOn || []).filter((d) => r?.tasks[d] && r.tasks[d].status !== 'done').map((d) => r!.tasks[d].title)
+      const line = stopped ? 'Not started' : waits.length ? `Queued · waits for ${waits.join(', ')}` : 'Queued'
+      return { mood: 'sleepy', line, dot: 'border', pips }
+    }
     case 'running':
       return { mood: stopped ? 'sleepy' : 'working', line: stopped ? `Interrupted · try ${t.attempts}` : `Working · try ${t.attempts}`, dot: 'text', pips }
     case 'retrying':
@@ -242,6 +270,10 @@ export function cardLook(t: TaskCardState, r?: RunView, maxAttempts = 3): CardLo
     case 'done':
       return { mood: 'happy', line: fails ? `Passed on try ${t.attempts}` : 'Passed', dot: 'pass', pips }
     case 'failed':
+      if (t.notStarted) {
+        const failed = (t.dependsOn || []).filter((d) => r?.tasks[d] && r.tasks[d].status !== 'done').map((d) => r!.tasks[d].title)
+        return { mood: 'sleepy', line: `Not started · ${failed.length ? `${failed.join(', ')} failed` : 'out of budget'}`, dot: 'fail', pips: [] }
+      }
       return { mood: 'sad', line: `Failed · ${t.attempts} ${t.attempts === 1 ? 'try' : 'tries'}`, dot: 'fail', pips }
     case 'replaced': {
       const by = r?.tasks[t.replacedBy]?.title || t.replacedBy

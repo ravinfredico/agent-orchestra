@@ -57,7 +57,7 @@ server/
   notify.py                 ntfy (M5)
 orchestra/fake.py           scripted runner + client: offline tests and `python -m server --fake`
 web/                        NEW: React app (Vite). Builds to web/dist
-replay/                     NEW: static replay page for the portfolio
+replay/                     static replay page: README; build output in replay/dist (web/src/replay is the source)
 widgets/                    NEW: scriptable.js (iPhone), android-kwgt.md
 tools.catalog.json          NEW: the tool catalog
 tests/                      pytest; web/src/**/*.test.tsx for Vitest
@@ -120,6 +120,14 @@ All JSON. All routes need auth when a token is configured (section 13).
 | `DELETE /api/runs/{id}` | | `204`. Refused with `409` while running. |
 | `GET /api/catalog` | | `[CatalogEntry]` without secrets |
 | `GET /api/playbooks` | | `[{id, title, when}]` |
+| `POST /api/runs/{id}/messages` | `{text}` | `202`. Steering: your message reaches the orchestrator at its next step. `409` if not running |
+| `GET /api/teams` | | `[Team + active_run, approvals, setup]` (approvals and setup worked out from the catalog, see 9g) |
+| `POST /api/teams/propose` | `{goal}` | `{team, summary, questions, approvals, setup, cost_usd}`. Nothing is saved. `400` empty goal, `422` no usable team |
+| `POST /api/teams` | `Team` fields | `201 Team`. `400` with a plain reason (unknown tool, bad cron, unknown time zone) |
+| `GET/PUT/DELETE /api/teams/{id}` | `PUT`: any Team fields, `memory` replaces memory.md | `Team` / `204` (`409` while its run is going) |
+| `GET /api/teams/{id}/room` | query `limit` (200) | `{items: [RoomItem], active_run}` |
+| `POST /api/teams/{id}/messages` | `{text}` | `202 {run_id, steered}`: starts a run, or steers the running one |
+| `POST /api/hooks/{team_id}/{secret}` | any body (64 KB max) | `202 {run_id}`. No login: the secret in the URL is the key. `404` if wrong or the hook is off |
 | `GET /api/status` | | widget shape, below |
 | `GET /api/health` | | `{ok, auth_mode, version, catalog: [ids]}` |
 
@@ -127,8 +135,14 @@ Shapes:
 ```jsonc
 // options (all optional; defaults shown)
 {"allow_bash": false, "repo": "", "orchestrator_model": "sonnet", "worker_model": "sonnet",
- "checker_model": "haiku", "max_cost": 5.0, "max_agents": 6, "max_assignments": 15,
- "max_attempts": 3, "catalog": ["*"], "allowed_domains": []}
+ "pick_tier": true, "max_tier": "opus", "checker_model": "haiku", "max_cost": 5.0,
+ "max_agents": 6, "max_assignments": 15, "max_attempts": 3, "max_steps": 25, "max_parallel": 3,
+ "catalog": ["*"], "allowed_domains": []}
+// worker_model: the default tier when the orchestrator names none (pick_tier: true),
+//   or the tier every worker uses (pick_tier: false).
+// max_tier: highest tier a pick or a step-up may reach. max_steps: tool-use turns per try.
+// The web app's Cheap preset (web/src/presets.ts): worker_model haiku, max_tier sonnet,
+//   max_cost 1, max_attempts 2, max_steps 15, max_assignments 8.
 
 // RunSummary
 {"id": "20261123-091402-a3f1c2", "title": "Indonesian e-wallets report", "task": "...",
@@ -138,8 +152,12 @@ Shapes:
  "repo": null, "branch": null, "parent_id": null}
 
 // RunDetail = RunSummary + 
-{"options": {...}, "agents": [{"name", "role", "tools", "model", "color_index", "status"}],
- "board": [{"task_id", "title", "agent", "status", "attempts", "done_when", "feedback", "replaces", "replaced_by"}],
+{"options": {...}, "agents": [{"name", "role", "tools", "model", "tier_reason", "color_index", "status"}],
+ "board": [{"task_id", "title", "agent", "status", "attempts", "done_when", "feedback", "replaces", "replaced_by",
+            "tier", "tier_reason", "checks", "checks_only", "depends_on", "owns",
+            "history": [{"attempt", "tier", "passed", "reason", "short", "checked_by", "checks"}]}],
+ "usage": {"by_agent": {"<name>": {"cost_usd", "calls", "role", "models", "tasks"}},
+           "by_model": {"<model>": {"cost_usd", "calls"}}},
  "files": [...], "final": "...", "error": null, "pending_approvals": [...], "last_seq": 57}
 
 // GET /api/status (for widgets)
@@ -162,23 +180,24 @@ Every line in `log.jsonl` and every SSE message is one event:
 
 | Type | Fields | Notes |
 |---|---|---|
-| `run_started` | `task, title, options, workspace, repo, branch, parent_id, auth_mode` | first event |
+| `run_started` | `task, title, options, workspace, repo, branch, parent_id, auth_mode, team_id, team_name, trigger` | first event. `trigger`: `{kind: manual \| message \| schedule \| webhook, ...}` (M8) |
+| `user_message` | `text` | you wrote during the run (steering, M8). The orchestrator gets it with its next tool result |
 | `playbook_chosen` | `id, title` | orchestrator read a playbook (section 9b) |
 | `orchestrator_said` | `text` | orchestrator's text blocks |
 | `nudge` | `round, pending` | engine pushed the orchestrator to continue; shown only in the raw log |
-| `agent_created` | `name, role, tools, model, color_index` | `tools` are catalog ids |
-| `task_assigned` | `task_id, title, agent, task, done_when, replaces` | |
-| `attempt_started` | `task_id, attempt` | |
+| `agent_created` | `name, role, tools, model, tier_reason, color_index` | `tools` are catalog ids. `model` is the agent's tier (haiku, sonnet, opus) |
+| `task_assigned` | `task_id, title, agent, task, done_when, replaces, tier, tier_reason, checks, checks_only, depends_on, owns` | `tier` is the task's model, from the task or its agent. `checks` are labels of cheap checks (section 9d) |
+| `attempt_started` | `task_id, attempt, tier` | `tier` goes up one step after a failed attempt, once (M7) |
 | `worker_activity` | `task_id, agent, tool, summary` | `summary` max 80 chars, e.g. "reading research/dana.md" |
 | `file_written` | `task_id, agent, path, size` | path relative to the workspace |
 | `checker_started` | `task_id, attempt` | |
-| `attempt_failed` | `task_id, attempt, reason, short` | `short` max 6 words |
-| `task_passed` | `task_id, attempt, reason` | |
-| `task_failed` | `task_id, attempts` | |
+| `attempt_failed` | `task_id, attempt, reason, short, checked_by, checks?` | `short` max 6 words. `checked_by`: `model`, `checks` or `worker` (it errored). `checks`: `[{check, passed, detail}]` |
+| `task_passed` | `task_id, attempt, reason, short, checked_by, checks?` | as `attempt_failed` |
+| `task_failed` | `task_id, attempts, reason?` | `attempts: 0` with `reason`: never started (a dependency failed, or out of budget). It can be replaced like any failed task |
 | `task_replaced` | `task_id, by` | |
 | `approval_requested` | `approval_id, task_id, agent, tool, catalog_id, preview` | `preview` is a redacted summary of the tool input |
 | `approval_resolved` | `approval_id, decision` | `approved`, `denied`, or `expired` |
-| `usage` | `cost_usd, delta_usd, model_calls, turns, assignments` | totals after this change |
+| `usage` | `cost_usd, delta_usd, model_calls, turns, assignments, agent, role, model, task_id` | totals after this change. `agent`, `role` (orchestrator, worker, checker), `model` and `task_id` say who spent `delta_usd` (M7). The orchestrator's usage lands when its turn ends |
 | `budget_exhausted` | `reason` | |
 | `finished` | `give_up, result` | terminal. `give_up` true means out of budget |
 | `run_failed` | `error, kind, hint` | terminal. `kind`: `auth`, `limit`, `crash` |
@@ -229,11 +248,31 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
   - mcp ids add `mcp_servers[id] = server`, and the server's tools go in `allowed_tools`, except
     outward ones
   - plugin ids add to `plugins`
-- **claude.ai connectors (status):** not verified yet; it needs your real Claude login (task 1.13).
-  Until then Gmail and Google Calendar ship as `kind: "mcp"` entries that read their URL and token from
-  `.env` (`GMAIL_MCP_URL`, `GMAIL_MCP_TOKEN`, `GCAL_MCP_URL`, `GCAL_MCP_TOKEN`). Without those they show
-  as "not set up" and the orchestrator is not offered them.
+- **claude.ai connectors (`orchestra/connectors.py`, F29 to F30):** Claude Code's docs say sessions
+  signed in with a claude.ai account, Agent SDK runs included, load the account's claude.ai connectors
+  automatically; tools are named `mcp__claude_ai_<Name>__<tool>`. So:
+  - Discovery: `claude mcp list` (health check, no model call), parsed for `claude.ai <Name>` lines,
+    cached 5 minutes. Each becomes `kind: "connector"`, id `connector.<name>`, `risk: outward`, with
+    status: connected, or "not set up" with the sign-in fix.
+  - The server adds them on every catalog read (`RunManager.catalog`); the CLI adds them per run.
+    Demo mode shows sample Figma, Notion and Slack connectors.
+  - Per agent (`Catalog.toolset`): chosen connectors go in `read_only_servers` (read name patterns
+    run freely, everything else goes through the approval callback). Connectors not chosen go in
+    `disallowed_tools`. An agent with none, the orchestrator and the checker run with
+    `ENABLE_CLAUDEAI_MCP_SERVERS=false`, so connectors aren't loaded at all.
+  - The approval callback denies any tool the agent wasn't given (`Toolset.owns`).
+  - Not yet confirmed on a real login (task 1.13). The `.env` Gmail and Calendar MCP entries stay as
+    a fallback.
 - **Plugins:** every folder in `plugins/` with `.claude-plugin/plugin.json` becomes `plugin.<name>`.
+- **App variables:** `${ORCHESTRA_ROOT}` (this repo) and `${PYTHON}` (the running Python) are filled in
+  by the app, so entries can start servers that ship in `mcp_servers/` on any OS.
+- **Video-team entries (2026-11-27):**
+  - `elevenlabs`: `uvx elevenlabs-mcp` with `ELEVENLABS_API_KEY`; files land in the workspace. Tools
+    matching `*call*`, `*agent*`, `*phone*`, `*whatsapp*` are outward (calls and voice agents).
+  - `tiktok`: `${PYTHON} ${ORCHESTRA_ROOT}/mcp_servers/tiktok.py` with `TIKTOK_ACCESS_TOKEN`, on TikTok's
+    v2 APIs: `creator_info`, `list_videos`, `post_status` (read); `upload_draft`, `publish_video`
+    (outward). Uploads go in one chunk up to 64 MB. `publish_video` is `SELF_ONLY` unless
+    `TIKTOK_PRIVACY` or the call says otherwise, because unaudited apps can only post privately.
 - **Picking per run:** the new-run Options panel lists non-builtin entries as chips (from
   `GET /api/catalog`). The chosen ids go in `options.catalog`. Builtins are always available.
 - The orchestrator prompt lists each enabled entry as `id: description (risk)`. The `create_agent`
@@ -244,12 +283,114 @@ The orchestrator can only give agents tools from the catalog. `tools.catalog.jso
 Inspired by Lauren Tan's pstack (`/poteto-mode` routes work to a playbook).
 - One markdown file per playbook in `orchestra/playbooks/`, front matter `id`, `title`, `when`.
   Body: steps, suggested roles and catalog tools, done-when templates, pitfalls.
-- Shipped: `research-report`, `build-with-tests`, `repo-change`, `writing`, `general`.
+- Shipped: `research-report`, `build-with-tests`, `repo-change`, `writing`, `short-video`, `general`.
 - The orchestrator prompt lists every playbook's summary. Its first tool call is
   `read_playbook(id)`, which returns the full text and logs `playbook_chosen`.
 - `options.playbook` (`"auto"` by default) lets you force one from the Options panel.
 - Playbooks give hints, not fixed roles: the orchestrator still invents the agents.
 - When a kind of run keeps failing the same way, fix the playbook's pitfalls, not only the prompt.
+
+## 9c. Parallel tasks (M7)
+`assign_tasks({tasks: [...]})` takes several tasks, each with the `assign_task` fields plus:
+- `depends_on`: task ids that must pass first, from the same batch or already done.
+- `owns`: files or folders only this task writes while it runs.
+
+Rules:
+- The whole batch is checked before anything starts: unknown agents or dependencies, loops, two
+  tasks that may run at once owning the same path, a path owned by a running task, or more tasks
+  than assignments left. Any problem refuses the batch and registers nothing.
+- All tasks are logged as `task_assigned` up front (queued cards). A task starts when its
+  dependencies have passed, its agent is free (one task per agent at a time), and fewer than
+  `max_parallel` (default 3) are running.
+- A task whose dependency did not pass is never started: `task_failed` with `attempts: 0` and a
+  `reason`. The orchestrator replaces it like any failed task.
+- With `owns`, the post-attempt file scan only reports changes inside the owned paths, so parallel
+  tasks don't claim each other's files.
+- The call returns when every task has ended: "N of M tasks passed", then each result.
+- Stop cancels the orchestrator's turn; `assign_tasks` cancels every running task before it returns.
+
+## 9d. Cheap checks (M7)
+`orchestra/checks.py`. A task can carry `checks`, run after each worker attempt and before the
+model checker, with no model call:
+
+| Type | Fields | Passes when |
+|---|---|---|
+| `file_exists` | `path` | the file exists in the workspace |
+| `file_count` | `glob, min` | at least `min` files match |
+| `contains` | `path, text` | the file contains the text (any case) |
+| `min_words` | `path, min` | the file has at least `min` words |
+| `command` | `run` | the command exits 0 within 120 s. Only when shell is on for the run |
+
+- A failing check fails the attempt with a reason for the worker; the model checker is skipped.
+- Passing checks are listed in the checker prompt so it doesn't redo them.
+- `checks_only: true` passes the task on passing checks, with no model checker.
+- Paths and globs can't leave the workspace. Commands run in the workspace, not in the SDK sandbox,
+  which is why they need shell on.
+
+## 9e. Teams, triggers and steering (M8)
+`server/teams.py`. A team is a folder `teams/<id>/` next to `runs/`:
+- `team.json`: `name, goal, members [{name, role, system_prompt, tools, wants, tier}], outputs, schedule [{cron, task}],
+  timezone, enabled, hook {enabled, task, secret}, options` (run options, Cheap preset by default).
+- `memory.md`: your notes, plus a "Past runs" list. After each team run the app adds
+  `- <date> · <title> · <status>: <first 300 chars of the result>`. Past 8000 chars the oldest runs drop off.
+- `events.jsonl`: team-level events, today only `trigger_skipped`.
+
+A team run is a normal verified run with `team` and `trigger` set:
+- Its members are created (logged as `agent_created`) before the orchestrator starts, each with only the
+  tools that are usable now: a signed-out connector is skipped, and a `wants` tool joins once it exists.
+- The first prompt starts with the team's name, goal, members and memory (`prompts.team_context`).
+- `meta.json` and `run_started` carry `team_id` and `trigger`.
+
+Triggers (the only way a team spends usage; one run per team at a time):
+| Trigger | Starts | If the team is busy |
+|---|---|---|
+| Room message | a run with your message as the task | the message steers the running run |
+| Schedule slot | cron `minute hour day month weekday` in the team's time zone (empty: this machine's). The server checks every 20 s and fires each slot once per minute | skipped, logged as `trigger_skipped`, shown in the room |
+| Webhook | a run with the hook's task plus the posted data | the data steers the running run |
+
+- Pause (`enabled: false`) stops schedule slots. Messages and the webhook still work.
+- Slots missed while the server was off are not caught up.
+- No daily cap (your decision, 2026-11-27). Teams use the Cheap preset unless you change it.
+
+Steering (`RunState.steer`): your message is logged as `user_message` and queued. Every orchestra
+tool result carries queued messages to the orchestrator. `finish` is refused while any are unread,
+so it can't end the run without seeing what you said. A message that arrives after `finish` was
+accepted starts the team's next run. Long `assign_tasks` batches delay delivery until they return.
+
+The room (`room_items`) is folded from the team's run logs plus `events.jsonl`: your messages (the
+task of a message-started run and every `user_message`), orchestrator replies, hand-offs
+(`task_assigned`: orchestrator → agent), checker results, final results, and system lines.
+Approval requests show in the room with Approve and Deny (they call the run's approvals endpoint).
+
+## 9g. Team builder (M9)
+`orchestra/builder.py`. One message becomes a proposed team; you review, edit and save it.
+- `propose()`: one model call (`sonnet`, no tools, connectors off, JSON schema `SCHEMA`). The prompt lists
+  the catalog, your connectors included. Demo mode answers with `fake.demo_proposal()` (marketing, or
+  TikTok for video words) through the same cleaning.
+- `clean_proposal()`: 2 to 8 members, lowercase names, tiers haiku or sonnet (opus never proposed), bad
+  cron slots dropped, at most 2 questions. Tool ids are matched to the catalog ("Figma" →
+  `connector.figma`). Anything else goes to the member's `wants`. Nothing is added to the catalog.
+- `review(team, catalog)` (also on every Team from the API): `approvals` for connector and outward
+  tools, and `setup` steps: `connect` (a wanted connector: "Connect Gmail at claude.ai"), `sign_in`
+  (a connector that needs `/mcp`), `option` (Shell is off), `missing_tool` (not in the catalog).
+- Your answers to the questions go into the team's notes in `memory.md`. No second model call.
+- Money guard: any tool id matching `MONEY_TOOL` (trade, broker, order, payment, checkout...) is dropped and
+  listed in `refused`, whatever the model said. No catalog entry matches it (tested).
+- Finance goals (`FINANCE`: stocks, watchlist, portfolio...) get "Never trades." in the goal and
+  `FINANCE_RULE` in every member's prompt: never buy, sell or advise trades; briefs end with "Not
+  financial advice."
+- `alert_task` (optional) turns on the team's webhook with that task, for alerts on fresh data.
+
+## 9f. Replay page (M6)
+- Source: `web/replay.html` and `web/src/replay/` (`Replay.tsx` player, `clock.ts` pacing and scrub,
+  `run.json` the recorded run, written by `scripts/make_fixtures.py` from the demo scenario).
+- It folds the log with the app's reducer and renders the app's thread, task cards and rail, inside a
+  `MemoryRouter` so no link leaves the page. No fetch, no SSE, no server.
+- Pacing ignores real gaps: each event holds for a fixed time by type (`holdAfter`), at 1×, 2× or 4×.
+  A position slider jumps to any event. The end shows "Replay finished" with the final result.
+- `scrub()` nulls `workspace`, `repo`, `branch`, and replaces machine paths and token-looking strings.
+- Build: `npm run build:replay` → `replay/dist/` (relative base, so it works under `/<repo>/`).
+- Publish: `.github/workflows/replay-pages.yml` (tests, build, deploy to Pages) on `main` or by hand.
 
 ## 10. Approvals for outward tools
 - Servers with outward tools are left out of `allowed_tools`, so the CLI asks the SDK's `can_use_tool`
@@ -294,6 +435,11 @@ runs/index.db    SQLite: runs table + FTS5 over task and title
 - `runs/` is in `.gitignore`.
 
 ## 13. Security
+**Sign-in:** the app contains no login code. It never asks for, reads, stores or sends Claude
+credentials. The SDK starts the installed Claude Code, which uses its own sign-in (`auth_mode()` only
+checks whether `ANTHROPIC_API_KEY` is set, to label the mode). Plan login is for personal use; see
+README "Sign-in and terms".
+
 - uvicorn binds to `127.0.0.1` only. The server refuses to start on any other host unless
   `APP_TOKEN` is set.
 - **Auth:** when `APP_TOKEN` is set, `POST /api/login` with the token sets an HttpOnly, SameSite=Strict

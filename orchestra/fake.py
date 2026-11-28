@@ -43,7 +43,7 @@ class FakeRunner:
         for key, t in self.tasks.items():
             if key in prompt:
                 return t
-        return FakeTask()
+        return self.tasks.setdefault("", FakeTask())   # unscripted work: one shared default, so tries count
 
     async def __call__(self, *, prompt, output_schema=None, cwd=None, on_tool_use=None, can_use_tool=None, **kw):
         t = self._find(prompt)
@@ -52,8 +52,8 @@ class FakeRunner:
             await asyncio.sleep(self.delay * 1.5)
             i = t.attempts - 1
             ok = t.verdicts[min(i, len(t.verdicts) - 1)]
-            reason = t.reasons[i] if i < len(t.reasons) else ("All criteria met." if ok else "Criteria not met.")
-            short = t.shorts[i] if i < len(t.shorts) else ("all criteria met" if ok else "criteria not met")
+            reason = t.reasons[i] if 0 <= i < len(t.reasons) else ("All criteria met." if ok else "Criteria not met.")
+            short = t.shorts[i] if 0 <= i < len(t.shorts) else ("all criteria met" if ok else "criteria not met")
             return AgentResult(text="", structured={"passed": ok, "reason": reason, "short": short},
                                turns=2, cost_usd=self.checker_cost)
         self.calls["worker"] += 1
@@ -124,10 +124,18 @@ DEMO_TASK = "Research the top 5 Indonesian e-wallets and write a comparison repo
 _WALLETS = ["gopay", "ovo", "dana", "shopeepay", "linkaja"]
 
 
-def demo_catalog() -> Catalog:
+def demo_catalog(connectors: bool = False) -> Catalog:
     entries = [_entry_from_dict(d) for d in BUILTIN_ENTRIES]
     entries.append(Entry(id="gmail", kind="mcp", risk="outward", server={"type": "http", "url": "http://demo"},
                          outward_tools=["send*"], description="Search, read and send email (demo)"))
+    entries.append(Entry(id="tiktok", kind="mcp", risk="outward", server={"type": "http", "url": "http://demo"},
+                         outward_tools=["post*", "schedule*"], description="Read post stats, schedule posts (demo)"))
+    if connectors:  # what your claude.ai connectors look like in the app (demo: nothing is called)
+        from .catalog import connector_entries
+        from .connectors import Connector
+        entries += connector_entries([Connector("claude.ai Figma", "https://mcp.figma.com/mcp", "connected"),
+                                      Connector("claude.ai Notion", "https://mcp.notion.com/mcp", "connected"),
+                                      Connector("claude.ai Slack", "https://mcp.slack.com/mcp", "needs_auth")])
     return Catalog(entries)
 
 
@@ -171,29 +179,35 @@ def demo_runner(delay: float = 0.6) -> FakeRunner:
 async def demo_script(tools):
     await tools.read_playbook({"id": "research-report"})
     yield "Plan: research each wallet, compare fees and features, then write the report. Research comes first. Hiring three agents."
-    for name, role, tl in [("researcher", "Finds fees, features and sources for each wallet", ["web", "files.write"]),
-                           ("analyst", "Turns research notes into comparison tables", ["files.read", "files.write"]),
-                           ("writer", "Writes the final report from the analysis", ["files.read", "files.write"])]:
-        await tools.create_agent({"name": name, "role": role, "system_prompt": f"You are the {name}.", "tools": tl})
+    for name, role, tl, tier, why in [
+            ("researcher", "Finds fees, features and sources for each wallet", ["web", "files.write"], "haiku", "search and notes"),
+            ("analyst", "Turns research notes into comparison tables", ["files.read", "files.write"], "haiku", "tables from notes"),
+            ("writer", "Writes the final report from the analysis", ["files.read", "files.write"], "sonnet", "long-form writing")]:
+        await tools.create_agent({"name": name, "role": role, "system_prompt": f"You are the {name}.", "tools": tl,
+                                  "tier": tier, "tier_reason": why})
     await tools.assign_task({"agent": "researcher", "task_id": "research-1", "title": "Research wallets",
                              "task": "[research] Research GoPay, OVO, DANA, ShopeePay and LinkAja. One file per wallet in research/.",
-                             "done_when": "research/ has 5 files, each with fees, features and 3+ source URLs"})
-    await tools.assign_task({"agent": "analyst", "task_id": "analysis-1", "title": "Compare fees",
-                             "task": "[analysis] Build a fee table and features matrix in analysis/comparison.md.",
-                             "done_when": "The fee table covers all 5 wallets; a features matrix with 5 columns"})
-    res = await tools.assign_task({"agent": "writer", "task_id": "report-1", "title": "Write the report",
-                                   "task": "[report-writer] Write report.md from analysis/ and research/.",
-                                   "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources"})
+                             "done_when": "research/ has 5 files, each with fees, features and 3+ source URLs",
+                             "checks": [{"type": "file_count", "glob": "research/*.md", "min": 5}]})
+    res = await tools.assign_tasks({"tasks": [
+        {"agent": "analyst", "task_id": "analysis-1", "title": "Compare fees", "owns": ["analysis/"],
+         "task": "[analysis] Build a fee table and features matrix in analysis/comparison.md.",
+         "done_when": "The fee table covers all 5 wallets; a features matrix with 5 columns"},
+        {"agent": "writer", "task_id": "report-1", "title": "Write the report", "depends_on": ["analysis-1"],
+         "owns": ["report.md"], "task": "[report-writer] Write report.md from analysis/ and research/.",
+         "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources"}]})
     if res.get("is_error"):
         yield "The writer can't search the research files. I'm hiring an editor who can, and giving it the report. It will email you when done."
         await tools.create_agent({"name": "editor", "role": "Assembles the report and compiles every source",
-                                  "system_prompt": "You are the editor.", "tools": ["files.read", "files.write", "gmail"]})
+                                  "system_prompt": "You are the editor.", "tools": ["files.read", "files.write", "gmail"],
+                                  "tier": "sonnet", "tier_reason": "editing and sources"})
         await tools.assign_task({"agent": "editor", "task_id": "report-2", "title": "Rewrite the report", "replaces": "report-1",
                                  "task": "[report-editor] Rewrite report.md. Grep research/ for every https:// URL and list them under Sources. Then email the user.",
                                  "done_when": "report.md has a summary, 5 wallet sections, the fee table, a recommendation, 10+ sources"})
     yield "Every task passed verification. Finishing."
-    await tools.finish({"result": "Wrote report.md comparing GoPay, OVO, DANA, ShopeePay and LinkAja on fees and features, "
-                                  "with a recommendation and 17 sources.\n\nFiles: report.md, analysis/comparison.md, research/ (5 files)."})
+    async for line in _finish(tools, "Wrote report.md comparing GoPay, OVO, DANA, ShopeePay and LinkAja on fees and features, "
+                                     "with a recommendation and 17 sources.\n\nFiles: report.md, analysis/comparison.md, research/ (5 files)."):
+        yield line
 
 
 # ---- build scenario: a small app with tests (picked for build-style tasks) -----------
@@ -268,9 +282,9 @@ async def demo_build_script(tools):
         yield "Shell is off, so nobody can run the code or the tests. Turn on shell commands for a checked build."
     extra = ["shell"] if shell else []
     await tools.create_agent({"name": "developer", "role": "Writes and fixes the app code", "system_prompt": "You are the developer.",
-                              "tools": ["files.read", "files.write", *extra]})
+                              "tools": ["files.read", "files.write", *extra], "tier": "sonnet", "tier_reason": "writes code"})
     await tools.create_agent({"name": "tester", "role": "Writes pytest tests and runs them", "system_prompt": "You are the tester.",
-                              "tools": ["files.read", "files.write", *extra]})
+                              "tools": ["files.read", "files.write", *extra], "tier": "haiku", "tier_reason": "tests from a spec"})
     await tools.assign_task({"agent": "developer", "task_id": "app-1", "title": "Write the todo app",
                              "task": "[dev-core] Write todo.py: add, list, done N, remove N. Save todos in todos.json.",
                              "done_when": '`python todo.py add "buy milk"` then `python todo.py list` prints "1. [ ] buy milk"'})
@@ -285,13 +299,299 @@ async def demo_build_script(tools):
                                          "Don't change test_todo.py. Add a README.md.",
                                  "done_when": "`pytest -q` exits 0 with at least 8 tests; README.md lists every command"})
     yield "Every task passed verification. Finishing."
-    await tools.finish({"result": "Built a todo CLI in todo.py (add, list, done, remove, saved in todos.json) with 11 passing "
-                                  "pytest tests. The tests caught a bug with bad todo numbers, which the developer fixed.\n\n"
-                                  "Files: todo.py, test_todo.py, README.md. Try it: python todo.py add \"buy milk\""})
+    async for line in _finish(tools, "Built a todo CLI in todo.py (add, list, done, remove, saved in todos.json) with 11 passing "
+                                     "pytest tests. The tests caught a bug with bad todo numbers, which the developer fixed.\n\n"
+                                     "Files: todo.py, test_todo.py, README.md. Try it: python todo.py add \"buy milk\""):
+        yield line
 
 
-def pick_demo(task: str):
-    """Demo mode: the build scenario for build-style tasks, otherwise the research one."""
+async def _finish(tools, result: str):
+    """finish, and if it was refused because you sent a message mid-run, acknowledge it and finish again."""
+    res = await tools.finish({"result": result})
+    if res.get("is_error") and "Message from the user" in res["content"][0]["text"]:
+        yield "Got your message. Noted for this result and the team's next run."
+        await tools.finish({"result": result})
+
+
+# ---- TikTok team scenario (picked for TikTok or video tasks and teams) ------------------
+
+TIKTOK_MEMBERS = [
+    {"name": "trendscout", "role": "Finds trends, sounds and hooks", "tools": ["web", "files.write"], "tier": "haiku"},
+    {"name": "analyst", "role": "Reads last week's post stats", "tools": ["tiktok", "files.write"], "tier": "haiku"},
+    {"name": "scriptwriter", "role": "Writes hooks, scripts and captions", "tools": ["files.read", "files.write"], "tier": "sonnet"},
+    {"name": "editor", "role": "Renders vertical videos with Remotion", "tools": ["files.read", "files.write"], "tier": "sonnet"},
+    {"name": "poster", "role": "Schedules posts, always with your approval", "tools": ["files.read", "tiktok"], "tier": "haiku"},
+]
+_IDEAS = [("01-kos-tour", "A Rp1.5 million kos room tour in Depok"), ("02-krl-rush", "Surviving the 7am KRL rush"),
+          ("03-thesis-cafe", "Ranking Jakarta cafes for thesis writing")]
+
+
+def demo_tiktok_runner(delay: float = 0.6) -> FakeRunner:
+    return FakeRunner({
+        "[tt-trends]": FakeTask(
+            shorts=["8 trends, 3 picked"], reasons=["trends.md lists 8 trends with sounds and why each fits; 3 are picked."],
+            tools=[("WebSearch", {"query": "TikTok trends Indonesia student life this week"}),
+                   ("WebFetch", {"url": "https://ads.tiktok.com/business/creativecenter/trends"})],
+            files=[("trends.md", "# Trends this week\n\n1. Room tours on a budget (sound: 'Lagi Tren')\n2. Commute POV\n3. Cafe rankings\n"
+                                 "\nPicked: room tour, commute POV, cafe ranking.")], cost=0.06),
+        "[tt-stats]": FakeTask(
+            shorts=["5 posts reviewed"], reasons=["stats.md covers last week's 5 posts with views, likes, watch time and 3 lessons."],
+            tools=[("mcp__tiktok__get_post_stats", {"days": 7})],
+            files=[("stats.md", "# Last week\n\n| Post | Views | Watch time |\n|---|---|---|\n| Cooking hack | 2.1k | 31% |\n"
+                                "| Campus tour | 18.4k | 64% |\n\nLessons: hooks under 2 s, faces in frame 1, skip cooking.")], cost=0.05),
+        "[tt-scripts]": FakeTask(
+            verdicts=[False, True], shorts=["2 hooks over 3 seconds", "3 scripts, hooks under 2 s"],
+            reasons=["Scripts 1 and 3 open with a 5 second intro; the stats say hooks must land in 2 seconds.",
+                     "All 3 scripts open with a hook under 2 seconds, have captions and 5 hashtags each."],
+            tools=[("Read", {"file_path": "trends.md"}), ("Read", {"file_path": "stats.md"})],
+            files=[(f"scripts/{slug}.md", f"# {title}\n\nHook (0-2 s): ...\n\nCaption: ...\n\n#anakkos #jakarta #mahasiswa #fyp #studentlife")
+                   for slug, title in _IDEAS], cost=0.2),
+        "[tt-render]": FakeTask(
+            shorts=["3 storyboards, 1080x1920"], reasons=["3 storyboards at 1080x1920 with voiceover lines, each under 30 s."],
+            tools=[("Read", {"file_path": "scripts/01-kos-tour.md"})],
+            files=[(f"videos/{slug}.storyboard.md", f"# {title}\n\nFormat: 1080x1920, 24 s, voiceover\n\n(demo: no real render)")
+                   for slug, title in _IDEAS], cost=0.22),
+        "[tt-post]": FakeTask(
+            shorts=["3 posts scheduled"], reasons=["3 posts scheduled for Mon, Wed and Fri at 18:00 WIB."],
+            outward=("mcp__tiktok__schedule_posts", {"posts": [s for s, _ in _IDEAS], "times": ["Mon 18:00", "Wed 18:00", "Fri 18:00"]}),
+            files=[("schedule.md", "# Scheduled\n\n- Mon 18:00 kos tour\n- Wed 18:00 KRL rush\n- Fri 18:00 thesis cafes")], cost=0.04),
+    }, delay=delay)
+
+
+async def demo_tiktok_script(tools):
+    await tools.read_playbook({"id": "short-video"})
+    yield ("Plan: the trend scout and the analyst work at the same time, then the script writer drafts 3 videos, "
+           "the editor renders them, and the poster schedules them once you approve.")
+    for m in TIKTOK_MEMBERS:
+        if m["name"] not in tools.s.agents:
+            await tools.create_agent({**m, "system_prompt": f"You are the team's {m['name']}.", "tier_reason": "team member"})
+    await tools.assign_tasks({"tasks": [
+        {"agent": "trendscout", "task_id": "trends-1", "title": "Find this week's trends", "owns": ["trends.md"],
+         "task": "[tt-trends] Find 8 student-life trends in Indonesia this week with sounds. Pick the 3 best. Save trends.md.",
+         "done_when": "trends.md lists 8 trends with a sound each and marks 3 picks",
+         "checks": [{"type": "file_exists", "path": "trends.md"}]},
+        {"agent": "analyst", "task_id": "stats-1", "title": "Review last week", "owns": ["stats.md"],
+         "task": "[tt-stats] Read last week's post stats. Save stats.md with a table and 3 lessons.",
+         "done_when": "stats.md has every post from the last 7 days and 3 lessons",
+         "checks": [{"type": "contains", "path": "stats.md", "text": "Lessons"}]},
+    ]})
+    msgs = tools.s.take_messages()
+    if msgs:
+        yield f"Got it: \"{msgs[-1]}\". The stats agree (cooking had the lowest watch time), so none of the 3 ideas are cooking."
+    await tools.assign_task({"agent": "scriptwriter", "task_id": "scripts-1", "title": "Write 3 scripts",
+                             "task": "[tt-scripts] Write 3 scripts from the picked trends, using the lessons in stats.md. One file each in scripts/.",
+                             "done_when": "3 scripts, each with a hook under 2 seconds, a caption and 5 hashtags",
+                             "checks": [{"type": "file_count", "glob": "scripts/*.md", "min": 3}]})
+    await tools.assign_task({"agent": "editor", "task_id": "render-1", "title": "Render 3 videos",
+                             "task": "[tt-render] Render the 3 scripts as 1080x1920 videos with a voiceover, under 30 s each.",
+                             "done_when": "3 vertical videos, each under 30 s, in videos/"})
+    yield "Videos are ready. The poster will schedule them for Mon, Wed and Fri at 18:00, after you approve."
+    await tools.assign_task({"agent": "poster", "task_id": "post-1", "title": "Schedule 3 posts",
+                             "task": "[tt-post] Schedule the 3 videos on TikTok for Mon, Wed and Fri at 18:00 WIB.",
+                             "done_when": "3 posts scheduled at the agreed times"})
+    async for line in _finish(tools, "3 TikToks ready and scheduled for Mon, Wed and Fri at 18:00: a kos room tour, the KRL rush, "
+                                     "and a thesis-cafe ranking. No cooking. Hooks are under 2 seconds, as last week's stats suggest.\n\n"
+                                     "Files: trends.md, stats.md, scripts/ (3), videos/ (3), schedule.md."):
+        yield line
+
+
+# ---- Marketing team (M9 demo): proposal and run ------------------------------------------
+
+MARKETING_PROPOSAL = {
+    "name": "Marketing team",
+    "goal": "Plan the week's social posts from last month's results and draft the newsletter. Nothing goes out without your OK.",
+    "summary": "Here is a team of 4 built on your Notion, Figma, Slack and Gmail. Check it, change anything, then save. Nothing runs until you do.",
+    "members": [
+        {"name": "strategist", "role": "Reads last month's results in Notion and sets the week's angle", "tier": "haiku",
+         "tools": ["connector.notion", "files.write"],
+         "system_prompt": "You are the team's strategist. Read last month's results in Notion and pick one angle for the week. Write insights.md with 3 numbers and the angle."},
+        {"name": "copywriter", "role": "Writes the posts, captions and newsletter text", "tier": "sonnet",
+         "tools": ["files.read", "files.write"],
+         "system_prompt": "You are the team's copywriter. Write short, specific posts in the brand's voice from insights.md. No filler, one idea per post."},
+        {"name": "designer", "role": "Builds the visuals in your Figma file", "tier": "sonnet",
+         "tools": ["connector.figma", "files.read"],
+         "system_prompt": "You are the team's designer. Build one visual per post in the team's Figma file, using its existing styles. Ask before you edit."},
+        {"name": "coordinator", "role": "Posts the plan to Slack and drafts the newsletter in Gmail", "tier": "haiku",
+         "tools": ["connector.slack", "connector.gmail", "files.read", "files.write"],
+         "system_prompt": "You are the team's coordinator. Post the week's plan to Slack and draft the newsletter in Gmail. Every post and draft waits for approval."},
+    ],
+    "schedule": [{"cron": "0 9 * * 1", "task": "Plan this week's posts: angle, 5 posts, visuals, and the plan in Slack"},
+                 {"cron": "0 16 * * 5", "task": "Draft this week's newsletter in Gmail from what we posted"}],
+    "outputs": ["Weekly content plan (plan.md)", "5 post drafts with captions", "Visuals in your Figma file", "Newsletter draft in Gmail"],
+    "questions": [{"question": "Which Slack channel gets the plan?", "options": ["#marketing", "#general"]}],
+}
+
+TIKTOK_PROPOSAL = {
+    "name": "TikTok studio", "goal": "Make and schedule 3 TikToks a week and learn from the stats. Posting always asks first.",
+    "summary": "Here is a team of 5 that researches, writes, renders and schedules TikToks. Check it, then save.",
+    "members": TIKTOK_MEMBERS,
+    "schedule": [{"cron": "0 9 * * 1", "task": "Make this week's 3 TikToks and schedule them"}],
+    "outputs": ["trends.md and stats.md", "3 scripts", "3 vertical videos", "3 scheduled posts"],
+    "questions": [{"question": "Which niche?", "options": ["Student life", "Food", "Tech"]}],
+}
+
+STOCKS_PROPOSAL = {
+    "name": "Stocks desk",
+    "goal": "A daily brief on my watchlist, research notes when I ask, and alerts on big moves. Never trades.",
+    "summary": "Here is a team of 3 for your watchlist: a scout for news, an analyst for prices and earnings dates, "
+               "and a writer for the brief. It has no trading tools and never will.",
+    "members": [
+        {"name": "scout", "role": "Finds news on each ticker", "tier": "haiku", "tools": ["web", "files.write"],
+         "system_prompt": "You are the team's scout. Find the last 24 hours of news for each watchlist ticker from reliable sources. Save news.md with a source URL per item."},
+        {"name": "analyst", "role": "Price moves and earnings dates", "tier": "haiku", "tools": ["web", "market-data.prices", "files.write"],
+         "system_prompt": "You are the team's analyst. Record yesterday's close, the day's move in percent and the next earnings date for each ticker. Save prices.md as a table with sources."},
+        {"name": "writer", "role": "Writes the daily brief and research notes", "tier": "sonnet", "tools": ["files.read", "files.write"],
+         "system_prompt": "You are the team's writer. Turn news.md and prices.md into a brief under 300 words: what moved, why, and what to watch. Plain words, no hype."},
+    ],
+    "schedule": [{"cron": "30 7 * * 1-5", "task": "Write today's brief for the watchlist"}],
+    "outputs": ["Daily brief (brief-<date>.md)", "news.md and prices.md with sources", "Research notes on request", "Alerts on big moves"],
+    "alert_task": "New prices arrived. If any watchlist ticker moved more than 3%, write a short alert with the likely reason.",
+    "questions": [{"question": "Which stocks are on your watchlist?", "options": ["BBCA, BBRI, TLKM", "AAPL, MSFT, NVDA"]}],
+}
+
+_STOCKS_KEYWORDS = re.compile(r"stock|saham|watchlist|ticker|invest|portfolio", re.I)
+_MARKETING_KEYWORDS = re.compile(r"marketing|newsletter|campaign|brand|social media", re.I)
+
+
+def demo_proposal(goal: str) -> dict:
+    """Demo mode team builder: the model's answer for a TikTok, stocks or marketing (default) team."""
+    import copy
+    if _TIKTOK_KEYWORDS.search(goal or ""):
+        return copy.deepcopy(TIKTOK_PROPOSAL)
+    if _STOCKS_KEYWORDS.search(goal or ""):
+        return copy.deepcopy(STOCKS_PROPOSAL)
+    return copy.deepcopy(MARKETING_PROPOSAL)
+
+
+def demo_marketing_runner(delay: float = 0.6) -> FakeRunner:
+    return FakeRunner({
+        "[mk-insights]": FakeTask(
+            shorts=["3 numbers, 1 angle"], reasons=["insights.md has 3 numbers from last month's Notion report and one angle."],
+            tools=[("mcp__claude_ai_Notion__notion-search", {"query": "October results"}),
+                   ("mcp__claude_ai_Notion__notion-fetch", {"id": "october-results"})],
+            files=[("insights.md", "# Last month\n\n- Carousel posts: 3.1x the saves of single images\n- Best day: Tuesday\n"
+                                   "- Newsletter open rate: 41%\n\nAngle this week: behind-the-scenes carousels.")], cost=0.04),
+        "[mk-posts]": FakeTask(
+            verdicts=[False, True], shorts=["post 4 has no call to action", "5 posts, each with a call to action"],
+            reasons=["Post 4 ends without a call to action; the done-when asks for one in every post.",
+                     "5 posts, each under 150 words with a caption and a call to action."],
+            tools=[("Read", {"file_path": "insights.md"})],
+            files=[(f"posts/0{i}.md", f"# Post {i}\n\nBehind the scenes, part {i}.\n\nCTA: save this for later.") for i in range(1, 6)],
+            cost=0.18),
+        "[mk-visuals]": FakeTask(
+            shorts=["5 frames in Figma"], reasons=["visuals.md links 5 frames, one per post, in the team's Figma file."],
+            tools=[("mcp__claude_ai_Figma__get_metadata", {"fileKey": "brand-kit"})],
+            outward=("mcp__claude_ai_Figma__use_figma", {"action": "create 5 carousel frames from the brand kit"}),
+            files=[("visuals.md", "# Visuals\n\n5 carousel frames in Figma, page 'Week 48'.")], cost=0.12),
+        "[mk-plan]": FakeTask(
+            shorts=["plan and newsletter drafted"],
+            reasons=["plan.md lists 5 posts with days; slack-post.md and newsletter.md are ready. Slack is not signed in, so nothing was posted."],
+            tools=[("Read", {"file_path": "posts/01.md"})],
+            files=[("plan.md", "# Week 48\n\n| Day | Post |\n|---|---|\n| Tue | Post 1 |\n| Wed | Post 2 |\n| Thu | Post 3 |\n| Fri | Post 4 |\n| Sat | Post 5 |"),
+                   ("slack-post.md", "Week 48 plan: behind-the-scenes carousels, Tue to Sat. Details in plan.md."),
+                   ("newsletter.md", "# This week\n\nA look behind the scenes...")], cost=0.05),
+    }, delay=delay)
+
+
+async def demo_marketing_script(tools):
+    yield ("Plan: the strategist reads last month's results in Notion, the copywriter writes 5 posts, then the designer "
+           "builds visuals in Figma (after you approve) while the coordinator drafts the plan and newsletter.")
+    for m in MARKETING_PROPOSAL["members"]:
+        if m["name"] not in tools.s.agents:
+            avail = tools.catalog.available_ids(tools.s.config)
+            await tools.create_agent({**m, "tools": [t for t in m["tools"] if t in avail], "tier_reason": "team member"})
+    await tools.assign_task({"agent": "strategist", "task_id": "insights-1", "title": "Read last month's results",
+                             "task": "[mk-insights] Read last month's results in Notion. Save insights.md with 3 numbers and one angle.",
+                             "done_when": "insights.md has 3 numbers and one angle",
+                             "checks": [{"type": "file_exists", "path": "insights.md"}]})
+    await tools.assign_task({"agent": "copywriter", "task_id": "posts-1", "title": "Write 5 posts",
+                             "task": "[mk-posts] Write 5 posts from insights.md, one file each in posts/.",
+                             "done_when": "5 posts, each under 150 words with a caption and a call to action",
+                             "checks": [{"type": "file_count", "glob": "posts/*.md", "min": 5}]})
+    await tools.assign_tasks({"tasks": [
+        {"agent": "designer", "task_id": "visuals-1", "title": "Build 5 visuals in Figma", "owns": ["visuals.md"],
+         "task": "[mk-visuals] Build one carousel frame per post in the team's Figma file. List them in visuals.md.",
+         "done_when": "5 frames in Figma, listed in visuals.md"},
+        {"agent": "coordinator", "task_id": "plan-1", "title": "Plan and newsletter", "owns": ["plan.md", "slack-post.md", "newsletter.md"],
+         "task": "[mk-plan] Write plan.md, the Slack post and the newsletter draft. Slack is not signed in yet: save the post to slack-post.md.",
+         "done_when": "plan.md, slack-post.md and newsletter.md exist",
+         "checks": [{"type": "file_exists", "path": "plan.md"}]},
+    ]})
+    async for line in _finish(tools, "Week 48 is planned: behind-the-scenes carousels, Tuesday to Saturday. 5 posts are written, "
+                                     "5 visuals are in Figma, and the newsletter is drafted. Slack isn't signed in yet, so the plan "
+                                     "is in slack-post.md for you to paste.\n\nFiles: insights.md, posts/ (5), visuals.md, plan.md, "
+                                     "slack-post.md, newsletter.md."):
+        yield line
+
+
+_TICKERS = ["BBCA", "BBRI", "TLKM"]
+
+
+def demo_stocks_runner(delay: float = 0.6) -> FakeRunner:
+    return FakeRunner({
+        "[st-news]": FakeTask(
+            shorts=["7 items, all sourced"], reasons=["news.md has 7 items across BBCA, BBRI and TLKM, each with a source URL."],
+            tools=[("WebSearch", {"query": "BBRI news today"}), ("WebFetch", {"url": "https://www.idx.co.id/en/news"})],
+            files=[("news.md", "# News, last 24 h\n\n- BBRI: Q3 loan growth 9% y/y (https://example.com/bbri)\n"
+                               "- TLKM: data center unit IPO plan (https://example.com/tlkm)\n- BBCA: no major news")], cost=0.03),
+        "[st-prices]": FakeTask(
+            shorts=["3 tickers, closes and dates"], reasons=["prices.md has close, move and next earnings date for all 3 tickers."],
+            tools=[("WebFetch", {"url": "https://www.idx.co.id/en/market-data"})],
+            files=[("prices.md", "# Prices\n\n| Ticker | Close | Move | Earnings |\n|---|---|---|---|\n"
+                                 "| BBCA | 9,875 | +0.5% | 2027-01-22 |\n| BBRI | 4,610 | +3.6% | 2027-01-29 |\n"
+                                 "| TLKM | 3,020 | -1.3% | 2027-02-05 |")], cost=0.03),
+        "[st-brief]": FakeTask(
+            verdicts=[False, True], shorts=["tells you to buy BBRI", "under 300 words, no advice"],
+            reasons=["The brief says \"a good time to buy BBRI\". The team never recommends trades; describe the move instead.",
+                     "Brief is 214 words, covers all 3 tickers with sources, recommends nothing and ends with the disclaimer."],
+            tools=[("Read", {"file_path": "news.md"}), ("Read", {"file_path": "prices.md"})],
+            files=[("brief-2026-11-30.md", "# Brief, Mon 30 Nov\n\n**BBRI +3.6%** after Q3 loan growth of 9%.\n\n"
+                                           "**TLKM -1.3%** on the data center IPO plan.\n\n**BBCA** flat, no news.\n\n"
+                                           "Watch: BBRI earnings on 29 Jan.\n\nNot financial advice.")], cost=0.09),
+    }, delay=delay)
+
+
+async def demo_stocks_script(tools):
+    yield "Morning. The scout and the analyst work at the same time, then the writer drafts the brief. Nobody trades."
+    for m in STOCKS_PROPOSAL["members"]:
+        if m["name"] not in tools.s.agents:
+            avail = tools.catalog.available_ids(tools.s.config)
+            await tools.create_agent({**m, "tools": [t for t in m["tools"] if t in avail], "tier_reason": "team member"})
+    await tools.assign_tasks({"tasks": [
+        {"agent": "scout", "task_id": "news-1", "title": "Find today's news", "owns": ["news.md"],
+         "task": f"[st-news] Find the last 24 hours of news for {', '.join(_TICKERS)}. Save news.md with a source per item.",
+         "done_when": "news.md covers every ticker, each item with a source URL",
+         "checks": [{"type": "file_exists", "path": "news.md"}]},
+        {"agent": "analyst", "task_id": "prices-1", "title": "Prices and earnings dates", "owns": ["prices.md"],
+         "task": f"[st-prices] Record close, move and next earnings date for {', '.join(_TICKERS)} in prices.md.",
+         "done_when": "prices.md has close, move and earnings date for every ticker",
+         "checks": [{"type": "contains", "path": "prices.md", "text": "Earnings"}]},
+    ]})
+    msgs = tools.s.take_messages()
+    if msgs:
+        yield f"Got it: \"{msgs[-1]}\". The writer will cover it in the brief."
+    await tools.assign_task({"agent": "writer", "task_id": "brief-1", "title": "Write the brief",
+                             "task": "[st-brief] Write today's brief from news.md and prices.md, under 300 words.",
+                             "done_when": "Under 300 words, every ticker covered with sources, no buy or sell advice, ends with 'Not financial advice.'",
+                             "checks": [{"type": "contains", "path": "brief-2026-11-30.md", "text": "Not financial advice"}]})
+    async for line in _finish(tools, "Today's brief is ready: BBRI rose 3.6% after 9% loan growth, TLKM slipped 1.3% on its data center "
+                                     "IPO plan, BBCA was flat. BBRI reports on 29 Jan.\n\nFiles: news.md, prices.md, "
+                                     "brief-2026-11-30.md. Not financial advice."):
+        yield line
+
+
+_TIKTOK_KEYWORDS = re.compile(r"tiktok|video|reel|konten", re.I)
+
+
+def pick_demo(task: str, team: dict | None = None):
+    """Demo mode: TikTok for video tasks or teams, marketing and stocks for those teams, build for build-style tasks, otherwise research."""
+    about = f"{task or ''} {(team or {}).get('name', '')} {(team or {}).get('goal', '')}"
+    if _TIKTOK_KEYWORDS.search(about):
+        return demo_tiktok_runner, demo_tiktok_script
+    if _MARKETING_KEYWORDS.search(about):
+        return demo_marketing_runner, demo_marketing_script
+    if _STOCKS_KEYWORDS.search(about):
+        return demo_stocks_runner, demo_stocks_script
     if _BUILD_KEYWORDS.search(task or ""):
         return demo_build_runner, demo_build_script
     return demo_runner, demo_script

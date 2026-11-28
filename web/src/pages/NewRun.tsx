@@ -4,12 +4,13 @@ import { api, type CatalogEntry, type PlaybookInfo, type RunOptions } from '../a
 import { Character } from '../components/Character'
 import { ArrowUp, Folder, Sliders } from '../components/Icons'
 import { MenuButton } from '../components/Shell'
+import { DEFAULT_PRESET, PRESETS, presetOf } from '../presets'
 import { CHECKER_COLOR, ORCHESTRATOR_COLOR } from '../state/reducer'
 
 const DEFAULTS: Required<Omit<RunOptions, 'catalog'>> & { catalog: string[] | null } = {
-  allow_bash: false, repo: '', orchestrator_model: 'sonnet', worker_model: 'sonnet', checker_model: 'haiku',
-  max_cost: 5, max_agents: 6, catalog: null, playbook: 'auto',
+  allow_bash: false, repo: '', max_agents: 6, max_parallel: 3, catalog: null, playbook: 'auto', ...DEFAULT_PRESET,
 }
+const TIERS = ['haiku', 'sonnet', 'opus']
 
 const SUGGESTIONS = [
   { label: 'Research report with sources', task: 'Research the top 5 Indonesian e-wallets and write a comparison report as report.md with a fee table and at least 10 source URLs' },
@@ -61,7 +62,10 @@ export function NewRun() {
     }
   }
 
-  const summary = `$${opts.max_cost} cap · shell ${opts.allow_bash ? 'on' : 'off'}${opts.repo ? ' · repo' : ''}`
+  const preset = presetOf(opts)
+  const num = (k: 'max_cost' | 'max_agents' | 'max_attempts' | 'max_steps' | 'max_assignments' | 'max_parallel') =>
+    (e: React.ChangeEvent<HTMLInputElement>) => set(k, Number(e.target.value))
+  const summary = `${preset === 'cheap' ? 'Cheap · ' : ''}$${opts.max_cost} cap · shell ${opts.allow_bash ? 'on' : 'off'}${opts.repo ? ' · repo' : ''}`
   return (
     <div className="new-run">
       <div style={{ position: 'absolute', top: 12, left: 12 }}><MenuButton /></div>
@@ -124,7 +128,7 @@ export function NewRun() {
                   return (
                     <button key={e.id} type="button" className="chip" disabled={off} aria-pressed={!off && selected.includes(e.id)}
                       title={e.unavailable ? `Not set up: ${e.unavailable}` : e.description} onClick={() => toggleTool(e.id)}>
-                      {e.id}{e.risk === 'outward' ? ' · asks first' : ''}
+                      {e.label ?? e.id}{e.risk === 'outward' ? ' · asks first' : ''}
                     </button>
                   )
                 })}
@@ -132,11 +136,37 @@ export function NewRun() {
               <small>Actions that send or change things (email, calendar) always ask you first. Greyed out ones need setup in .env.</small>
             </div>
           )}
+          <div className="field wide">
+            <span id="preset-label">Preset</span>
+            <div className="presets" role="group" aria-labelledby="preset-label">
+              <button type="button" className="chip" aria-pressed={preset === 'default'} onClick={() => setOpts({ ...opts, ...PRESETS.default })}>Default</button>
+              <button type="button" className="chip" aria-pressed={preset === 'cheap'} onClick={() => setOpts({ ...opts, ...PRESETS.cheap })}>Cheap</button>
+              {preset === 'custom' && <span className="chip preset-custom">Custom</span>}
+            </div>
+            <small>{preset === 'cheap'
+              ? 'Haiku workers, sonnet at most, 2 tries per task, $1 cap.'
+              : 'Cheap: haiku workers, sonnet at most, 2 tries per task, $1 cap. Changing a field below makes it Custom.'}</small>
+          </div>
           <label className="field">
-            <span>Orchestrator and workers</span>
-            <select value={opts.worker_model} onChange={(e) => setOpts({ ...opts, worker_model: e.target.value, orchestrator_model: e.target.value })}>
-              <option>sonnet</option><option>opus</option><option>haiku</option>
+            <span>Orchestrator</span>
+            <select value={opts.orchestrator_model} onChange={(e) => set('orchestrator_model', e.target.value)}>
+              {TIERS.map((t) => <option key={t}>{t}</option>)}
             </select>
+          </label>
+          <label className="field">
+            <span>Workers</span>
+            <select value={opts.pick_tier ? 'auto' : opts.worker_model}
+              onChange={(e) => setOpts(e.target.value === 'auto' ? { ...opts, pick_tier: true } : { ...opts, pick_tier: false, worker_model: e.target.value })}>
+              <option value="auto">Orchestrator picks</option>
+              {TIERS.map((t) => <option key={t} value={t}>Always {t}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Highest model</span>
+            <select value={opts.max_tier} onChange={(e) => set('max_tier', e.target.value)}>
+              {TIERS.map((t) => <option key={t}>{t}</option>)}
+            </select>
+            <small>A failed try steps up one model, once, up to this.</small>
           </label>
           <label className="field">
             <span>Checker</span>
@@ -146,13 +176,27 @@ export function NewRun() {
           </label>
           <label className="field">
             <span>Usage cap (est. $)</span>
-            <input type="number" className="mono" min={0.5} step={0.5} value={opts.max_cost}
-              onChange={(e) => set('max_cost', Number(e.target.value))} inputMode="decimal" />
+            <input type="number" className="mono" min={0.5} step={0.5} value={opts.max_cost} onChange={num('max_cost')} inputMode="decimal" />
           </label>
           <label className="field">
             <span>Max agents</span>
-            <input type="number" className="mono" min={1} max={12} value={opts.max_agents}
-              onChange={(e) => set('max_agents', Number(e.target.value))} inputMode="numeric" />
+            <input type="number" className="mono" min={1} max={12} value={opts.max_agents} onChange={num('max_agents')} inputMode="numeric" />
+          </label>
+          <label className="field">
+            <span>Tries per task</span>
+            <input type="number" className="mono" min={1} max={5} value={opts.max_attempts} onChange={num('max_attempts')} inputMode="numeric" />
+          </label>
+          <label className="field">
+            <span>Steps per try</span>
+            <input type="number" className="mono" min={5} max={60} value={opts.max_steps} onChange={num('max_steps')} inputMode="numeric" />
+          </label>
+          <label className="field">
+            <span>Max tasks</span>
+            <input type="number" className="mono" min={1} max={40} value={opts.max_assignments} onChange={num('max_assignments')} inputMode="numeric" />
+          </label>
+          <label className="field">
+            <span>Tasks at once</span>
+            <input type="number" className="mono" min={1} max={6} value={opts.max_parallel} onChange={num('max_parallel')} inputMode="numeric" />
           </label>
         </section>
       )}

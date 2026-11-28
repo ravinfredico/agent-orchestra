@@ -16,6 +16,10 @@ when: Write new code (script, CLI, small app, library) that must work, proven by
 - code: "`<command>` exits 0 and prints <expected>"
 - tests: "`pytest -q` (or the project's test command) exits 0 with at least <n> tests covering <cases>"
 
+## Cheap checks
+- Add `checks: [{"type": "command", "run": "pytest -q"}]` to test tasks, and a `file_exists` check for
+  each file the task names. When the command fully proves done_when, set `checks_only: true`.
+
 ## Pitfalls
 - A tester can't make tests pass by editing tests to match a bug. The checker runs the tests itself.
 - Name the files and the command in every task, so the checker can run exactly that.

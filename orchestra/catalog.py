@@ -12,9 +12,13 @@ import copy
 import fnmatch
 import json
 import os
+import sys
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from . import connectors
+from .connectors import DISABLE_ENV, READ_PATTERNS, server_key
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CATALOG_PATH = ROOT / "tools.catalog.json"
@@ -38,7 +42,7 @@ BUILTIN_ENTRIES = [
 @dataclass
 class Entry:
     id: str
-    kind: str                         # builtin | mcp | plugin
+    kind: str                         # builtin | mcp | plugin | connector
     description: str
     risk: str = "read"
     tools: list[str] = field(default_factory=list)       # builtin tool names
@@ -48,11 +52,13 @@ class Entry:
     enabled: bool = True
     requires: str | None = None       # e.g. "allow_bash"
     unavailable: str | None = None    # why it can't be used right now (missing env var, etc.)
+    connector: str | None = None      # claude.ai connector name, e.g. "claude.ai Figma" (kind connector)
 
     def public(self) -> dict:
         """Safe to send to the browser: no server config, no secrets."""
         return {"id": self.id, "kind": self.kind, "description": self.description, "risk": self.risk,
-                "enabled": self.enabled, "requires": self.requires, "unavailable": self.unavailable}
+                "enabled": self.enabled, "requires": self.requires, "unavailable": self.unavailable,
+                "label": self.connector[len(connectors.PREFIX):] if self.connector else None}
 
 
 @dataclass
@@ -63,27 +69,49 @@ class Toolset:
     mcp_servers: dict = field(default_factory=dict)
     plugins: list[dict] = field(default_factory=list)
     gated_servers: dict[str, list[str]] = field(default_factory=dict)  # server -> outward patterns
+    read_only_servers: dict[str, list[str]] = field(default_factory=dict)  # server -> read patterns; the rest is outward
+    server_ids: dict[str, str] = field(default_factory=dict)          # server name -> catalog id
+    env: dict[str, str] = field(default_factory=dict)                 # extra env for the agent's session
+    disallowed_tools: list[str] = field(default_factory=list)         # hidden from the agent entirely
 
     @property
     def needs_approval_callback(self) -> bool:
-        return bool(self.gated_servers)
+        return bool(self.gated_servers or self.read_only_servers)
 
     def is_outward(self, tool_name: str) -> bool:
         """tool_name like 'mcp__gmail__send_message'."""
         m = re.match(r"mcp__(.+?)__(.+)", tool_name)
-        if not m or m.group(1) not in self.gated_servers:
+        if not m:
             return False
-        return any(fnmatch.fnmatch(m.group(2), p) for p in self.gated_servers[m.group(1)])
+        server, name = m.group(1), m.group(2)
+        if server in self.read_only_servers:
+            return not any(fnmatch.fnmatch(name.lower(), p) for p in self.read_only_servers[server])
+        if server not in self.gated_servers:
+            return False
+        return any(fnmatch.fnmatch(name, p) for p in self.gated_servers[server])
+
+    def owns(self, tool_name: str) -> bool:
+        """Was this tool given to the agent? Claude Code can load tools we never chose (connectors)."""
+        m = re.match(r"mcp__(.+?)__", tool_name)
+        if not m:
+            return tool_name in self.tools
+        s = m.group(1)
+        return s in self.mcp_servers or s in self.read_only_servers or s in self.gated_servers \
+            or f"mcp__{s}" in self.allowed_tools
 
     def catalog_id_for(self, tool_name: str) -> str:
         m = re.match(r"mcp__(.+?)__", tool_name)
-        return m.group(1) if m else tool_name
+        return self.server_ids.get(m.group(1), m.group(1)) if m else tool_name
+
+
+# Filled in by the app, not .env: lets catalog entries start servers that ship in this repo.
+BUILTIN_VARS = {"ORCHESTRA_ROOT": str(Path(__file__).resolve().parent.parent), "PYTHON": sys.executable}
 
 
 def _substitute(value, missing: set):
     if isinstance(value, str):
         def rep(m):
-            v = os.environ.get(m.group(1))
+            v = BUILTIN_VARS.get(m.group(1)) or os.environ.get(m.group(1)) or None
             if v is None:
                 missing.add(m.group(1))
                 return ""
@@ -94,6 +122,17 @@ def _substitute(value, missing: set):
     if isinstance(value, list):
         return [_substitute(v, missing) for v in value]
     return value
+
+
+def connector_entries(found) -> list[Entry]:
+    """Catalog entries for discovered claude.ai connectors (orchestra.connectors.discover())."""
+    return [Entry(id=c.id, kind="connector", description=connectors.description(c), risk="outward",
+                  connector=c.name, unavailable=connectors.unavailable(c)) for c in found]
+
+
+def with_connectors(catalog: "Catalog", found) -> "Catalog":
+    known = {e.id for e in catalog.entries}
+    return Catalog(catalog.entries + [e for e in connector_entries(found) if e.id not in known])
 
 
 def _server_name(entry_id: str) -> str:
@@ -141,6 +180,17 @@ class Catalog:
                     ts.allowed_tools.append(f"mcp__{name}")
             elif e.kind == "plugin" and e.path:
                 ts.plugins.append({"type": "local", "path": str(Path(e.path).resolve())})
+            elif e.kind == "connector" and e.connector:
+                # Claude Code loads it from claude.ai; we only decide who may use which tool
+                name = server_key(e.connector)
+                ts.read_only_servers[name] = list(READ_PATTERNS)
+                ts.server_ids[name] = e.id
+        # connectors this agent was not given stay hidden; with none, they are not loaded at all
+        chosen = set(ts.read_only_servers)
+        others = [server_key(e.connector) for e in self.entries if e.kind == "connector" and e.connector]
+        ts.disallowed_tools = [f"mcp__{s}" for s in others if s not in chosen]
+        if not chosen:
+            ts.env = dict(DISABLE_ENV)
         ts.tools = list(dict.fromkeys(ts.tools))
         ts.allowed_tools = list(dict.fromkeys(ts.allowed_tools))
         return ts

@@ -21,6 +21,54 @@ describe('reducer', () => {
     expect(r.final).toMatch(/report\.md/)
   })
 
+  it('tracks the model tier and the step-up after a failed attempt', () => {
+    const r = reduceAll(demoEvents)
+    const a = r.tasks['analysis-1']
+    expect(a.tierReason).toBe('tables from notes')
+    expect(a.history.map((h) => h.tier)).toEqual(['haiku', 'sonnet'])
+    expect(a.tier).toBe('sonnet')
+    expect(r.agents.writer.model).toBe('sonnet')
+  })
+
+  it('shows what a queued task waits for, and why a blocked one never started', () => {
+    const at = demoEvents.findIndex((e) => e.type === 'task_assigned' && e.task_id === 'report-1')
+    const mid = reduceAll(demoEvents.slice(0, at + 1))
+    expect(mid.tasks['report-1'].dependsOn).toEqual(['analysis-1'])
+    expect(cardLook(mid.tasks['report-1'], mid).line).toBe('Queued · waits for Compare fees')
+
+    const base = { run_id: 'x', t: 1 }
+    const evs = [
+      { ...base, seq: 1, type: 'run_started', task: 't', title: 't', options: {} },
+      { ...base, seq: 2, type: 'agent_created', name: 'a', role: '', tools: [], model: 'haiku', color_index: 0 },
+      { ...base, seq: 3, type: 'task_assigned', task_id: 'r1', title: 'Research', agent: 'a', done_when: 'x' },
+      { ...base, seq: 4, type: 'task_assigned', task_id: 'rep', title: 'Report', agent: 'a', done_when: 'x', depends_on: ['r1'] },
+      { ...base, seq: 5, type: 'task_failed', task_id: 'r1', attempts: 2 },
+      { ...base, seq: 6, type: 'task_failed', task_id: 'rep', attempts: 0, reason: 'depends on r1, which did not pass' },
+    ] as RunEvent[]
+    const r = reduceAll(evs)
+    expect(cardLook(r.tasks.rep, r).line).toBe('Not started · Research failed')
+    expect(r.agents.a.failed).toBe(1)                 // the blocked task is not the agent's failure
+  })
+
+  it('breaks usage down by agent and by model, adding up to the total', () => {
+    const r = reduceAll(demoEvents)
+    const byAgent = Object.values(r.usageByAgent).reduce((n, a) => n + a.costUsd, 0)
+    const byModel = Object.values(r.usageByModel).reduce((n, m) => n + m.costUsd, 0)
+    expect(byAgent).toBeCloseTo(r.costUsd, 3)
+    expect(byModel).toBeCloseTo(r.costUsd, 3)
+    expect(r.usageByAgent.analyst.models).toEqual(['haiku', 'sonnet'])
+    expect(r.usageByAgent.checker.role).toBe('checker')
+    expect(r.usageByAgent.orchestrator.models).toEqual(['sonnet'])
+    expect(r.usageByAgent.researcher.tasks).toEqual(['research-1'])
+  })
+
+  it('keeps cheap check results on the attempt', () => {
+    const t = reduceAll(demoEvents).tasks['research-1']
+    expect(t.checks).toEqual(['5+ files match research/*.md'])
+    expect(t.history[0].checks[0]).toMatchObject({ passed: true, detail: '5 found' })
+    expect(t.history[0].checkedBy).toBe('model')
+  })
+
   it('builds the thread in event order with joined lines grouped', () => {
     const r = reduceAll(demoEvents)
     const kinds = r.thread.map((i) => i.kind)

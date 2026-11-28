@@ -21,7 +21,9 @@ from claude_agent_sdk import (
 
 from . import prompts
 from .approvals import ApprovalBroker
-from .catalog import Catalog, load_catalog
+from .connectors import DISABLE_ENV
+from .connectors import discover as discover_connectors
+from .catalog import Catalog, load_catalog, with_connectors
 from .config import Config
 from .playbooks import summary_lines
 from .runner import run_agent as default_runner
@@ -33,18 +35,20 @@ COPY_IGNORE = shutil.ignore_patterns(".agents", ".git", "node_modules", "__pycac
 
 def create_run(task: str, config: Config, runs_dir: Path = Path("runs"), workspace: Path | None = None, *,
                repo: str | None = None, branch: str | None = None, parent_id: str | None = None,
-               seed_from: Path | None = None, listeners=None, run_id: str | None = None) -> RunState:
+               seed_from: Path | None = None, listeners=None, run_id: str | None = None,
+               team: dict | None = None, trigger: dict | None = None) -> RunState:
     """Make the run folder and state, copy a seed workspace if given, and log run_started."""
     run_dir = Path(runs_dir) / (run_id or make_run_id())
     while not run_id and run_dir.exists():          # never reuse a folder
         run_dir = Path(runs_dir) / make_run_id()
     state = RunState(task, config, run_dir, workspace, repo=repo, branch=branch,
-                     parent_id=parent_id, listeners=listeners)
+                     parent_id=parent_id, listeners=listeners, team=team, trigger=trigger)
     if seed_from and Path(seed_from).is_dir() and not workspace:
         shutil.copytree(seed_from, state.workspace, dirs_exist_ok=True, ignore=COPY_IGNORE)
     state.log("run_started", task=task, title=state.title, options=config.to_options(),
               workspace=str(state.workspace), repo=repo, branch=branch, parent_id=parent_id,
-              auth_mode=state.auth_mode)
+              auth_mode=state.auth_mode, team_id=(team or {}).get("id"), team_name=(team or {}).get("name"),
+              trigger=trigger)
     return state
 
 
@@ -67,6 +71,14 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
     tools = OrchestraTools(state, runner=runner, catalog=catalog)
     state.tools = tools
     task = state.task
+    if state.team:  # a saved team: its members exist before the orchestrator starts
+        available = catalog.available_ids(config)
+        for m in state.team.get("members", []):
+            # a tool that isn't set up yet is skipped; a wanted connector joins once you connect it
+            usable = [t for t in list(m.get("tools", [])) + list(m.get("wants", [])) if t in available]
+            await tools.create_agent({**m, "tools": list(dict.fromkeys(usable)),
+                                      "tier_reason": m.get("tier_reason") or "team member"})
+        task = f"{prompts.team_context(state.team)}\n{task}"
     if state.repo:
         task = (f"{task}\n\nYou are working in an EXISTING codebase at the workspace root. "
                 "Have an agent explore its structure, conventions and tests before changing anything.")
@@ -83,6 +95,7 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
         permission_mode="dontAsk",
         max_turns=config.budget.max_orchestrator_turns,
         setting_sources=[],
+        env=dict(DISABLE_ENV),          # your claude.ai connectors are for workers that were given them
     )
 
     try:
@@ -99,7 +112,8 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
                     elif isinstance(msg, ResultMessage):
                         # cost on a long-lived session is a running total, so add only the change
                         total = msg.total_cost_usd or 0.0
-                        state.record_usage(msg.num_turns, max(total - orch_cost, 0.0))
+                        state.record_usage(msg.num_turns, max(total - orch_cost, 0.0), role="orchestrator",
+                                           model=config.orchestrator_model)
                         orch_cost = max(orch_cost, total)
                         if msg.is_error and msg.errors:
                             raise RuntimeError("; ".join(msg.errors))
@@ -122,6 +136,7 @@ async def execute_run(state: RunState, *, runner=default_runner, catalog: Catalo
                     "You stopped without calling finish. "
                     + (f"Unfinished tasks: {pending}. " if pending else "")
                     + "Check view_board, fix what failed, and continue until finish is accepted."
+                    + (prompts.user_messages(state.take_messages()) if state.inbox else "")
                 )
 
         if state.final_result is None:
@@ -148,12 +163,15 @@ def _save(state: RunState) -> None:
 
 
 async def run(task: str, config: Config, runs_dir: Path = Path("runs"), workspace: Path | None = None, *,
-              branch: str | None = None, listeners=None, runner=default_runner) -> RunState:
-    """Create and execute a run in one go (CLI)."""
+              branch: str | None = None, listeners=None, runner=default_runner, catalog: Catalog | None = None,
+              connectors: bool = True) -> RunState:
+    """Create and execute a run in one go (CLI). Your claude.ai connectors join the catalog."""
     state = create_run(task, config, runs_dir, workspace, repo=str(workspace) if workspace else None,
                        branch=branch, listeners=listeners)
+    if catalog is None:
+        catalog = with_connectors(load_catalog(), discover_connectors()) if connectors else load_catalog()
     try:
-        return await execute_run(state, runner=runner)
+        return await execute_run(state, runner=runner, catalog=catalog)
     except asyncio.CancelledError:
         return state
 

@@ -17,5 +17,15 @@
   {"id": "calendar", "kind": "mcp", "risk": "outward",
    "server": {"type": "http", "url": "${GCAL_MCP_URL}", "headers": {"Authorization": "Bearer ${GCAL_MCP_TOKEN}"}},
    "outward_tools": ["create*", "update*", "delete*", "respond*"],
-   "description": "Read your Google Calendar. Creating, changing or answering events needs your approval"}
+   "description": "Read your Google Calendar. Creating, changing or answering events needs your approval"},
+  {"id": "elevenlabs", "kind": "mcp", "risk": "outward",
+   "server": {"type": "stdio", "command": "uvx", "args": ["elevenlabs-mcp"],
+              "env": {"ELEVENLABS_API_KEY": "${ELEVENLABS_API_KEY}", "ELEVENLABS_MCP_BASE_PATH": "."}},
+   "outward_tools": ["*call*", "*agent*", "*phone*", "*whatsapp*"],
+   "description": "ElevenLabs: voiceovers, sound effects and music (uses your ElevenLabs credits). Phone calls and voice agents need your approval"},
+  {"id": "tiktok", "kind": "mcp", "risk": "outward",
+   "server": {"type": "stdio", "command": "${PYTHON}", "args": ["${ORCHESTRA_ROOT}/mcp_servers/tiktok.py"],
+              "env": {"TIKTOK_ACCESS_TOKEN": "${TIKTOK_ACCESS_TOKEN}"}},
+   "outward_tools": ["upload_draft", "publish_video"],
+   "description": "TikTok: read your posts' stats; send drafts to your inbox or post (private until TikTok audits your app). Every upload needs your approval"}
 ]

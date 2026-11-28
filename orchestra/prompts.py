@@ -16,6 +16,9 @@ agents, give them tasks, and keep going until every task has passed verification
 - assign_task: give a task to an agent. Every task needs a short title (2 to 4 words, like
   "Compare fees") and a concrete, checkable "done_when". The task is retried automatically and checked
   by an independent checker. You get PASSED or FAILED.
+- assign_tasks: give several tasks in one call. Independent tasks run at the same time; set
+  depends_on for tasks that need another's output, and owns (files or folders) so parallel agents
+  never write the same file. Prefer it whenever two or more tasks don't depend on each other.
 - view_board: see every task, its status, feedback, and remaining budget.
 - finish: submit the final answer. Refused while any task on the board is not done.
 
@@ -24,6 +27,9 @@ agents, give them tasks, and keep going until every task has passed verification
 
 Tools marked "outward" act on the outside world (send email, create events). The user must approve
 each such action, so only give them to an agent when the task really needs it.
+Tools named `connector.*` are the user's own claude.ai connectors (Figma, Gmail, Notion, Slack...).
+Give a connector only to the agent whose task needs it. Reading through it is free; anything that
+sends, creates or changes something there asks the user first, so batch such actions.
 
 ## Playbooks
 {playbook_lines}
@@ -37,7 +43,8 @@ each such action, so only give them to an agent when the task really needs it.
    responsible for, what to produce, and where to save it.
 3. Assign: give each subtask a short title and a done_when that a checker can verify by reading the
    workspace, e.g. "report.md exists, has 5 sections, each with at least one source URL".
-   Bad done_when: "it is good". Independent subtasks can be assigned in parallel.
+   Bad done_when: "it is good". Send independent subtasks together with assign_tasks so they run
+   in parallel, with depends_on for the ones that must wait.
 4. All agents share one workspace folder. Tell them exact file names so later agents can build on
    earlier output and parallel agents never write the same file.
 5. When a task FAILS: read the feedback, then fix the cause. Rewrite the task, split it, give the
@@ -46,6 +53,18 @@ each such action, so only give them to an agent when the task really needs it.
    If you split the work, use replaces on the final task that delivers what the failed one should have.
 6. When everything is done: assign a final task that assembles the deliverable if needed, then call
    finish with a summary of the result and the files produced.
+
+## Model tiers (usage is limited, so pick the cheapest that fits)
+Give every agent a tier, with a few-word tier_reason: haiku for search, reading, summaries, simple
+edits and lists; sonnet for writing, planning, analysis and code; opus only for a task that already
+failed on sonnet. You can set a different tier on one task with assign_task. A failed attempt is
+retried one tier up automatically, once.
+
+## Cheap checks (save usage)
+Add `checks` to a task for anything a file test or command can verify: files exist, a file count,
+text present, a word count, or (only when shell is on) a command like `pytest -q` that must exit 0.
+They run before the model checker, and a failing check skips it. Set checks_only=true when the
+checks cover the whole done_when, so no model checker runs at all.
 
 Keep your own messages short: one or two plain sentences saying what you are doing and why.
 
@@ -94,7 +113,11 @@ Work in the current folder. Save your output to files as the task says."""
     return prompt
 
 
-def checker_task_prompt(task: str, done_when: str, report: str) -> str:
+def checker_task_prompt(task: str, done_when: str, report: str, check_results: list | None = None) -> str:
+    done = ""
+    if check_results:
+        done = "\n\n## Already verified by commands (don't redo these)\n" + "\n".join(
+            f"- {r['check']}" for r in check_results)
     return f"""## Task that was given
 {task}
 
@@ -102,10 +125,34 @@ def checker_task_prompt(task: str, done_when: str, report: str) -> str:
 {done_when}
 
 ## Worker's report (do not trust it, check the files)
-{report[:6000]}"""
+{report[:6000]}{done}"""
 
 
 def short_reason(reason: str, words: int = 6) -> str:
     """Fallback when the checker gives no `short`: the first few words of the reason."""
     parts = (reason or "").replace("\n", " ").split()
     return " ".join(parts[:words]).rstrip(".,;:")
+
+
+def user_messages(msgs: list[str]) -> str:
+    """Your mid-run messages, as the orchestrator sees them."""
+    body = "\n".join(f"- {m}" for m in msgs)
+    return (f"\n## Message from the user (sent while you were working)\n{body}\n"
+            "Take it into account now: change the plan, add or replace tasks if needed. "
+            "Answer briefly in your next message.")
+
+
+def team_context(team: dict) -> str:
+    """The first-prompt section for a saved team: who is on it, and what it remembers."""
+    members = "\n".join(f"- {m['name']} ({m.get('tier') or 'default tier'}): {m.get('role', '')}"
+                         for m in team.get("members", []))
+    memory = (team.get("memory") or "").strip() or "(empty)"
+    return f"""## Your team: {team.get('name', '')}
+{team.get('goal', '')}
+
+These agents already exist. Reuse them; create a new one only if no member fits.
+{members}
+
+## Team memory (past work and the user's feedback; don't redo what is already known)
+{memory[:8000]}
+"""

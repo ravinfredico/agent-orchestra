@@ -44,6 +44,11 @@ Desktop                                         Phone
 | P2 | Phone live run | `P2-Live` | Team strip of faces, thread, run bar with meter and Stop. |
 | P3 | Phone files | `P3-Files` | Bottom sheet with file chips and the rendered file. |
 | P4 | Phone history | `P4-History` | Runs list with search and New run. |
+| T1 | Team room | `M8-Teams` | Sidebar Teams section, room (your bubbles right; orchestrator, hand-offs "orchestrator → agent" and checker results left; system lines centred; approval requests with Approve / Deny and a check-coloured border), message box, team panel (goal, members with tier chips, Set up first when a tool is missing, triggers in words, memory, Edit, Pause). Below 1280 px the panel is a drawer opened from the header. |
+| T2 | Team editor | `M8-Teams` | Name, time zone, goal, outputs (one per line), members (name, role, model, tool chips; dashed "X · set up" chips for missing tools, click to remove), schedule slots (cron + task), webhook toggle with task and URL, memory, Save, Cancel, Delete (asks twice). |
+| T3 | Team builder | `M9-Builder` | `/teams/new`. Describe: "What should the team do?", a composer ("One model call. Nothing runs until you save."), example chips (Marketing team, TikTok studio, Stocks desk), "Or set it up by hand" (the editor). Designing: the orchestrator with "Designing your team…". Failed: alert with Try again, the message kept. Review ("Proposal · not saved"): your message, the orchestrator's summary, member cards (face, name, role, tier chip, tool pills; a lock on tools that ask first; dashed "set up" pills for missing ones), and a side column: Set up first (check-coloured box), Schedule, Outputs, Asks you first, questions with option chips and Other. The Schedule list adds "New data · <task>" when the webhook is on. Under Asks you first, "Left out: <tools>. Anything that moves money stays outside the app." when tools were refused. Sticky footer: Save team, Edit before saving (opens T2 prefilled), Start over. Below 900 px it stacks. |
+| R1 | Replay page | `M6-Replay` | The run screen without the sidebar, a header with "Replay · a recorded run, no live agents" and a GitHub link, and a player instead of the run bar: play/pause, position slider, event count, speed 1× 2× 4×. The end card is "Replay finished" with the result and Play again. |
+| — | Message during a run | `M8-Teams` | A message box above the run bar while live: "Message the orchestrator. It reads this at its next step." Your message joins the thread at once as a user bubble. |
 
 Built in the app but not yet drawn on the canvas: the **approval card**, the **interrupted** outcome,
 the **stop confirmation**, the **playbook line** and **Playbook select** (Auto or one playbook, with its
@@ -82,6 +87,9 @@ Character (36 px) + title (15/600) + status line (13, text-2, with a 7 px dot) +
 | checking | waiting | Checking · try N | check | current ring |
 | retrying | sad, then working | Try N · <short reason, max 5 words> | check | fail dots, current ring |
 | done | happy | Passed | pass | fails, filled |
+| not started (dependency failed, M7) | sleepy | Not started · <title> failed | fail | none |
+
+On the right, before the dots, a mono tier chip names the model of the current try (`haiku`, `sonnet ↑` after a step-up). Open, the card shows the tier and its reason, the cheap checks, and per try the tier and either the checker's reason or each check with ✓ or ✕ ("checks, no model asked"). Canvas: `M7-Cheaper`.
 | failed | sad | Failed · N tries | fail | all fail |
 | replaced | sleepy | Replaced by <new title> | border | none; card at 55% opacity, title struck |
 
@@ -103,7 +111,7 @@ Tap or Enter opens the card in place: "Done when: …", then one checker line pe
 |---|---|
 | Empty | Placeholder "Give the team a task, and say how to tell it's done". Start disabled. |
 | Typing | Start enabled (primary circle). Enter adds a line; Cmd/Ctrl+Enter starts. |
-| Options open | Options button highlighted, panel below with all run options. |
+| Options open | Options button highlighted, panel below with all run options: shell, playbook, repo, connectors, then Preset (Default, Cheap; Custom once a field is edited), Orchestrator, Workers (Orchestrator picks, or Always <tier>), Highest model, Checker, usage cap, max agents, tries per task, steps per try, max tasks, tasks at once. Canvas: `M7-Cheaper`. |
 | Running | Becomes the run bar: team faces, "Running", elapsed and usage, Stop. |
 | Replanning | Run bar says "Replanning". |
 | Waiting for approval | Run bar says "Needs your approval". |
@@ -229,7 +237,7 @@ Phone rules:
 |---|---|
 | Greeting | What should the team do? |
 | Composer placeholder | Give the team a task, and say how to tell it's done |
-| Options summary | $5 cap · shell off |
+| Options summary | $5 cap · shell off (Cheap preset: Cheap · $1 cap · shell off) |
 | Shell option | Allow shell commands. Needed for code and tests. Commands run on this machine. |
 | Repo option | Work in a repository (optional). Needs a clean git tree. The team works on a new branch, so your main branch is never touched. |
 | Running | Running · 00:24 · $0.74 est. |
@@ -296,20 +304,22 @@ Every live event (see ARCHITECTURE.md) has a home in the UI:
 | run_started | Your message, run bar "Running" |
 | playbook_chosen | Playbook line: book icon + "Using the <title> playbook" |
 | orchestrator_said | Orchestrator message |
+| user_message | Your bubble in the thread (and in the team room); announced "You said: …" (M8) |
 | nudge | Nothing visible (raw log only) |
 | agent_created | Joined line, rail team row, run bar face |
-| task_assigned | New task card (queued) |
-| attempt_started | Card working / retrying, character working |
+| task_assigned | New task card (queued; "Queued · waits for <title>" when it has unfinished dependencies). Tier chip and reason on the card (M7, canvas `M7-Cheaper`) |
+| attempt_started | Card working / retrying, character working. Tier chip updates on a step-up |
+| attempt_failed / task_passed with `checked_by: checks` | Card detail shows each check with pass or fail, "no model asked" (M7, canvas `M7-Cheaper`) |
 | worker_activity | Activity line |
 | file_written | Rail files list, file count badge |
 | checker_started | Card checking, character waiting |
 | attempt_failed | Card retrying with reason, character sad |
 | task_passed | Card done, character happy (hop) |
-| task_failed | Card failed |
+| task_failed | Card failed (with `attempts: 0`: "Not started", M7) |
 | task_replaced | Old card crossed out |
 | approval_requested | Approval card, run bar "Needs your approval", push |
 | approval_resolved | Approval card collapses |
-| usage | Meters |
+| usage | Meters. Rail "By model" bar and list, "By agent" rows with cost, a thin bar, models used (haiku → sonnet after a step-up) and tasks or checks (M7, canvas `M7-Cheaper`) |
 | budget_exhausted | Meter turns check color, "almost out" then outcome |
 | finished | Finished or Out of budget outcome card |
 | run_failed | Crashed outcome card |

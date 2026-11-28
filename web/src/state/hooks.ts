@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, RUNS_CHANGED, type Health, type RunSummary } from '../api'
+import { api, RUNS_CHANGED, TEAMS_CHANGED, type Health, type RoomItem, type RunSummary, type Team } from '../api'
 import { emptyRun, reduce, TERMINAL } from './reducer'
 import type { RunEvent, RunView } from './types'
 
@@ -66,6 +66,42 @@ export function useRuns(params: { q?: string; status?: string; repo?: boolean; l
   }, [load])
 
   return { runs, loaded, reload: load }
+}
+
+export function useTeams() {
+  const [teams, setTeams] = useState<Team[]>([])
+  const load = useCallback(() => { api.teams().then(setTeams).catch(() => {}) }, [])
+  useEffect(() => {
+    load()
+    window.addEventListener(TEAMS_CHANGED, load)
+    const t = window.setInterval(load, 8000)
+    return () => { window.removeEventListener(TEAMS_CHANGED, load); window.clearInterval(t) }
+  }, [load])
+  return teams
+}
+
+/** A team and its room. Polls while the page is open: faster while a run is going. */
+export function useRoom(teamId: string) {
+  const [team, setTeam] = useState<Team | null>(null)
+  const [items, setItems] = useState<RoomItem[]>([])
+  const [activeRun, setActiveRun] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const load = useCallback(() => {
+    if (!teamId) return
+    api.team(teamId).then(setTeam).catch((e) => setError((e as Error).message))
+    api.room(teamId).then((r) => { setItems(r.items); setActiveRun(r.active_run) }).catch(() => {})
+  }, [teamId])
+  useEffect(() => {
+    setTeam(null); setItems([]); setError('')
+    load()
+    window.addEventListener(TEAMS_CHANGED, load)
+    return () => window.removeEventListener(TEAMS_CHANGED, load)
+  }, [load])
+  useEffect(() => {
+    const t = window.setInterval(load, activeRun ? 1500 : 6000)
+    return () => window.clearInterval(t)
+  }, [load, activeRun])
+  return { team, items, activeRun, error, reload: load }
 }
 
 export function useHealth(): Health | null {

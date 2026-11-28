@@ -4,12 +4,12 @@ import { api } from '../api'
 import { clock, money } from '../format'
 import { useElapsed } from '../state/hooks'
 import {
-  agentAccessory, agentColor, agentMood, agentStatusText, isLive, needsApproval, ORCHESTRATOR_COLOR,
+  agentAccessory, agentColor, agentMood, agentStatusText, CHECKER_COLOR, isLive, needsApproval, ORCHESTRATOR_COLOR,
   orchestratorMood, toolVerb,
 } from '../state/reducer'
 import type { Approval, RunView } from '../state/types'
 import { Character } from './Character'
-import { FileIc, StopSq } from './Icons'
+import { ArrowUp, FileIc, StopSq } from './Icons'
 
 // ---- approval card (DESIGN.md 3.5) ---------------------------------------------------------
 
@@ -192,8 +192,20 @@ export function RunBar({ run, onStop }: { run: RunView; onStop: () => void }) {
   }
 
   const label = needsApproval(run) ? 'Needs your approval' : run.replanning ? 'Replanning' : 'Running'
+  const steer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!follow.trim() || busy) return
+    setBusy(true)
+    try { await api.steer(run.id, follow.trim()); setFollow('') } catch { /* the run just ended */ } finally { setBusy(false) }
+  }
   return (
     <div className="runbar-wrap">
+      <form className="follow steer" onSubmit={steer}>
+        <label className="visually-hidden" htmlFor="steer">Message the orchestrator</label>
+        <input id="steer" value={follow} onChange={(e) => setFollow(e.target.value)} autoComplete="off"
+          placeholder="Message the orchestrator. It reads this at its next step." />
+        <button type="submit" className="send-btn" disabled={!follow.trim() || busy} aria-label="Send message"><ArrowUp /></button>
+      </form>
       <div className="runbar">
         <div className="meter meter-mini" role="presentation"><i style={{ transform: `scaleX(${pct / 100})` }} /></div>
         <span className="faces" aria-hidden>
@@ -208,6 +220,55 @@ export function RunBar({ run, onStop }: { run: RunView; onStop: () => void }) {
         <button className="btn btn-sm btn-stop" onClick={onStop}><StopSq />Stop</button>
       </div>
     </div>
+  )
+}
+
+// ---- usage by model and by agent (M7, canvas M7-Cheaper) ------------------------------------
+
+const TIER_ORDER = ['haiku', 'sonnet', 'opus']
+const tierRank = (m: string) => (TIER_ORDER.includes(m) ? TIER_ORDER.indexOf(m) : TIER_ORDER.length)
+
+export function UsageBreakdown({ run }: { run: RunView }) {
+  const models = Object.entries(run.usageByModel)
+    .sort(([a], [b]) => tierRank(a) - tierRank(b))
+  const agents = Object.entries(run.usageByAgent).sort(([, a], [, b]) => b.costUsd - a.costUsd)
+  if (!agents.length) return null
+  const total = Math.max(run.costUsd, 1e-9)
+  const color = (name: string) => name === 'orchestrator' ? ORCHESTRATOR_COLOR
+    : name === 'checker' ? CHECKER_COLOR : agentColor(run.agents[name]?.colorIndex ?? 0)
+  return (
+    <>
+      <section aria-labelledby="by-model">
+        <h3 className="caps" id="by-model">By model</h3>
+        <div className="tier-bar" aria-hidden>
+          {models.map(([m, u]) => <i key={m} className={`tier-${m}`} style={{ flexGrow: u.costUsd / total }} />)}
+        </div>
+        <ul className="usage-list">
+          {models.map(([m, u]) => (
+            <li key={m}><span className={`tier-swatch tier-${m}`} aria-hidden /><span className="n">{m}</span><span className="v">{money(u.costUsd)}</span></li>
+          ))}
+        </ul>
+      </section>
+      <section aria-labelledby="by-agent">
+        <h3 className="caps" id="by-agent">By agent</h3>
+        <ul className="usage-list usage-agents">
+          {agents.map(([n, u]) => {
+            const tasks = u.tasks.length
+            const meta = [u.models.join(' → '),
+              u.role === 'checker' ? `${u.calls} ${u.calls === 1 ? 'check' : 'checks'}`
+                : u.role === 'orchestrator' ? 'planning' : `${tasks} ${tasks === 1 ? 'task' : 'tasks'}, ${u.calls} ${u.calls === 1 ? 'try' : 'tries'}`]
+            return (
+              <li key={n}>
+                <span className="agent-dot" style={{ background: color(n) }} aria-hidden />
+                <span className="n">{n}</span><span className="v">{money(u.costUsd)}</span>
+                <span className="meter meter-thin" aria-hidden><i style={{ transform: `scaleX(${Math.min(1, u.costUsd / total)})` }} /></span>
+                <span className="meta">{meta.join(' · ')}</span>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+    </>
   )
 }
 
@@ -240,6 +301,7 @@ export function Rail({ run, open, onClose }: { run: RunView; open: boolean; onCl
           <div><b>{run.assignments}/{run.options?.max_assignments ?? 15}</b><span>tasks</span></div>
         </div>
       </section>
+      <UsageBreakdown run={run} />
       <section>
         <h2 className="caps">Team</h2>
         <div className="team-row">

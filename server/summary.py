@@ -24,6 +24,8 @@ def fold(run_dir: Path) -> dict:
         "auth_mode": meta.get("auth_mode"), "options": meta.get("options", {}),
         "board": [], "files": [], "final": "", "error": None, "pending_approvals": [], "last_seq": 0,
         "model_calls": 0, "playbook": None,
+        "usage": {"by_agent": {}, "by_model": {}},
+        "team_id": meta.get("team_id"), "trigger": meta.get("trigger"), "messages": [],
     }
     agents: dict[str, dict] = {}
     board: dict[str, dict] = {}
@@ -32,20 +34,27 @@ def fold(run_dir: Path) -> dict:
     for e in events:
         t = e["type"]
         d["last_seq"] = e["seq"]
-        if t == "playbook_chosen":
+        if t == "user_message":
+            d["messages"].append({"t": e["t"], "text": e.get("text", "")})
+        elif t == "playbook_chosen":
             d["playbook"] = {"id": e.get("id"), "title": e.get("title")}
         elif t == "agent_created":
             agents[e["name"]] = {"name": e["name"], "role": e.get("role", ""), "tools": e.get("tools", []),
-                                 "model": e.get("model", ""), "color_index": e.get("color_index", len(agents)),
+                                 "model": e.get("model", ""), "tier_reason": e.get("tier_reason", ""),
+                                 "color_index": e.get("color_index", len(agents)),
                                  "status": "idle"}
         elif t == "task_assigned":
             board[e["task_id"]] = {"task_id": e["task_id"], "title": e.get("title", ""), "agent": e["agent"],
                                    "task": e.get("task", ""), "done_when": e.get("done_when", ""),
                                    "replaces": e.get("replaces", ""), "replaced_by": "", "status": "pending",
-                                   "attempts": 0, "feedback": "", "short": "", "history": []}
+                                   "attempts": 0, "feedback": "", "short": "", "history": [],
+                                   "tier": e.get("tier", ""), "tier_reason": e.get("tier_reason", ""),
+                                   "checks": e.get("checks", []), "checks_only": e.get("checks_only", False),
+                                   "depends_on": e.get("depends_on", []), "owns": e.get("owns", [])}
         elif t == "attempt_started" and e["task_id"] in board:
             b = board[e["task_id"]]
             b["attempts"] = e["attempt"]
+            b["tier"] = e.get("tier") or b["tier"]
             b["status"] = "running" if e["attempt"] == 1 else "retrying"
             if b["agent"] in agents:
                 agents[b["agent"]]["status"] = "working"
@@ -57,15 +66,19 @@ def fold(run_dir: Path) -> dict:
         elif t == "attempt_failed" and e["task_id"] in board:
             b = board[e["task_id"]]
             b.update(status="retrying", feedback=e.get("reason", ""), short=e.get("short", ""))
-            b["history"].append({"attempt": e["attempt"], "passed": False, "reason": e.get("reason", ""), "short": e.get("short", "")})
+            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": False, "reason": e.get("reason", ""), "short": e.get("short", ""),
+                               "checked_by": e.get("checked_by", "model"), "checks": e.get("checks", [])})
         elif t == "task_passed" and e["task_id"] in board:
             b = board[e["task_id"]]
             b.update(status="done", feedback=e.get("reason", ""), short=e.get("short", ""))
-            b["history"].append({"attempt": e["attempt"], "passed": True, "reason": e.get("reason", ""), "short": e.get("short", "")})
+            b["history"].append({"attempt": e["attempt"], "tier": b["tier"], "passed": True, "reason": e.get("reason", ""), "short": e.get("short", ""),
+                               "checked_by": e.get("checked_by", "model"), "checks": e.get("checks", [])})
             if b["agent"] in agents:
                 agents[b["agent"]]["status"] = "idle"
         elif t == "task_failed" and e["task_id"] in board:
             board[e["task_id"]]["status"] = "failed"
+            if e.get("reason"):  # never started: a dependency failed or the budget ran out
+                board[e["task_id"]].update(feedback=e["reason"], short="not started")
             a = agents.get(board[e["task_id"]]["agent"])
             if a:
                 a["status"] = "idle"
@@ -78,6 +91,7 @@ def fold(run_dir: Path) -> dict:
         elif t == "usage":
             d["cost_usd"] = e.get("cost_usd", d["cost_usd"])
             d["model_calls"] = e.get("model_calls", d["model_calls"])
+            _add_usage(d["usage"], e)
         elif t == "approval_requested":
             pending[e["approval_id"]] = {k: e.get(k) for k in ("approval_id", "task_id", "agent", "tool", "catalog_id", "preview")}
         elif t == "approval_resolved":
@@ -107,8 +121,25 @@ def fold(run_dir: Path) -> dict:
     return d
 
 
+def _add_usage(u: dict, e: dict) -> None:
+    """Fold one usage event into the per-agent and per-model breakdown (old logs have neither)."""
+    delta = e.get("delta_usd") or 0.0
+    who, model = e.get("agent") or "unknown", e.get("model") or "unknown"
+    a = u["by_agent"].setdefault(who, {"cost_usd": 0.0, "calls": 0, "role": e.get("role", ""), "models": [],
+                                       "tasks": []})
+    a["cost_usd"] = round(a["cost_usd"] + delta, 4)
+    a["calls"] += 1
+    if model not in a["models"]:
+        a["models"].append(model)
+    if e.get("task_id") and e["task_id"] not in a["tasks"]:
+        a["tasks"].append(e["task_id"])
+    m = u["by_model"].setdefault(model, {"cost_usd": 0.0, "calls": 0})
+    m["cost_usd"] = round(m["cost_usd"] + delta, 4)
+    m["calls"] += 1
+
+
 SUMMARY_KEYS = ("id", "title", "task", "status", "needs_approval", "created_at", "ended_at", "duration_s",
-                "cost_usd", "agents", "tasks_total", "tasks_passed", "repo", "branch", "parent_id")
+                "cost_usd", "agents", "tasks_total", "tasks_passed", "repo", "branch", "parent_id", "team_id")
 
 
 def summary(detail: dict) -> dict:

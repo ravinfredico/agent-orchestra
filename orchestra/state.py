@@ -41,7 +41,8 @@ class AgentSpec:
     system_prompt: str
     tools: list[str]               # catalog ids
     color_index: int = 0
-    model: str = ""
+    model: str = ""                # tier: haiku | sonnet | opus
+    tier_reason: str = ""
 
 
 @dataclass
@@ -58,6 +59,10 @@ class Task:
     output: str = ""
     feedback: str = ""
     short: str = ""                # checker's few-word reason, for the task card
+    tier: str = ""                 # model tier of the current attempt
+    tier_reason: str = ""
+    depends_on: list[str] = field(default_factory=list)  # tasks that must pass first
+    owns: list[str] = field(default_factory=list)        # files only this task may write while it runs
 
 
 @dataclass
@@ -74,7 +79,8 @@ Listener = Callable[[dict], None]
 class RunState:
     def __init__(self, task: str, config: Config, run_dir: Path, workspace: Path | None = None, *,
                  repo: str | None = None, branch: str | None = None, parent_id: str | None = None,
-                 listeners: list[Listener] | None = None):
+                 listeners: list[Listener] | None = None, team: dict | None = None,
+                 trigger: dict | None = None):
         self.task = task
         self.title = short_title(task)
         self.config = config
@@ -87,6 +93,9 @@ class RunState:
         self.repo = repo
         self.branch = branch
         self.parent_id = parent_id
+        self.team = team           # {id, name, members, memory} for a team run, else None
+        self.trigger = trigger     # {kind: message | schedule | webhook | manual, ...}
+        self.inbox: list[str] = [] # your messages sent mid-run, not yet seen by the orchestrator
         self.auth_mode = auth_mode()
         self.created_at = round(time.time(), 2)
         self.agents: dict[str, AgentSpec] = {}
@@ -123,14 +132,32 @@ class RunState:
             return f"assignment limit reached ({b.max_assignments})"
         return None
 
-    def record_usage(self, turns: int, cost: float | None) -> None:
+    def record_usage(self, turns: int, cost: float | None, *, agent: str = "", role: str = "",
+                     model: str = "", task_id: str = "") -> None:
+        """Add one model call. agent/role/model/task_id say who spent it, for the breakdown.
+
+        role is orchestrator, worker or checker; agent is the worker's name, or the role itself."""
         self.usage.model_calls += 1
         self.usage.turns += turns or 0
         delta = cost or 0.0
         self.usage.cost_usd += delta
         self.log("usage", cost_usd=round(self.usage.cost_usd, 4), delta_usd=round(delta, 4),
                  model_calls=self.usage.model_calls, turns=self.usage.turns,
-                 assignments=self.usage.assignments)
+                 assignments=self.usage.assignments, agent=agent or role, role=role, model=model,
+                 task_id=task_id)
+
+    # ---- steering: your messages during a run --------------------------------
+
+    def steer(self, text: str) -> None:
+        """Queue a message from you. The orchestrator gets it with its next tool result."""
+        text = text.strip()[:4000]
+        if text:
+            self.inbox.append(text)
+            self.log("user_message", text=text)
+
+    def take_messages(self) -> list[str]:
+        msgs, self.inbox = self.inbox, []
+        return msgs
 
     # ---- board ---------------------------------------------------------------
 
@@ -143,6 +170,7 @@ class RunState:
                     "agent": t.agent,
                     "status": t.status,
                     "attempts": t.attempts,
+                    "tier": t.tier,
                     "done_when": t.done_when,
                     "last_feedback": t.feedback[:500],
                 }
@@ -175,6 +203,7 @@ class RunState:
             "id": self.run_id, "task": self.task, "title": self.title,
             "options": self.config.to_options(), "parent_id": self.parent_id,
             "repo": self.repo, "branch": self.branch, "auth_mode": self.auth_mode,
+            "team_id": (self.team or {}).get("id"), "trigger": self.trigger,
             "workspace": str(self.workspace), "created_at": self.created_at,
         }
 

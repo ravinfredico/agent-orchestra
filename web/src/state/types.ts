@@ -16,6 +16,7 @@ export interface Agent {
   role: string
   tools: string[]
   model: string
+  tierReason: string
   colorIndex: number
   activity: string          // latest worker_activity summary while working
   currentTask: string | null
@@ -23,8 +24,25 @@ export interface Agent {
   failed: number
 }
 
+export interface CheckResult {
+  check: string
+  passed: boolean
+  detail: string
+}
+
+export interface AgentUsage {
+  costUsd: number
+  calls: number
+  role: string              // orchestrator | worker | checker
+  models: string[]          // in the order first used
+  tasks: string[]
+}
+
 export interface Attempt {
   attempt: number
+  tier: string
+  checkedBy: string         // model | checks | worker
+  checks: CheckResult[]
   passed: boolean
   reason: string
   short: string
@@ -42,6 +60,12 @@ export interface TaskCardState {
   attempts: number
   short: string
   history: Attempt[]
+  tier: string              // model tier of the current attempt
+  tierReason: string
+  checks: string[]          // cheap check labels, run before the model checker
+  checksOnly: boolean
+  dependsOn: string[]       // task ids that must pass first (parallel batches)
+  notStarted: string        // why it never started (a dependency failed, out of budget), else ''
 }
 
 export interface Approval {
@@ -63,6 +87,7 @@ export interface FileEntry {
 
 export type ThreadItem =
   | { kind: 'task_message'; seq: number; text: string }
+  | { kind: 'user_message'; seq: number; text: string }   // sent mid-run (steering)
   | { kind: 'say'; seq: number; text: string }
   | { kind: 'playbook'; seq: number; id: string; title: string }
   | { kind: 'joined'; seq: number; names: string[] }
@@ -79,11 +104,15 @@ export interface RunView {
   repo: string | null
   branch: string | null
   parentId: string | null
+  teamId: string | null
+  teamName: string | null
   startedAt: number | null
   endedAt: number | null
   lastEventAt: number | null
   costUsd: number
   modelCalls: number
+  usageByAgent: Record<string, AgentUsage>   // key: worker name, 'orchestrator' or 'checker'
+  usageByModel: Record<string, { costUsd: number; calls: number }>
   assignments: number
   agents: Record<string, Agent>
   agentOrder: string[]
